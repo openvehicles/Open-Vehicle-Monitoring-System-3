@@ -90,32 +90,35 @@ void powermgmt::WebCleanup()
     powersaving_duration = c.getvar("powersaving_duration");
 
     // check values
-    if (!modemoff_delay.empty())
-      {
-      if (modemoff_delay.find_first_not_of("0123456789") != std::string::npos)
-        error += "<li data-input=\"user_key\">Invalid Modem off delay!</li>";
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+    if (modemoff_delay.empty() || modemoff_delay.find_first_not_of("0123456789") != std::string::npos)
+      error += "<li data-input=\"modemoff_delay\">Invalid Modem off delay!</li>";
+#ifdef CONFIG_OVMS_COMP_WIFI
+    if (modemoff_wifi_delay.empty() || modemoff_wifi_delay.find_first_not_of("0123456789") != std::string::npos)
+      error += "<li data-input=\"modemoff_wifi_delay\">Invalid Modem off (WiFi) delay!</li>";
+#endif
+#endif
+    if (wifioff_delay.empty() || wifioff_delay.find_first_not_of("0123456789") != std::string::npos)
+      error += "<li data-input=\"wifioff_delay\">Invalid WiFi off delay!</li>";
 
-      if (modemoff_wifi_delay.find_first_not_of("0123456789") != std::string::npos)
-        error += "<li data-input=\"user_key\">Invalid Modem off (WiFi) delay!</li>";
+    if (b12v_shutdown_delay.empty() || b12v_shutdown_delay.find_first_not_of("0123456789") != std::string::npos)
+      error += "<li data-input=\"12v_shutdown_delay\">Invalid shutdown delay!</li>";
 
-      if (wifioff_delay.find_first_not_of("0123456789") != std::string::npos)
-        error += "<li data-input=\"user_key\">Invalid WiFi off delay!</li>";
+    if (powersaving_days.empty() || powersaving_days.find_first_not_of("0123456789") != std::string::npos || atoi(powersaving_days.c_str()) < 1)
+      error += "<li data-input=\"powersaving_days\">Invalid powersaving days!</li>";
 
-      if (b12v_shutdown_delay.find_first_not_of("0123456789") != std::string::npos)
-        error += "<li data-input=\"user_key\">Invalid shutdown delay!</li>";
+    if (powersaving_deepsleep_days.empty() || powersaving_deepsleep_days.find_first_not_of("0123456789") != std::string::npos)
+      error += "<li data-input=\"powersaving_deepsleep_days\">Invalid deep sleep limit days!</li>";
 
-      if (powersaving_days.find_first_not_of("0123456789") != std::string::npos)
-        error += "<li data-input=\"user_key\">Invalid powersaving days!</li>";
+    if (powersaving_target != "modem" && powersaving_target != "wifi" &&
+        powersaving_target != "both" && powersaving_target != "deepsleep")
+      error += "<li data-input=\"powersaving_target\">Invalid powersaving target!</li>";
 
-      if (powersaving_deepsleep_days.find_first_not_of("0123456789") != std::string::npos)
-        error += "<li data-input=\"user_key\">Invalid deep sleep limit days!</li>";
+    if (powersaving_interval.empty() || powersaving_interval.find_first_not_of("0123456789") != std::string::npos || atoi(powersaving_interval.c_str()) < 1)
+      error += "<li data-input=\"powersaving_interval\">Invalid powersaving interval!</li>";
 
-      if (powersaving_interval.find_first_not_of("0123456789") != std::string::npos)
-        error += "<li data-input=\"user_key\">Invalid powersaving interval!</li>";
-
-      if (powersaving_duration.find_first_not_of("0123456789") != std::string::npos)
-        error += "<li data-input=\"user_key\">Invalid powersaving duration!</li>";
-      }
+    if (powersaving_duration.empty() || powersaving_duration.find_first_not_of("0123456789") != std::string::npos || atoi(powersaving_duration.c_str()) < 1)
+      error += "<li data-input=\"powersaving_duration\">Invalid powersaving duration!</li>";
 
 
     if (error == "")

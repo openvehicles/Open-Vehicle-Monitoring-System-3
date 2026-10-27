@@ -92,9 +92,9 @@ static void pmgmt_powersaving_set(int verbosity, OvmsWriter* writer, OvmsCommand
       {
       char* endptr = nullptr;
       long days = strtol(argv[0], &endptr, 10);
-      if (endptr == argv[0] || *endptr != '\0' || days < 0)
+      if (endptr == argv[0] || *endptr != '\0' || days < 0 || days > 365)
         {
-        writer->puts("Error: Invalid days value. Must be >= 0 (0 = unlimited).");
+        writer->puts("Error: Invalid days value. Must be 0..365 (0 = unlimited).");
         return;
         }
       auto lock = MyConfig.Lock();
@@ -182,10 +182,11 @@ powermgmt::powermgmt()
 
 powermgmt::~powermgmt()
   {
- #ifdef CONFIG_OVMS_COMP_WEBSERVER
+  MyEvents.DeregisterEvent(TAG);
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebCleanup();
 #endif
- }
+  }
 
 void powermgmt::ConfigChanged(std::string event, void* data)
   {
@@ -194,39 +195,66 @@ void powermgmt::ConfigChanged(std::string event, void* data)
   // read vehicle framework config:
   if (!param || param->GetName() == "power")
     {
+    auto getClampedUInt = [](const char* key, int def, int min_val, int max_val) -> unsigned int {
+      if (!MyConfig.IsDefined("power", key))
+        return (unsigned int)def;
+      std::string val = MyConfig.GetParamValue("power", key);
+      if (val.empty())
+        return (unsigned int)def;
+      int v = atoi(val.c_str());
+      if (v < min_val) v = min_val;
+      if (v > max_val) v = max_val;
+      return (unsigned int)v;
+    };
+
+    bool was_powersaving_active = m_powersaving_active;
+
     m_enabled = MyConfig.GetParamValueBool("power", "enabled", false);
-    m_modemoff_delay = MyConfig.GetParamValueInt("power", "modemoff_delay", POWERMGMT_MODEMOFF_DELAY);
-    m_modemoff_wifi_delay = MyConfig.GetParamValueInt("power", "modemoff_wifi_delay", POWERMGMT_MODEMOFF_WIFI_DELAY);
+    m_modemoff_delay = getClampedUInt("modemoff_delay", POWERMGMT_MODEMOFF_DELAY, 0, 8760);
+    m_modemoff_wifi_delay = getClampedUInt("modemoff_wifi_delay", POWERMGMT_MODEMOFF_WIFI_DELAY, 0, 525600);
     m_modem_wifi_fallback = MyConfig.GetParamValueBool("power", "modem_wifi_fallback", false);
-    m_wifioff_delay = MyConfig.GetParamValueInt("power", "wifioff_delay", POWERMGMT_WIFIOFF_DELAY);
+    m_wifioff_delay = getClampedUInt("wifioff_delay", POWERMGMT_WIFIOFF_DELAY, 0, 8760);
     m_wifioff_if_disconnected = MyConfig.GetParamValueBool("power", "wifioff_if_disconnected", false);
     if (MyConfig.ismounted() && !MyConfig.IsDefined("power", "wifioff_if_disconnected"))
       {
       MyConfig.SetParamValueBool("power", "wifioff_if_disconnected", m_wifioff_if_disconnected);
       }
-    m_12v_shutdown_delay = MyConfig.GetParamValueInt("power", "12v_shutdown_delay", POWERMGMT_12V_SHUTDOWN_DELAY);
+    m_12v_shutdown_delay = getClampedUInt("12v_shutdown_delay", POWERMGMT_12V_SHUTDOWN_DELAY, 0, 525600);
     m_powersaving_enabled = MyConfig.GetParamValueBool("power", "powersaving.enabled", false);
-    m_powersaving_days = MyConfig.GetParamValueInt("power", "powersaving.days", POWERMGMT_POWERSAVING_DAYS);
-    m_powersaving_deepsleep_days = MyConfig.GetParamValueInt("power", "powersaving.deepsleep_days", POWERMGMT_POWERSAVING_DEEPSLEEP_DAYS);
+    m_powersaving_days = getClampedUInt("powersaving.days", POWERMGMT_POWERSAVING_DAYS, 1, 365);
+    m_powersaving_deepsleep_days = getClampedUInt("powersaving.deepsleep_days", POWERMGMT_POWERSAVING_DEEPSLEEP_DAYS, 0, 365);
     m_powersaving_target = MyConfig.GetParamValue("power", "powersaving.target", POWERMGMT_POWERSAVING_TARGET);
-    m_powersaving_interval = MyConfig.GetParamValueInt("power", "powersaving.interval", POWERMGMT_POWERSAVING_INTERVAL);
-    m_powersaving_duration = MyConfig.GetParamValueInt("power", "powersaving.duration", POWERMGMT_POWERSAVING_DURATION);
+    if (m_powersaving_target != "modem" && m_powersaving_target != "wifi" &&
+        m_powersaving_target != "both" && m_powersaving_target != "deepsleep")
+      {
+      m_powersaving_target = POWERMGMT_POWERSAVING_TARGET;
+      }
+    m_powersaving_interval = getClampedUInt("powersaving.interval", POWERMGMT_POWERSAVING_INTERVAL, 1, 720);
+    m_powersaving_duration = getClampedUInt("powersaving.duration", POWERMGMT_POWERSAVING_DURATION, 1, 1440);
 
     // Restore timers from parktime after reboot if feature enabled
     int park_secs = StandardMetrics.ms_v_env_parktime->AsInt(0);
-    if (m_enabled && park_secs > 1)
+    if (event == "config.mounted" && m_enabled && park_secs > 1)
       m_notcharging_timer = park_secs;
+
     if (!m_powersaving_enabled)
       {
       m_powersaving_active = false;
       m_powersaving_awake_phase = false;
       m_powersaving_deepsleep_fallback = false;
+      if (was_powersaving_active)
+        {
+        if (m_wifi_off) PowerOnWifi();
+        if (m_modem_off) PowerOnModem();
+        }
       }
     else if (park_secs > 1)
       {
-      m_powersaving_timer = park_secs;
+      if (event == "config.mounted" || m_powersaving_timer < (unsigned int)park_secs)
+        m_powersaving_timer = park_secs;
+
       if (m_powersaving_target == "deepsleep" && m_powersaving_deepsleep_days > 0 &&
-          m_powersaving_timer >= (m_powersaving_days + m_powersaving_deepsleep_days) * 24 * 60 * 60)
+          m_powersaving_timer >= (m_powersaving_days + m_powersaving_deepsleep_days) * 86400U)
         {
         m_powersaving_deepsleep_fallback = true;
         m_powersaving_target = "both";
@@ -235,7 +263,7 @@ void powermgmt::ConfigChanged(std::string event, void* data)
         {
         m_powersaving_deepsleep_fallback = false;
         }
-      if (event == "config.mounted" && m_powersaving_timer >= m_powersaving_days * 24 * 60 * 60)
+      if (event == "config.mounted" && m_powersaving_timer >= m_powersaving_days * 86400U)
         {
         m_powersaving_active = true;
         m_powersaving_cycle_timer = 0;
@@ -247,6 +275,9 @@ void powermgmt::ConfigChanged(std::string event, void* data)
 
 void powermgmt::EventVehicleOn(std::string event, void* data)
   {
+  m_notcharging_timer = 0;
+  m_modemoff_wifi_timer = 0;
+
   if (m_powersaving_active || m_powersaving_timer > 0 || m_powersaving_deepsleep_fallback)
     {
     ESP_LOGI(TAG, "Vehicle ON event received, resetting power saving timer and mode.");
@@ -256,7 +287,25 @@ void powermgmt::EventVehicleOn(std::string event, void* data)
     m_powersaving_cycle_timer = 0;
     m_powersaving_awake_phase = false;
     m_powersaving_target = MyConfig.GetParamValue("power", "powersaving.target", POWERMGMT_POWERSAVING_TARGET);
+    if (m_powersaving_target != "modem" && m_powersaving_target != "wifi" &&
+        m_powersaving_target != "both" && m_powersaving_target != "deepsleep")
+      {
+      m_powersaving_target = POWERMGMT_POWERSAVING_TARGET;
+      }
     }
+
+#ifdef CONFIG_OVMS_COMP_WIFI
+  if (m_wifi_off)
+    {
+    PowerOnWifi();
+    }
+#endif
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+  if (m_modem_off)
+    {
+    PowerOnModem();
+    }
+#endif
   }
 
 void powermgmt::GetEstimatedConsumption(powermgmt_consumption_t& out)
@@ -416,11 +465,10 @@ void powermgmt::PowerOffWifi()
 #ifdef CONFIG_OVMS_COMP_WIFI
   if (MyPeripherals && MyPeripherals->m_esp32wifi)
     {
-    if (MyPeripherals->m_esp32wifi->GetPowerMode() == On)
+    if (MyPeripherals->m_esp32wifi->GetPowerMode() != Off)
       {
       ESP_LOGW(TAG, "Powering off wifi");
       MyEvents.SignalEvent("powermgmt.wifi.off", NULL);
-      vTaskDelay(2000 / portTICK_PERIOD_MS); // make sure all notifications are transmitted before powering down WiFi
       MyPeripherals->m_esp32wifi->SetPowerMode(Off);
       }
     m_wifi_off = true;
@@ -433,15 +481,18 @@ void powermgmt::PowerOffModem(bool wifi_triggered)
 #ifdef CONFIG_OVMS_COMP_CELLULAR
   if (MyPeripherals && MyPeripherals->m_cellular_modem)
     {
-    if (MyPeripherals->m_cellular_modem->GetPowerMode() == On)
+    if (MyPeripherals->m_cellular_modem->GetPowerMode() != Off)
       {
       ESP_LOGW(TAG, "Powering off cellular modem%s", wifi_triggered ? " (WiFi connected)" : "");
       MyEvents.SignalEvent("powermgmt.modem.off", NULL);
-      vTaskDelay(2000 / portTICK_PERIOD_MS); // make sure all notifications are transmitted before powering down modem
       MyPeripherals->m_cellular_modem->SetPowerMode(Off);
+      m_modem_off_wifi = wifi_triggered;
+      }
+    else if (!wifi_triggered)
+      {
+      m_modem_off_wifi = false;
       }
     m_modem_off = true;
-    m_modem_off_wifi = wifi_triggered;
     }
 #endif
   }
@@ -557,9 +608,9 @@ void powermgmt::CommandPowerSaving(int verbosity, OvmsWriter* writer, const char
             }
           char* endptr = nullptr;
           long days = strtol(days_str, &endptr, 10);
-          if (endptr == days_str || *endptr != '\0' || days < 0)
+          if (endptr == days_str || *endptr != '\0' || days < 0 || days > 365)
             {
-            writer->puts("Error: Invalid days value. Must be >= 0 (0 = unlimited).");
+            writer->puts("Error: Invalid days value. Must be 0..365 (0 = unlimited).");
             return;
             }
           m_powersaving_deepsleep_days = (unsigned int)days;
@@ -581,7 +632,7 @@ void powermgmt::CommandPowerSaving(int verbosity, OvmsWriter* writer, const char
 
     m_powersaving_active = true;
     m_powersaving_deepsleep_fallback = false;
-    m_powersaving_timer = m_powersaving_days * 24 * 60 * 60;
+    m_powersaving_timer = m_powersaving_days * 86400U;
     m_powersaving_cycle_timer = 0;
     m_powersaving_awake_phase = false;
     MyConfig.SetParamValueBool("power", "powersaving.enabled", true);
@@ -595,6 +646,12 @@ void powermgmt::CommandPowerSaving(int verbosity, OvmsWriter* writer, const char
     m_powersaving_awake_phase = false;
     m_powersaving_target = MyConfig.GetParamValue("power", "powersaving.target", POWERMGMT_POWERSAVING_TARGET);
     MyConfig.SetParamValueBool("power", "powersaving.enabled", false);
+#ifdef CONFIG_OVMS_COMP_WIFI
+    if (m_wifi_off) PowerOnWifi();
+#endif
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+    if (m_modem_off) PowerOnModem();
+#endif
     writer->puts("Periodic power saving mode deactivated.");
     }
   else
@@ -636,18 +693,17 @@ void powermgmt::Ticker1(std::string event, void* data)
     if (m_powersaving_enabled)
       {
       m_powersaving_timer++;
-      if (m_powersaving_timer >= m_powersaving_days * 24 * 60 * 60)
+      if (m_powersaving_timer >= m_powersaving_days * 86400U)
         {
         MyNotify.NotifyStringf("info", "powermgmt.powersaving.active",
           "Periodic power saving mode activated after %u days of inactivity (target: %s).",
           m_powersaving_days, m_powersaving_target.c_str());
         ESP_LOGI(TAG, "Power saving inactivity threshold of %u days reached, entering periodic power saving mode.", m_powersaving_days);
-        vTaskDelay(2000 / portTICK_PERIOD_MS); // make sure all notifications are transmitted before entering power saving mode
         m_powersaving_active = true;
         m_powersaving_cycle_timer = 0;
         m_powersaving_awake_phase = false;
         if (m_powersaving_target == "deepsleep" && m_powersaving_deepsleep_days > 0 &&
-            m_powersaving_timer >= (m_powersaving_days + m_powersaving_deepsleep_days) * 24 * 60 * 60)
+            m_powersaving_timer >= (m_powersaving_days + m_powersaving_deepsleep_days) * 86400U)
           {
           m_powersaving_deepsleep_fallback = true;
           m_powersaving_target = "both";
@@ -659,25 +715,24 @@ void powermgmt::Ticker1(std::string event, void* data)
     {
     m_powersaving_timer++;
     if (m_powersaving_target == "deepsleep" && m_powersaving_deepsleep_days > 0 &&
-        m_powersaving_timer >= (m_powersaving_days + m_powersaving_deepsleep_days) * 24 * 60 * 60)
+        m_powersaving_timer >= (m_powersaving_days + m_powersaving_deepsleep_days) * 86400U)
       {
       MyNotify.NotifyStringf("info", "powermgmt.powersaving.fallback",
         "Deep sleep limit of %u days reached, continuing periodic power saving with target 'both' until vehicle ON.",
         m_powersaving_deepsleep_days);
-      vTaskDelay(2000 / portTICK_PERIOD_MS);
       ESP_LOGI(TAG, "Deep sleep limit of %u days reached, switching power saving target to 'both' until vehicle ON.",
         m_powersaving_deepsleep_days);
       m_powersaving_deepsleep_fallback = true;
-      m_powersaving_target = "both";      
+      m_powersaving_target = "both";
       }
 
     // Duty-cycle execution
-    m_powersaving_cycle_timer++;
     unsigned int interval_secs = (m_powersaving_interval > 0 ? m_powersaving_interval : POWERMGMT_POWERSAVING_INTERVAL) * 60 * 60;
     unsigned int duration_secs = (m_powersaving_duration > 0 ? m_powersaving_duration : POWERMGMT_POWERSAVING_DURATION) * 60;
     if (duration_secs >= interval_secs)
       duration_secs = interval_secs / 2;
     unsigned int pos_in_cycle = m_powersaving_cycle_timer % interval_secs;
+    m_powersaving_cycle_timer++;
 
     if (pos_in_cycle < duration_secs)
       {
@@ -784,18 +839,17 @@ void powermgmt::Ticker1(std::string event, void* data)
     }
 #endif
 
-#if defined(CONFIG_OVMS_COMP_CELLULAR) && defined(CONFIG_OVMS_COMP_WIFI)
-  if (!ps_keep_modem && m_modemoff_wifi_delay && m_modemoff_wifi_timer > m_modemoff_wifi_delay*60) // minutes to seconds
-    {
-    PowerOffModem(true);
-    }
-#endif
-
 #ifdef CONFIG_OVMS_COMP_CELLULAR
   if (!ps_keep_modem && m_modemoff_delay && m_notcharging_timer > m_modemoff_delay*60*60) // hours to seconds
     {
     PowerOffModem(false);
     }
+#ifdef CONFIG_OVMS_COMP_WIFI
+  else if (!ps_keep_modem && m_modemoff_wifi_delay && m_modemoff_wifi_timer > m_modemoff_wifi_delay*60) // minutes to seconds
+    {
+    PowerOffModem(true);
+    }
+#endif
 #endif
 
   if (StandardMetrics.ms_v_bat_12v_voltage_alert->AsBool())
@@ -805,9 +859,8 @@ void powermgmt::Ticker1(std::string event, void* data)
       {
       ESP_LOGW(TAG, "12V battery alert detected, will shutdown in %d minutes", m_12v_shutdown_delay);
       }
-    if (m_12v_shutdown_delay && m_12v_alert_timer > m_12v_shutdown_delay*60) // minutes to seconds
+    if (m_12v_shutdown_delay && m_12v_alert_timer > m_12v_shutdown_delay*60 && !MyBoot.IsShuttingDown()) // minutes to seconds
       {
-      m_12v_shutdown_delay = 0;
       ESP_LOGE(TAG,"Ongoing 12V battery alert time limit exceeded! Shutting down OVMS..");
       MyEvents.SignalEvent("powermgmt.ovms.shutdown",NULL);
       
