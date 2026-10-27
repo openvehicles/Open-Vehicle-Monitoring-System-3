@@ -192,6 +192,11 @@ void powermgmt::ConfigChanged(std::string event, void* data)
   {
   OvmsConfigParam* param = (OvmsConfigParam*) data;
 
+  if (!param || param->GetName() == "vehicle" || param->GetName() == "power")
+    {
+    m_12v_shutdown_delay = MyConfig.GetParamValueInt("vehicle", "12v.shutdown_delay", 2);
+    }
+
   // read vehicle framework config:
   if (!param || param->GetName() == "power")
     {
@@ -219,7 +224,6 @@ void powermgmt::ConfigChanged(std::string event, void* data)
       {
       MyConfig.SetParamValueBool("power", "wifioff_if_disconnected", m_wifioff_if_disconnected);
       }
-    m_12v_shutdown_delay = getClampedUInt("12v_shutdown_delay", POWERMGMT_12V_SHUTDOWN_DELAY, 0, 525600);
     m_powersaving_enabled = MyConfig.GetParamValueBool("power", "powersaving.enabled", false);
     m_powersaving_days = getClampedUInt("powersaving.days", POWERMGMT_POWERSAVING_DAYS, 1, 365);
     m_powersaving_deepsleep_days = getClampedUInt("powersaving.deepsleep_days", POWERMGMT_POWERSAVING_DEEPSLEEP_DAYS, 0, 365);
@@ -851,7 +855,9 @@ void powermgmt::Ticker1(std::string event, void* data)
     }
 #endif
 #endif
-
+  /*
+  // 12V battery alert shutdown handling (only if configured)
+  // Note: This is disabled because it can cause issues with vehicle.cpp ticker60 12V alert handling.
   if (StandardMetrics.ms_v_bat_12v_voltage_alert->AsBool())
     {
     m_12v_alert_timer++;
@@ -882,5 +888,6 @@ void powermgmt::Ticker1(std::string event, void* data)
       ESP_LOGI(TAG, "12V battery alert resolved, shutdown cancelled");
       }
     m_12v_alert_timer = 0;
-    }
-  }
+    } 
+    */
+  } // end of Ticker1

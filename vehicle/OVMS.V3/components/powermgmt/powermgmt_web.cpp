@@ -134,7 +134,7 @@ void powermgmt::WebCleanup()
 #endif
       MyConfig.SetParamValue("power", "wifioff_delay", wifioff_delay);
       MyConfig.SetParamValueBool("power", "wifioff_if_disconnected", wifioff_if_disconnected);
-      MyConfig.SetParamValue("power", "12v_shutdown_delay", b12v_shutdown_delay);
+      MyConfig.SetParamValue("vehicle", "12v.shutdown_delay", b12v_shutdown_delay);
       MyConfig.SetParamValueBool("power", "powersaving.enabled", powersaving_enabled);
       MyConfig.SetParamValue("power", "powersaving.days", powersaving_days);
       MyConfig.SetParamValue("power", "powersaving.deepsleep_days", powersaving_deepsleep_days);
@@ -167,7 +167,9 @@ void powermgmt::WebCleanup()
 #endif
     wifioff_delay = MyConfig.GetParamValue("power", "wifioff_delay", STR(POWERMGMT_WIFIOFF_DELAY));
     wifioff_if_disconnected = MyConfig.GetParamValueBool("power", "wifioff_if_disconnected", false);
-    b12v_shutdown_delay = MyConfig.GetParamValue("power", "12v_shutdown_delay", STR(POWERMGMT_12V_SHUTDOWN_DELAY));
+    b12v_shutdown_delay = MyConfig.GetParamValue("vehicle", "12v.shutdown_delay", STR(POWERMGMT_12V_SHUTDOWN_DELAY));
+    if (b12v_shutdown_delay.empty())
+      b12v_shutdown_delay = STR(POWERMGMT_12V_SHUTDOWN_DELAY);
     powersaving_enabled = MyConfig.GetParamValueBool("power", "powersaving.enabled", false);
     powersaving_days = MyConfig.GetParamValue("power", "powersaving.days", STR(POWERMGMT_POWERSAVING_DAYS));
     powersaving_deepsleep_days = MyConfig.GetParamValue("power", "powersaving.deepsleep_days", STR(POWERMGMT_POWERSAVING_DEEPSLEEP_DAYS));
