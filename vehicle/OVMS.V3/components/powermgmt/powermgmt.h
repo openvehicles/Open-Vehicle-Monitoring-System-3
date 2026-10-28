@@ -90,6 +90,8 @@ class powermgmt
     void CommandPowerSaving(int verbosity, OvmsWriter* writer, const char* action, const char* target = nullptr, const char* days_str = nullptr);
     void EventVehicleOn(std::string event, void* data);
     void EventVehicleAwake(std::string event, void* data);
+    void EventCharge12VStart(std::string event, void* data);
+    void EventCharge12VStop(std::string event, void* data);
     unsigned int GetNotChargingTimer() const { return m_notcharging_timer; }
     unsigned int GetModemOffWifiTimer() const { return m_modemoff_wifi_timer; }
     unsigned int Get12VAlertTimer() const { return m_12v_alert_timer; }

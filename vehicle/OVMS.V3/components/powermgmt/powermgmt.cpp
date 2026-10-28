@@ -151,6 +151,8 @@ powermgmt::powermgmt()
 
   MyEvents.RegisterEvent(TAG, "vehicle.on", std::bind(&powermgmt::EventVehicleOn, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "vehicle.awake", std::bind(&powermgmt::EventVehicleAwake, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "vehicle.charge.12v.start", std::bind(&powermgmt::EventCharge12VStart, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "vehicle.charge.12v.stop", std::bind(&powermgmt::EventCharge12VStop, this, _1, _2));
 
   OvmsCommand* cmd_pmgmt = MyCommandApp.RegisterCommand("pmgmt", "Power management framework", pmgmt_status, "", 0, 0, false);
   cmd_pmgmt->RegisterCommand("status", "Show power status and estimated consumption", pmgmt_status, "", 0, 0, false);
@@ -213,6 +215,7 @@ void powermgmt::ConfigChanged(std::string event, void* data)
       return (unsigned int)v;
     };
 
+    bool was_powersaving_enabled = m_powersaving_enabled;
     bool was_powersaving_active = m_powersaving_active;
 
     m_enabled = MyConfig.GetParamValueBool("power", "enabled", false);
@@ -239,8 +242,12 @@ void powermgmt::ConfigChanged(std::string event, void* data)
 
     // Restore timers from parktime after reboot if feature enabled
     int park_secs = StandardMetrics.ms_v_env_parktime->AsInt(0);
-    if (event == "config.mounted" && m_enabled && park_secs > 1)
-      m_notcharging_timer = park_secs;
+    if (event == "config.mounted")
+      {
+      m_charging = StandardMetrics.ms_v_env_charging12v->AsBool();
+      if (m_enabled && park_secs > 1)
+        m_notcharging_timer = park_secs;
+      }
 
     if (!m_powersaving_enabled)
       {
@@ -255,7 +262,8 @@ void powermgmt::ConfigChanged(std::string event, void* data)
       }
     else if (park_secs > 1)
       {
-      if (event == "config.mounted" || m_powersaving_timer < (unsigned int)park_secs)
+      if ((event == "config.mounted" || !was_powersaving_enabled) &&
+          m_powersaving_timer < (unsigned int)park_secs)
         m_powersaving_timer = park_secs;
 
       if (m_powersaving_target == "deepsleep" && m_powersaving_deepsleep_days > 0 &&
@@ -299,58 +307,127 @@ void powermgmt::EventVehicleOn(std::string event, void* data)
       }
     }
 
-#ifdef CONFIG_OVMS_COMP_WIFI
   if (m_wifi_off)
     {
     PowerOnWifi();
     }
-#endif
-#ifdef CONFIG_OVMS_COMP_CELLULAR
   if (m_modem_off)
     {
     PowerOnModem();
     }
-#endif
   }
 
 void powermgmt::EventVehicleAwake(std::string event, void* data)
   {
-  // Reset the timer when the vehicle wakes up (with a maximum delay of 1 hour) 
-  // to prevent the modem/Wi-Fi from remaining powered on for an extended period 
-  // while the vehicle is parked and in power-saving mode.
-  if (m_modemoff_delay > 1)
-    m_notcharging_timer = (m_modemoff_delay - 1) * 60 * 60;
-  else if (m_wifioff_delay > 1)
-    m_notcharging_timer = (m_wifioff_delay - 1) * 60 * 60;
-  else
-    m_notcharging_timer = 0;
-  m_modemoff_wifi_timer = 0;
-
+  // Cap the timer when the vehicle wakes up (with a maximum remaining delay of 1 hour)
+  // so a woken-up modem/Wi-Fi stays on for up to 1 hour without advancing a lower timer.
   if (m_powersaving_active)
     {
-    ESP_LOGI(TAG, "Vehicle AWAKE event received, activating power saving awake phase.");
     m_powersaving_cycle_timer = 0;
     if (!m_powersaving_awake_phase)
       {
+      ESP_LOGI(TAG, "Vehicle AWAKE event received, activating power saving awake phase.");
       m_powersaving_awake_phase = true;
       if (m_powersaving_target == "modem" || m_powersaving_target == "both" || m_powersaving_target == "deepsleep")
         PowerOnModem();
       if (m_powersaving_target == "wifi" || m_powersaving_target == "both" || m_powersaving_target == "deepsleep")
         PowerOnWifi();
       }
-    else if ((m_powersaving_target == "wifi" || m_powersaving_target == "both" || m_powersaving_target == "deepsleep") && m_wifi_off)
+    else
+      {
+      if ((m_powersaving_target == "modem" || m_powersaving_target == "both" || m_powersaving_target == "deepsleep") && m_modem_off)
+        PowerOnModem();
+      if ((m_powersaving_target == "wifi" || m_powersaving_target == "both" || m_powersaving_target == "deepsleep") && m_wifi_off)
+        PowerOnWifi();
+      }
+    }
+  else
+    {
+    if (m_wifi_off && (m_charging || !m_enabled || !m_wifioff_delay || m_notcharging_timer <= m_wifioff_delay * 60 * 60))
       {
       PowerOnWifi();
       }
+    if (m_modem_off)
+      {
+      ESP_LOGI(TAG, "Vehicle AWAKE event received, powering on cellular modem and resetting delay timers.");
+      if (m_modemoff_delay >= 1)
+        {
+        unsigned int max_timer = (m_modemoff_delay - 1) * 60 * 60;
+        if (m_notcharging_timer > max_timer)
+          m_notcharging_timer = max_timer;
+        }
+      else
+        {
+        m_notcharging_timer = 0;
+        }
+      m_modemoff_wifi_timer = 0;
+      PowerOnModem();
+      }
     }
+  }
 
-#ifdef CONFIG_OVMS_COMP_CELLULAR
-  if (m_modem_off)
+void powermgmt::EventCharge12VStart(std::string event, void* data)
+  {
+  ESP_LOGI(TAG, "Charging 12V battery..");
+  m_charging = true;
+  m_modemoff_wifi_timer = 0;
+  if (m_powersaving_active)
+    m_powersaving_cycle_timer = 0;
+
+  int park_secs = StandardMetrics.ms_v_env_parktime->AsInt(0);
+  if (StandardMetrics.ms_v_env_on->AsBool())
     {
-    ESP_LOGI(TAG, "Vehicle AWAKE event received, powering on cellular modem and resetting delay timers.");
-    PowerOnModem();
+    m_notcharging_timer = 0;
     }
-#endif
+  else
+    {
+    if (m_notcharging_timer > (unsigned int)park_secs)
+      m_notcharging_timer = (unsigned int)park_secs;
+
+    if (m_modemoff_delay >= 1)
+      {
+      unsigned int max_timer = (m_modemoff_delay - 1) * 60 * 60;
+      if (m_notcharging_timer > max_timer)
+        m_notcharging_timer = max_timer;
+      }
+    else if (m_wifioff_delay >= 1)
+      {
+      unsigned int max_timer = (m_wifioff_delay - 1) * 60 * 60;
+      if (m_notcharging_timer > max_timer)
+        m_notcharging_timer = max_timer;
+      }
+    }
+  }
+
+void powermgmt::EventCharge12VStop(std::string event, void* data)
+  {
+  ESP_LOGI(TAG, "No longer charging 12V battery..");
+  m_charging = false;
+  m_modemoff_wifi_timer = 0;
+
+  int park_secs = StandardMetrics.ms_v_env_parktime->AsInt(0);
+  if (StandardMetrics.ms_v_env_on->AsBool())
+    {
+    m_notcharging_timer = 0;
+    }
+  else
+    {
+    if (m_notcharging_timer > (unsigned int)park_secs)
+      m_notcharging_timer = (unsigned int)park_secs;
+
+    if (m_modemoff_delay >= 1)
+      {
+      unsigned int max_timer = (m_modemoff_delay - 1) * 60 * 60;
+      if (m_notcharging_timer > max_timer)
+        m_notcharging_timer = max_timer;
+      }
+    else if (m_wifioff_delay >= 1)
+      {
+      unsigned int max_timer = (m_wifioff_delay - 1) * 60 * 60;
+      if (m_notcharging_timer > max_timer)
+        m_notcharging_timer = max_timer;
+      }
+    }
   }
 
 void powermgmt::GetEstimatedConsumption(powermgmt_consumption_t& out)
@@ -547,10 +624,14 @@ void powermgmt::PowerOnWifi()
 #ifdef CONFIG_OVMS_COMP_WIFI
   if (MyPeripherals && MyPeripherals->m_esp32wifi)
     {
-    ESP_LOGI(TAG, "Powering on wifi");
-    MyPeripherals->m_esp32wifi->SetPowerMode(On);
-    if (MyPeripherals->m_esp32wifi->GetMode() == ESP32WIFI_MODE_OFF)
-      MyPeripherals->m_esp32wifi->AutoInit();
+    if (MyPeripherals->m_esp32wifi->GetPowerMode() != On ||
+        MyPeripherals->m_esp32wifi->GetMode() == ESP32WIFI_MODE_OFF)
+      {
+      ESP_LOGI(TAG, "Powering on wifi");
+      MyPeripherals->m_esp32wifi->SetPowerMode(On);
+      if (MyPeripherals->m_esp32wifi->GetMode() == ESP32WIFI_MODE_OFF)
+        MyPeripherals->m_esp32wifi->AutoInit();
+      }
     m_wifi_off = false;
     }
 #endif
@@ -561,8 +642,11 @@ void powermgmt::PowerOnModem()
 #ifdef CONFIG_OVMS_COMP_CELLULAR
   if (MyPeripherals && MyPeripherals->m_cellular_modem)
     {
-    ESP_LOGI(TAG, "Powering on cellular modem");
-    MyPeripherals->m_cellular_modem->SetPowerMode(On);
+    if (MyPeripherals->m_cellular_modem->GetPowerMode() == Off)
+      {
+      ESP_LOGI(TAG, "Powering on cellular modem");
+      MyPeripherals->m_cellular_modem->SetPowerMode(On);
+      }
     m_modem_off = false;
     m_modem_off_wifi = false;
     }
@@ -604,32 +688,43 @@ void powermgmt::CommandPowerOn(int verbosity, OvmsWriter* writer, const char* ta
   {
   bool do_modem = (strcmp(target, "modem") == 0 || strcmp(target, "both") == 0);
   bool do_wifi = (strcmp(target, "wifi") == 0 || strcmp(target, "both") == 0);
+  bool was_powersaving_active = m_powersaving_active;
 
   m_notcharging_timer = 0;
   m_modemoff_wifi_timer = 0;
   m_powersaving_timer = 0;
+  m_powersaving_cycle_timer = 0;
   m_powersaving_active = false;
   m_powersaving_deepsleep_fallback = false;
   m_powersaving_awake_phase = false;
   m_powersaving_target = MyConfig.GetParamValue("power", "powersaving.target", POWERMGMT_POWERSAVING_TARGET);
+  if (m_powersaving_target != "modem" && m_powersaving_target != "wifi" &&
+      m_powersaving_target != "both" && m_powersaving_target != "deepsleep")
+    {
+    m_powersaving_target = POWERMGMT_POWERSAVING_TARGET;
+    }
 
-  if (do_modem)
+  if (do_modem || (was_powersaving_active && m_modem_off))
     {
 #ifdef CONFIG_OVMS_COMP_CELLULAR
     PowerOnModem();
-    writer->puts("Cellular modem powered on and delay timers reset.");
+    if (do_modem)
+      writer->puts("Cellular modem powered on and delay timers reset.");
 #else
-    writer->puts("Error: Cellular support not enabled.");
+    if (do_modem)
+      writer->puts("Error: Cellular support not enabled.");
 #endif
     }
 
-  if (do_wifi)
+  if (do_wifi || (was_powersaving_active && m_wifi_off))
     {
 #ifdef CONFIG_OVMS_COMP_WIFI
     PowerOnWifi();
-    writer->puts("WiFi powered on and delay timers reset.");
+    if (do_wifi)
+      writer->puts("WiFi powered on and delay timers reset.");
 #else
-    writer->puts("Error: WiFi support not enabled.");
+    if (do_wifi)
+      writer->puts("Error: WiFi support not enabled.");
 #endif
     }
   }
@@ -691,12 +786,8 @@ void powermgmt::CommandPowerSaving(int verbosity, OvmsWriter* writer, const char
     m_powersaving_awake_phase = false;
     m_powersaving_target = MyConfig.GetParamValue("power", "powersaving.target", POWERMGMT_POWERSAVING_TARGET);
     MyConfig.SetParamValueBool("power", "powersaving.enabled", false);
-#ifdef CONFIG_OVMS_COMP_WIFI
     if (m_wifi_off) PowerOnWifi();
-#endif
-#ifdef CONFIG_OVMS_COMP_CELLULAR
     if (m_modem_off) PowerOnModem();
-#endif
     writer->puts("Periodic power saving mode deactivated.");
     }
   else
@@ -720,12 +811,10 @@ void powermgmt::Ticker1(std::string event, void* data)
   if (!m_charging)
     {
     m_notcharging_timer++;
-#ifdef CONFIG_OVMS_COMP_WIFI
     if (MyNetManager.m_connected_wifi)
       m_modemoff_wifi_timer++;
     else
       m_modemoff_wifi_timer = 0;
-#endif
     }
   else
     {
@@ -779,7 +868,7 @@ void powermgmt::Ticker1(std::string event, void* data)
     unsigned int pos_in_cycle = m_powersaving_cycle_timer % interval_secs;
     m_powersaving_cycle_timer++;
 
-    if (pos_in_cycle < duration_secs)
+    if (pos_in_cycle < duration_secs || m_charging)
       {
       if (!m_powersaving_awake_phase)
         {
@@ -822,80 +911,43 @@ void powermgmt::Ticker1(std::string event, void* data)
       }
     }
 
-  if (StandardMetrics.ms_v_env_charging12v->AsBool())
-    {
-    if (!m_charging)
-      {
-      ESP_LOGI(TAG,"Charging 12V battery..");
-      m_charging=true;
-      m_modemoff_wifi_timer=0;
-      // Turn on WiFi and modem if they were previously turned off by us
-#ifdef CONFIG_OVMS_COMP_WIFI
-      if (m_wifi_off)
-        {
-        PowerOnWifi();
-        }
-#endif
-#ifdef CONFIG_OVMS_COMP_CELLULAR
-      if (m_modem_off)
-        {
-        PowerOnModem();
-        }
-#endif
-      }
-    }
-  else
-    {
-    if (m_charging)
-      {
-      ESP_LOGI(TAG,"No longer charging 12V battery..");
-      m_charging=false;
-      m_notcharging_timer=0;
-      m_modemoff_wifi_timer=0;
-      }
-    }
+  bool ps_keep_wifi = m_powersaving_active && m_powersaving_awake_phase &&
+    (m_powersaving_target == "wifi" || m_powersaving_target == "both" || m_powersaving_target == "deepsleep");
+  bool ps_keep_modem = m_powersaving_active && m_powersaving_awake_phase &&
+    (m_powersaving_target == "modem" || m_powersaving_target == "both" || m_powersaving_target == "deepsleep");
+  bool ps_sleep_wifi = m_powersaving_active && !m_powersaving_awake_phase &&
+    (m_powersaving_target == "wifi" || m_powersaving_target == "both" || m_powersaving_target == "deepsleep");
+  bool ps_sleep_modem = m_powersaving_active && !m_powersaving_awake_phase &&
+    (m_powersaving_target == "modem" || m_powersaving_target == "both" || m_powersaving_target == "deepsleep");
 
-#if defined(CONFIG_OVMS_COMP_CELLULAR) && defined(CONFIG_OVMS_COMP_WIFI)
   if (m_modem_wifi_fallback && m_modem_off_wifi && !MyNetManager.m_connected_wifi)
     {
-    if (!m_enabled || !(m_modemoff_delay && m_notcharging_timer > m_modemoff_delay*60*60))
+    if (!ps_sleep_modem && (!m_enabled || !(m_modemoff_delay && m_notcharging_timer > m_modemoff_delay*60*60)))
       {
       ESP_LOGI(TAG,"WiFi disconnected, powering on cellular modem (fallback)");
       PowerOnModem();
       }
     }
-#endif
 
   if (!m_enabled)
     return;
 
-  bool ps_keep_wifi = m_powersaving_active && m_powersaving_awake_phase &&
-    (m_powersaving_target == "wifi" || m_powersaving_target == "both" || m_powersaving_target == "deepsleep");
-  bool ps_keep_modem = m_powersaving_active && m_powersaving_awake_phase &&
-    (m_powersaving_target == "modem" || m_powersaving_target == "both" || m_powersaving_target == "deepsleep");
-
-#ifdef CONFIG_OVMS_COMP_WIFI
-  if (!ps_keep_wifi && m_wifioff_delay && m_notcharging_timer > m_wifioff_delay*60*60) // hours to seconds
+  if (!m_charging && !ps_keep_wifi && !ps_sleep_wifi && m_wifioff_delay && m_notcharging_timer > m_wifioff_delay*60*60) // hours to seconds
     {
     if (!m_wifioff_if_disconnected || !MyNetManager.m_connected_wifi)
       {
       PowerOffWifi();
       }
     }
-#endif
 
-#ifdef CONFIG_OVMS_COMP_CELLULAR
-  if (!ps_keep_modem && m_modemoff_delay && m_notcharging_timer > m_modemoff_delay*60*60) // hours to seconds
+  if (!m_charging && !ps_keep_modem && !ps_sleep_modem && m_modemoff_delay && m_notcharging_timer > m_modemoff_delay*60*60) // hours to seconds
     {
     PowerOffModem(false);
     }
-#ifdef CONFIG_OVMS_COMP_WIFI
-  else if (!ps_keep_modem && m_modemoff_wifi_delay && m_modemoff_wifi_timer > m_modemoff_wifi_delay*60) // minutes to seconds
+  else if (!ps_keep_modem && !ps_sleep_modem && m_modemoff_wifi_delay && m_modemoff_wifi_timer > m_modemoff_wifi_delay*60) // minutes to seconds
     {
     PowerOffModem(true);
     }
-#endif
-#endif
   // 12V battery alert shutdown handling (only if configured)
   if (StandardMetrics.ms_v_bat_12v_voltage_alert->AsBool())
     m_12v_alert_timer++;
