@@ -294,7 +294,7 @@ void powermgmt::WebCleanup()
   c.input("number", "Delay before modem is turned off (when WiFi connected)", "modemoff_wifi_delay", modemoff_wifi_delay.c_str(),
     "Default: " STR(POWERMGMT_MODEMOFF_WIFI_DELAY) " minutes",
     "<p>0 = disabled. Turns off the cellular modem after the specified minutes of active WiFi connection while not charging the 12V battery. "
-    "The modem is turned back on when 12V battery charging starts.</p>",
+    "The modem is turned back on when 12V battery charging starts or the vehicle wakes up.</p>",
     "min=\"0\" step=\"1\"", "minutes");
   c.input_checkbox("Turn on modem when WiFi disconnects (fallback)", "modem_wifi_fallback", modem_wifi_fallback,
     "<p>If enabled, the cellular modem will be powered back on automatically when the WiFi connection is lost (as long as the general modem off delay has not been exceeded).</p>");

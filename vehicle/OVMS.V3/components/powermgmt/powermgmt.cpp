@@ -150,6 +150,7 @@ powermgmt::powermgmt()
   ConfigChanged("config.mounted", NULL);
 
   MyEvents.RegisterEvent(TAG, "vehicle.on", std::bind(&powermgmt::EventVehicleOn, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "vehicle.awake", std::bind(&powermgmt::EventVehicleAwake, this, _1, _2));
 
   OvmsCommand* cmd_pmgmt = MyCommandApp.RegisterCommand("pmgmt", "Power management framework", pmgmt_status, "", 0, 0, false);
   cmd_pmgmt->RegisterCommand("status", "Show power status and estimated consumption", pmgmt_status, "", 0, 0, false);
@@ -307,6 +308,46 @@ void powermgmt::EventVehicleOn(std::string event, void* data)
 #ifdef CONFIG_OVMS_COMP_CELLULAR
   if (m_modem_off)
     {
+    PowerOnModem();
+    }
+#endif
+  }
+
+void powermgmt::EventVehicleAwake(std::string event, void* data)
+  {
+  // Reset the timer when the vehicle wakes up (with a maximum delay of 1 hour) 
+  // to prevent the modem/Wi-Fi from remaining powered on for an extended period 
+  // while the vehicle is parked and in power-saving mode.
+  if (m_modemoff_delay > 1)
+    m_notcharging_timer = (m_modemoff_delay - 1) * 60 * 60;
+  else if (m_wifioff_delay > 1)
+    m_notcharging_timer = (m_wifioff_delay - 1) * 60 * 60;
+  else
+    m_notcharging_timer = 0;
+  m_modemoff_wifi_timer = 0;
+
+  if (m_powersaving_active)
+    {
+    ESP_LOGI(TAG, "Vehicle AWAKE event received, activating power saving awake phase.");
+    m_powersaving_cycle_timer = 0;
+    if (!m_powersaving_awake_phase)
+      {
+      m_powersaving_awake_phase = true;
+      if (m_powersaving_target == "modem" || m_powersaving_target == "both" || m_powersaving_target == "deepsleep")
+        PowerOnModem();
+      if (m_powersaving_target == "wifi" || m_powersaving_target == "both" || m_powersaving_target == "deepsleep")
+        PowerOnWifi();
+      }
+    else if ((m_powersaving_target == "wifi" || m_powersaving_target == "both" || m_powersaving_target == "deepsleep") && m_wifi_off)
+      {
+      PowerOnWifi();
+      }
+    }
+
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+  if (m_modem_off)
+    {
+    ESP_LOGI(TAG, "Vehicle AWAKE event received, powering on cellular modem and resetting delay timers.");
     PowerOnModem();
     }
 #endif
