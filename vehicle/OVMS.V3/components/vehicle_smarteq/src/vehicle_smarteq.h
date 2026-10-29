@@ -35,7 +35,7 @@
 
 // --- Constants ---
 #define VERSION "2.2.0"
-#define PRESET_VERSION 20261014        // Configuration preset version
+#define PRESET_VERSION 20261029        // Configuration preset version
 #define PRESET_VERSION_12VREF 20261014 // Configuration preset version for 12V reference migration, defined separately to allow setting 12V reference migration
 #define DEFAULT_BATTERY_CAPACITY 16700 // <- net 16700 Wh, gross 17600 Wh
 #define MAX_POLL_DATA_LEN 126
