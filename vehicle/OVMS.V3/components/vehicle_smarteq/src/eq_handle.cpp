@@ -224,20 +224,28 @@ void OvmsVehicleSmartEQ::HandleTripcounter(){
 
 void OvmsVehicleSmartEQ::HandleServerCon(){
   // Handle Server connection
-  bool modem_off = (MyPeripherals && MyPeripherals->m_cellular_modem &&
-                    MyPeripherals->m_cellular_modem->GetPowerMode() == Off);
+#if defined(CONFIG_OVMS_COMP_WIFI) || defined(CONFIG_OVMS_COMP_CELLULAR)
+  bool modem_off = false;
+#if defined(CONFIG_OVMS_COMP_CELLULAR)
+  if (MyPeripherals && MyPeripherals->m_cellular_modem)
+    modem_off = (MyPeripherals->m_cellular_modem->GetPowerMode() == Off);
+#endif
 
-  if (modem_off || StdMetrics.ms_s_v2_connected->AsBool() || StdMetrics.ms_s_v3_connected->AsBool()) 
+  bool active_v2 = (MyOvmsServerV2 != NULL) && StdMetrics.ms_s_v2_connected->AsBool();
+  bool active_v3 = (MyOvmsServerV3 != NULL) && StdMetrics.ms_s_v3_connected->AsBool();
+
+  if (modem_off || active_v2 || active_v3)
     {
     m_reboot_ticker = m_reboot_time; // reset reboot ticker when server connection is detected or cellular is off by power management/user
-    ESP_LOGD(TAG, "Server connection detected, reboot ticker reset to %d", m_reboot_time);
+    ESP_LOGD(TAG, "Server connection active/detected, reboot ticker reset to %d", m_reboot_time);
     }
   else if (m_reboot_ticker > 0 && --m_reboot_ticker == 0) 
     {
     MyNetManager.RestartNetwork();
     m_reboot_ticker = m_reboot_time;
-    ESP_LOGD(TAG, "Server connection lost for %d seconds, restarting network", m_reboot_time);
+    ESP_LOGD(TAG, "Server connection lost for %d minutes, restarting network", m_reboot_time);
     }
+#endif
 }
 
 /**
