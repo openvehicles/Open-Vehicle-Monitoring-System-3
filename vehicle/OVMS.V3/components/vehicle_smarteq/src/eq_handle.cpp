@@ -253,6 +253,13 @@ void OvmsVehicleSmartEQ::HandleServerCon(){
  * Called once per 10 seconds from Ticker10
  */
 void OvmsVehicleSmartEQ::HandleCharging() {
+  if (!IsChargingEQ()) 
+    return; // Skip if not charging
+  if (m_poll_state != POLLSTATE_CHARGING && !m_poll_cooldown) 
+    {
+    smartCoolDownPolling(5);
+    smartOBDpolling(true); // ensure OBD polling is active during charging
+    }
   ESP_LOGD(TAG, "HandleCharging()");
   float act_soc         = StdMetrics.ms_v_bat_soc->AsFloat(0.0f);
   float limit_soc       = StdMetrics.ms_v_charge_limit_soc->AsFloat(0.0f);

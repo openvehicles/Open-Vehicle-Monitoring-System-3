@@ -37,13 +37,14 @@ static const char *TAG = "v-smarteq";
 
 void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker) 
   {
-  // when 12V voltage is critically low, then switch to sleep mode immediately
+  // when 12V voltage is critically low, then switch to sleep mode immediately (only when parked and not charging)
   float volt   = StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f);
-  float bms12v = mt_bms_voltages->GetElemValue(6) + 0.25f;  // 12V BMS clamp 30 + 0.25V offset
-  float voltcan = mt_evc_dcdc->GetElemValue(4);             // 12V voltage can
+  bool  poll_active = (m_poll_state != POLLSTATE_OFF);
+  float bms12v = (poll_active && mt_bms_voltages && !mt_bms_voltages->IsStale()) ? (mt_bms_voltages->GetElemValue(6) + 0.25f) : volt;
+  float voltcan = (poll_active && mt_evc_dcdc && !mt_evc_dcdc->IsStale()) ? mt_evc_dcdc->GetElemValue(4) :volt;
   bool  ref12V_valid = m_ref12V > 11.0f;                    // evaluate reference once per tick
 
-  if (ref12V_valid && (
+  if (!IsChargingEQ() && !IsOnEQ() && !Is12VchargeEQ() && ref12V_valid && (
       (volt > 6.0f && m_ref12V - volt > m_alert12V) ||
       (m_can_active && bms12v > 6.0f && m_ref12V - bms12v > m_alert12V) ||
       (m_can_active && voltcan > 6.0f && m_ref12V - voltcan > m_alert12V)))
@@ -67,8 +68,8 @@ void OvmsVehicleSmartEQ::Ticker1(uint32_t ticker)
       smart12VHistory();          // log undervoltage event in history metric and send data log
       }
     }
-  else if (m_12v_alerted && ref12V_valid && 
-          volt > 6.0f && m_ref12V - volt <= m_alert12V)
+  else if (m_12v_alerted && (IsChargingEQ() || IsOnEQ() || Is12VchargeEQ() || 
+          (ref12V_valid && volt > 6.0f && m_ref12V - volt <= m_alert12V)))
     {
     if (m_12v_alerted_ticker > 0 && --m_12v_alerted_ticker == 0)
       {
