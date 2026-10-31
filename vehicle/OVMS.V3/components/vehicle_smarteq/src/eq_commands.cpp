@@ -87,7 +87,7 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
     smartCANbusAccess(true); // enable CAN write access to send wakeup command
     }  
 
-  vTaskDelay(200 / portTICK_PERIOD_MS);
+  vTaskDelay(500 / portTICK_PERIOD_MS);
   if (res == Success)
     {
     if (wakeup && !can_awake) 

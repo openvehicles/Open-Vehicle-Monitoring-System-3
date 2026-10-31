@@ -269,52 +269,29 @@ void OvmsVehicleSmartEQ::HandleCharging() {
   float charge_current  = fabs(StdMetrics.ms_v_bat_current->AsFloat(0.0f));
   float energy = fabs(StdMetrics.ms_v_bat_power->AsFloat(0.0f) / 3600.0f);
   float charged = StdMetrics.ms_v_charge_kwh->AsFloat(0.0f);
-
+  // cap limit_soc to 100% to avoid negative remaining time calculations)
+  if(limit_soc > 99.0f || limit_soc < 10.0f) 
+    limit_soc = 100.0f;
+  // If limit_range is set, then calculate remaining time to that range
+  if (limit_range > 10.0f && max_range > 10.0f)
+    limit_soc = limit_range / max_range * 100.0f;
   // Check if we have what is needed to calculate energy and remaining minutes
   if (charge_voltage > 0.0f && charge_current > 0.0f) 
     {
     // Update energy taken
     StdMetrics.ms_v_charge_kwh->SetValue( charged + energy);
-    // If no limits are set, then calculate remaining time to full charge
-    if (limit_soc <= 0.0f && limit_range <= 0.0f) 
+    int remaining_soc = calcMinutesRemaining(limit_soc, charge_voltage, charge_current);
+    if (act_soc >= limit_soc && !m_notifySOClimit) 
       {
-      // If the charge power is above 12kW, then use the OBD duration value
-      if(StdMetrics.ms_v_charge_power->AsFloat(0.0f) > 12.0f)
-        {
-        StdMetrics.ms_v_charge_duration_full->SetValue(mt_obd_duration->AsInt(0));
-        ESP_LOGV(TAG, "Time remaining: %d mins to 100%% soc", mt_obd_duration->AsInt(0));
-        } 
-      else 
-        {
-        float soc100 = 100.0f;
-        int remaining_soc = calcMinutesRemaining(soc100, charge_voltage, charge_current);
-        StdMetrics.ms_v_charge_duration_full->SetValue(remaining_soc, Minutes);
-        ESP_LOGV(TAG, "Time remaining: %d mins to %0.0f%% soc", remaining_soc, soc100);
-        }
-      }    
-    // if limit_soc is set, then calculate remaining time to limit_soc
-    if (limit_soc > 0.0f) 
-      {
-      int minsremaining_soc = calcMinutesRemaining(limit_soc, charge_voltage, charge_current);
-
-      StdMetrics.ms_v_charge_duration_soc->SetValue(minsremaining_soc, Minutes);
-      ESP_LOGV(TAG, "Time remaining: %d mins to %0.0f%% soc", minsremaining_soc, limit_soc);
-      if (act_soc >= limit_soc && !m_notifySOClimit) 
-        {
-        m_notifySOClimit = true;
-        StdMetrics.ms_v_charge_duration_soc->SetValue(0, Minutes);
-        ESP_LOGV(TAG, "Time remaining: 0 mins to %0.0f%% soc (already above limit)", limit_soc);
-        NotifySOClimit();
-        }
+      m_notifySOClimit = true;
+      StdMetrics.ms_v_charge_duration_soc->SetValue(0, Minutes);
+      ESP_LOGV(TAG, "Time remaining: 0 mins to %0.0f%% soc (already above limit)", limit_soc);
+      NotifySOClimit();
       }
-    // If limit_range is set, then calculate remaining time to that range
-    if (limit_range > 0.0f && max_range > 0.0f) 
+    else
       {
-      float range_soc           = limit_range / max_range * 100.0f;
-      int   minsremaining_range = calcMinutesRemaining(range_soc, charge_voltage, charge_current);
-
-      StdMetrics.ms_v_charge_duration_range->SetValue(minsremaining_range, Minutes);
-      ESP_LOGV(TAG, "Time remaining: %d mins for %0.0f km (%0.0f%% soc)", minsremaining_range, limit_range, range_soc);
+      StdMetrics.ms_v_charge_duration_full->SetValue(remaining_soc, Minutes);
+      ESP_LOGV(TAG, "Time remaining: %d mins to %0.0f%% soc", remaining_soc, limit_soc);
       }
     }
 }
