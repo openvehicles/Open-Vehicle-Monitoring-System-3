@@ -190,6 +190,8 @@ class modem : public pcp, public InternalRamAllocated
     int                    m_gps_holiday_multi;     // = config modem gps.parkholiday.multi (factor, default 3), multiplier for holiday mode
     int                    m_gps_reactlock;         // = config modem gps.reactlock (minutes, default 5)
     bool                   m_gps_awake_start;       // start GPS when vehicle awakes
+    bool                   m_ota_flashing;          // true = OTA flash in progress (pause status poller & NMEA)
+    bool                   m_nmea_ota_paused;       // true = NMEA was paused for OTA flash
     OvmsMutex              m_gps_mutex;             // lock for start/stop NMEA
 
     OvmsMutex              m_cmd_mutex;             // lock for the CMD channel

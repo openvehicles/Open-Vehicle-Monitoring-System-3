@@ -77,10 +77,13 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
       if (MyOvmsServerV3)
         {
         // Transmit metrics classified as 'immediately' if indicated by MetricModified():
-        bool have_immediately = MyOvmsServerV3->m_have_immediately.exchange(false);
-        if (have_immediately)
+        if (!MyOvmsServerV3->m_ota_paused)
           {
-          MyOvmsServerV3->TransmitImmediateMetrics();
+          bool have_immediately = MyOvmsServerV3->m_have_immediately.exchange(false);
+          if (have_immediately)
+            {
+            MyOvmsServerV3->TransmitImmediateMetrics();
+            }
           }
         // Transmit queued events:
         if (uxQueueMessagesWaiting(MyOvmsServerV3->m_eventqueue))
@@ -292,6 +295,7 @@ OvmsServerV3::OvmsServerV3(const char* name)
   m_connect_jitter   = -1;          // -1 = not yet chosen
   m_updatetime_priority = false;
   m_updatetime_immediately = false;
+  m_ota_paused = false;
   m_have_immediately = false;
   m_max_per_call_sendall = 100;      // max messages to send per Ticker1 call in sendall mode, default 100
   m_max_per_call_modified = 150;     // max messages to send per Ticker1 call in modified mode, default 150
@@ -339,6 +343,9 @@ OvmsServerV3::OvmsServerV3(const char* name)
   MyEvents.RegisterEvent(TAG,"vehicle.locked", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"vehicle.unlocked", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"server.v3.connected", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"ota.flash.starting", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"ota.flash.done", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"ota.flash.abort", std::bind(&OvmsServerV3::EventListener, this, _1, _2));
 
   // read config:
   ConfigChanged(NULL);
@@ -842,6 +849,7 @@ void OvmsServerV3::IncomingEvent(std::string event, void* data)
   {
   if (!m_mgconn) return;
   if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
+  if (m_ota_paused && event.compare(0, 10, "ota.flash.") != 0) return;
 
   // Queue the event for the next TransmitEvents() run (MG_EV_POLL):
   const char* msg = strdup(event.c_str());
@@ -1201,7 +1209,11 @@ bool OvmsServerV3::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
   if (strcmp(type->m_name,"info")==0)
     {
     // Info notifications
-    if (!StandardMetrics.ms_s_v3_connected->AsBool()) return false;
+    if (!StandardMetrics.ms_s_v3_connected->AsBool() || m_ota_paused)
+      {
+      m_notify_info_pending = true;
+      return false;
+      }
     uint16_t txid = TransmitNotificationInfo(entry);
     if (!txid) m_notify_info_pending = true;
     return (txid != 0);
@@ -1209,7 +1221,11 @@ bool OvmsServerV3::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
   else if (strcmp(type->m_name,"error")==0)
     {
     // Error notification
-    if (!StandardMetrics.ms_s_v3_connected->AsBool()) return false;
+    if (!StandardMetrics.ms_s_v3_connected->AsBool() || m_ota_paused)
+      {
+      m_notify_error_pending = true;
+      return false;
+      }
     uint16_t txid = TransmitNotificationError(entry);
     if (!txid) m_notify_error_pending = true;
     return (txid != 0);
@@ -1217,7 +1233,11 @@ bool OvmsServerV3::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
   else if (strcmp(type->m_name,"alert")==0)
     {
     // Alert notifications
-    if (!StandardMetrics.ms_s_v3_connected->AsBool()) return false;
+    if (!StandardMetrics.ms_s_v3_connected->AsBool() || m_ota_paused)
+      {
+      m_notify_alert_pending = true;
+      return false;
+      }
     uint16_t txid = TransmitNotificationAlert(entry);
     if (!txid) m_notify_alert_pending = true;
     return (txid != 0);
@@ -1236,6 +1256,16 @@ bool OvmsServerV3::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
 void OvmsServerV3::EventListener(std::string event, void* data)
   {
   int64_t now = StandardMetrics.ms_m_monotonic->AsInt();
+  if (event == "ota.flash.starting")
+    {
+    m_ota_paused = true;
+    return;
+    }
+  if (event == "ota.flash.done" || event == "ota.flash.abort")
+    {
+    m_ota_paused = false;
+    return;
+    }
   if (event == "config.changed" || event == "config.mounted")
     {
     ConfigChanged((OvmsConfigParam*) data);
@@ -1247,14 +1277,14 @@ void OvmsServerV3::EventListener(std::string event, void* data)
       event == "vehicle.locked" || event == "vehicle.unlocked" ||
       event == "app.disconnected")
     {
-    if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
+    if (!StandardMetrics.ms_s_v3_connected->AsBool() || m_ota_paused) return;
     m_lasttx_priority = now;
     m_lasttx = now;
     TransmitModifiedMetrics();
     }
   if (event == "app.connected" || event == "server.v3.connected")
     {
-    if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
+    if (!StandardMetrics.ms_s_v3_connected->AsBool() || m_ota_paused) return;
     
     if ( (now - m_lasttx_sendall) > 30 )
       {
@@ -1515,6 +1545,8 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
     {
     if (m_liveness_enabled)
       LivenessCheck();
+    if (m_ota_paused)
+      return;
     bool carawake = StandardMetrics.ms_v_env_awake->AsBool();
     bool caron = StandardMetrics.ms_v_env_on->AsBool();
     bool carcharging = StandardMetrics.ms_v_charge_inprogress->AsBool();

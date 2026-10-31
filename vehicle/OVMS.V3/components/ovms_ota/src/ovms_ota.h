@@ -80,9 +80,11 @@ class OvmsOTA
 
   public:
     bool IsFlashStatus();
+    void NotifyFlashStarting();
+    void NotifyFlashFinished(bool success);
     void SetFlashStatus(const char* status, int perc=0, bool dolog=false);
     void SetFlashPerc(int perc);
-    void ClearFlashStatus();
+    void ClearFlashStatus(bool success=false);
     const char* GetFlashStatus();
     int GetFlashPerc();
 
@@ -101,6 +103,7 @@ class OvmsOTA
     OvmsMutex m_flashing;
     const char *m_flashstatus;
     int m_flashperc;
+    bool m_flash_notified;
     TaskHandle_t m_autotask;
     int m_lastcheckday;
     std::string m_lastnotifyversion;

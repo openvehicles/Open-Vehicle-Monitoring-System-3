@@ -163,6 +163,7 @@ class OvmsServerV2 : public OvmsServer, MongooseClient
     bool m_pending_notify_data;
     uint32_t m_pending_notify_data_last;
     int m_pending_notify_data_retransmit;
+    bool m_ota_paused;
   };
 
 class OvmsServerV2Init

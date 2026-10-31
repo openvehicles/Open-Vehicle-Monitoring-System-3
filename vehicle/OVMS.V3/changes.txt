@@ -1,6 +1,16 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- OTA / Cellular / Server V2 & V3: improve OTA flash reliability over cellular connections by
+    pre-erasing the target partition via HTTP HEAD before starting the download, writing in
+    512-byte flash slices with HTTP Range resume support, lowering the cellular UART RX FIFO
+    full threshold, and introducing OTA flash lifecycle events to pause background traffic
+    (cellular status polling, GPS NMEA stream, Server V2 & V3 metric/notification transmissions)
+    while an OTA flash operation is in progress.
+  New events:
+    ota.flash.starting                                -- signaled before OTA flash begins
+    ota.flash.done                                    -- signaled after OTA flash succeeded
+    ota.flash.abort                                   -- signaled when OTA flash was aborted/failed
 - WiFi: add support for open WiFi networks (using '-' or 'OPEN' as password placeholder) and
     per-SSID client MAC address spoofing in the web UI and configuration, reverting to the
     default hardware MAC address for all other networks.
