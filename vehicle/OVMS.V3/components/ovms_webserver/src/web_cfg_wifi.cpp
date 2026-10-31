@@ -54,7 +54,7 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
 
     if (cfg_sq_bad >= cfg_sq_good) {
       error += "<li data-input=\"cfg_sq_bad\">'Bad' signal level must be lower than 'good' level.</li>";
-    } else {
+    } else if (error == "") {
       if (cfg_sq_good == -87)
         MyConfig.DeleteInstance("network", "wifi.sq.good");
       else
@@ -140,6 +140,11 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
 
   c.fieldset_start("Wifi client networks");
   OutputWifiTable(p, c, "client", "wifi.ssid", MyConfig.GetParamValue("auto", "wifi.ssid.client"));
+  c.print(
+    "<div class=\"form-group\"><div class=\"col-sm-12\"><div class=\"help-block\">"
+      "<p>Hint: For open networks without a password, enter <code>-</code> or <code>OPEN</code> as the passphrase."
+      " Leave <em>Custom MAC</em> empty to use the default hardware MAC address for that network.</p>"
+    "</div></div></div>");
   c.fieldset_end();
 
   c.fieldset_start("Wifi client options");
@@ -189,12 +194,15 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
                     "<span class=\"hidden-xs\">Select</span><span class=\"hidden-sm hidden-md hidden-lg\">⊙</span>"
                   "</button>"
                 "</div></div></td>"
+              "<td><input type=\"password\" class=\"form-control\" name=\"' + pfx + '_pass_' + nr + '\" placeholder=\"Passphrase\""
+                " autocomplete=\"section-wifi-' + pfx + ' current-password\"></td>"
+              "<td><input type=\"text\" class=\"form-control\" name=\"' + pfx + '_mac_' + nr + '\" placeholder=\"Hardware MAC (aa:bb:cc:dd:ee:ff)\"></td>"
             "' : '"
               "<td><input type=\"text\" class=\"form-control\" name=\"' + pfx + '_ssid_' + nr + '\" placeholder=\"SSID\""
                 " autocomplete=\"section-wifi-' + pfx + ' username\"></td>"
+              "<td><input type=\"password\" class=\"form-control\" name=\"' + pfx + '_pass_' + nr + '\" placeholder=\"Passphrase\""
+                " autocomplete=\"section-wifi-' + pfx + ' current-password\"></td>"
             "') + '"
-            "<td><input type=\"password\" class=\"form-control\" name=\"' + pfx + '_pass_' + nr + '\" placeholder=\"Passphrase\""
-              " autocomplete=\"section-wifi-' + pfx + ' current-password\"></td>"
           "</tr>"
         "');"
       "$(el).parent().parent().before(row).prev().find(\"input\").first().focus();"
@@ -266,7 +274,7 @@ void OvmsWebServer::OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std:
   OvmsConfigParam* param = MyConfig.CachedParam(paramname);
   int pos = 0, pos_autostart = 0, max;
   char buf[50];
-  std::string ssid, pass;
+  std::string ssid, pass, mac;
 
   if (c.method == "POST") {
     max = atoi(c.getvar(prefix.c_str()).c_str());
@@ -277,23 +285,40 @@ void OvmsWebServer::OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std:
     max = param->m_instances.size();
   }
 
-  c.printf(
-    "<div class=\"table-responsive\">"
-      "<input type=\"hidden\" name=\"%s\" value=\"%d\">"
-      "<table class=\"table\">"
-        "<thead>"
-          "<tr>"
-            "<th width=\"10%%\"></th>"
-            "<th width=\"45%%\">SSID</th>"
-            "<th width=\"45%%\">Passphrase</th>"
-          "</tr>"
-        "</thead>"
-        "<tbody>"
-    , _attr(prefix), max);
+  if (prefix == "client") {
+    c.printf(
+      "<div class=\"table-responsive\">"
+        "<input type=\"hidden\" name=\"%s\" value=\"%d\">"
+        "<table class=\"table\">"
+          "<thead>"
+            "<tr>"
+              "<th width=\"10%%\"></th>"
+              "<th width=\"35%%\">SSID</th>"
+              "<th width=\"30%%\">Passphrase</th>"
+              "<th width=\"25%%\">Custom MAC</th>"
+            "</tr>"
+          "</thead>"
+          "<tbody>"
+      , _attr(prefix), max);
+  } else {
+    c.printf(
+      "<div class=\"table-responsive\">"
+        "<input type=\"hidden\" name=\"%s\" value=\"%d\">"
+        "<table class=\"table\">"
+          "<thead>"
+            "<tr>"
+              "<th width=\"10%%\"></th>"
+              "<th width=\"45%%\">SSID</th>"
+              "<th width=\"45%%\">Passphrase</th>"
+            "</tr>"
+          "</thead>"
+          "<tbody>"
+      , _attr(prefix), max);
+  }
 
-  auto gen_row = [&c,&pos,&pos_autostart,&prefix,&ssid]() {
+  auto gen_row = [&c,&pos,&pos_autostart,&prefix,&ssid,&mac]() {
     if (prefix == "client") {
-      // client entry: add network scanner/selector
+      // client entry: add network scanner/selector and custom MAC
       c.printf(
           "<tr>"
             "<td><button type=\"button\" class=\"btn btn-danger\" onclick=\"delRow(this)\" %s><strong>✖</strong></button></td>"
@@ -306,12 +331,14 @@ void OvmsWebServer::OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std:
                 "</button>"
               "</div></div></td>"
             "<td><input type=\"password\" class=\"form-control\" name=\"%s_pass_%d\" placeholder=\"no change\"></td>"
+            "<td><input type=\"text\" class=\"form-control\" name=\"%s_mac_%d\" placeholder=\"Hardware MAC (aa:bb:cc:dd:ee:ff)\" value=\"%s\"></td>"
           "</tr>"
       , (pos == pos_autostart) ? "disabled title=\"Current autostart network\"" : ""
       , _attr(prefix), pos, _attr(ssid)
       , _attr(prefix), pos, _attr(prefix)
       , _attr(prefix), pos
-      , _attr(prefix), pos);
+      , _attr(prefix), pos
+      , _attr(prefix), pos, _attr(mac));
     } else {
       // ap entry:
       c.printf(
@@ -330,29 +357,37 @@ void OvmsWebServer::OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std:
     for (pos = 1; pos <= max; pos++) {
       sprintf(buf, "%s_ssid_%d", prefix.c_str(), pos);
       ssid = c.getvar(buf);
+      if (prefix == "client") {
+        sprintf(buf, "%s_mac_%d", prefix.c_str(), pos);
+        mac = c.getvar(buf);
+      }
       gen_row();
     }
   }
   else {
     for (auto const& kv : param->m_instances) {
-      pos++;
       ssid = kv.first;
-      if (endsWith(ssid, ".ovms.staticip"))
+      if (endsWith(ssid, ".ovms.staticip") || endsWith(ssid, ".ovms.mac"))
         continue;
+      pos++;
       if (ssid == autostart_ssid)
         pos_autostart = pos;
+      if (prefix == "client")
+        mac = param->GetValue(ssid + ".ovms.mac");
       gen_row();
     }
   }
 
-  c.print(
+  c.printf(
           "<tr>"
             "<td><button type=\"button\" class=\"btn btn-success\" onclick=\"addRow(this)\"><strong>✚</strong></button></td>"
             "<td></td>"
             "<td></td>"
+            "%s"
           "</tr>"
         "</tbody>"
-      "</table>");
+      "</table>"
+    , (prefix == "client") ? "<td></td>" : "");
   c.printf(
       "<input type=\"hidden\" name=\"%s_autostart\" value=\"%d\">"
     "</div>"
@@ -398,6 +433,23 @@ void OvmsWebServer::UpdateWifiTable(PageEntry_t& p, PageContext_t& c, const std:
     newmap[ssid] = pass;
     if (param->IsDefined(ssid + ".ovms.staticip"))
       newmap[ssid + ".ovms.staticip"] = param->GetValue(ssid + ".ovms.staticip");
+    if (prefix == "client") {
+      sprintf(buf, "%s_mac_%d", prefix.c_str(), i);
+      std::string mac = c.getvar(buf);
+      if (!mac.empty()) {
+        uint8_t custom_mac[6];
+        char tail = 0;
+        if (sscanf(mac.c_str(), "%2hhx:%2hhx:%2hhx:%2hhx:%2hhx:%2hhx%c",
+                   &custom_mac[0], &custom_mac[1], &custom_mac[2],
+                   &custom_mac[3], &custom_mac[4], &custom_mac[5], &tail) != 6) {
+          error += "<li>SSID <code>" + ssid + "</code>: MAC address must be in format <code>aa:bb:cc:dd:ee:ff</code></li>";
+        } else if (custom_mac[0] & 0x01) {
+          error += "<li>SSID <code>" + ssid + "</code>: MAC address must be unicast (first byte must be even, e.g. <code>02:...</code>)</li>";
+        } else {
+          newmap[ssid + ".ovms.mac"] = mac;
+        }
+      }
+    }
     if (i == pos_autostart)
       ssid_autostart = ssid;
   }
