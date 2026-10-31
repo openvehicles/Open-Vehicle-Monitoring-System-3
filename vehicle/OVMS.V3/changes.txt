@@ -6,6 +6,32 @@ Open Vehicle Monitor System v3 - Change log
     default hardware MAC address for all other networks.
   New config:
     [wifi.ssid] <ssid>.ovms.mac                       -- custom client MAC address (spoofed) for <ssid>
+- Power Management: add option to power off cellular modem after configurable minutes of active
+    WiFi connection while not charging the 12V battery, an optional fallback to power the
+    modem back on if the WiFi connection is lost, and a live power status / estimated OVMS
+    current consumption overview in the web UI and CLI.
+  New feature: periodic power saving (duty-cycling / deep sleep) after configurable days of
+    inactivity (tracked independently of 12V trickle charging), reset upon vehicle.on event.
+  New commands:
+    pmgmt status                                      -- show power status and estimated consumption
+    pmgmt config                                      -- show power management configuration
+    pmgmt poweroff <modem|wifi|both>                  -- power off modem, wifi or both as if delay reached
+    pmgmt poweron <modem|wifi|both>                   -- power on modem, wifi or both and reset delay timers
+    pmgmt powersaving set <modem|wifi|both|deepsleep [days]> -- set periodic power saving target
+    pmgmt powersaving ctrl <on|off>                   -- enable or disable periodic power saving mode
+    pmgmt powersaving on [modem|wifi|both|deepsleep [days]] -- activate periodic power saving immediately
+    pmgmt powersaving off                             -- deactivate periodic power saving immediately
+    pmgmt powersaving status                          -- show periodic power saving status
+  New configs:
+    [power] modemoff_wifi_delay (int, default 0)      -- delay in minutes before modem is turned off when WiFi connected (0 = disabled)
+    [power] modem_wifi_fallback (bool, default false) -- turn on modem when WiFi disconnects
+    [power] wifioff_if_disconnected (bool, default false) -- turn off WiFi after wifioff_delay only when no active WiFi connection exists
+    [power] powersaving.enabled (bool, default false) -- enable periodic power saving
+    [power] powersaving.days (int, default 4)         -- inactivity days threshold
+    [power] powersaving.deepsleep_days (int, default 9) -- limit deepsleep to x days before switching to both (0 = unlimited)
+    [power] powersaving.target (string, default both) -- target action (modem, wifi, both, deepsleep)
+    [power] powersaving.interval (int, default 6)     -- duty-cycle interval in hours
+    [power] powersaving.duration (int, default 15)    -- duty-cycle duration in minutes
 - Server V2: disable legacy V2/MP App/client workaround of changing commas in command responses
     and text notifications into semicolons, add configuration option to enable if still needed.
   New config:
