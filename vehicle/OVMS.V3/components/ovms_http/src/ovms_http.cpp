@@ -43,11 +43,11 @@ OvmsHttpClient::OvmsHttpClient(long timeout_ms /*= 10000*/)
   m_timeout_ms = timeout_ms;
   }
 
-OvmsHttpClient::OvmsHttpClient(std::string url, const char* method, long timeout_ms /*= 10000*/)
+OvmsHttpClient::OvmsHttpClient(std::string url, const char* method, long timeout_ms /*= 10000*/, size_t range_start /*= 0*/)
   {
   m_buf = NULL;
   m_timeout_ms = timeout_ms;
-  Request(url, method);
+  Request(url, method, range_start);
   }
 
 OvmsHttpClient::~OvmsHttpClient()
@@ -59,8 +59,12 @@ OvmsHttpClient::~OvmsHttpClient()
     }
   }
 
-bool OvmsHttpClient::Request(std::string url, const char* method)
+bool OvmsHttpClient::Request(std::string url, const char* method, size_t range_start /*= 0*/)
   {
+  if (m_buf != NULL || IsOpen())
+    {
+    Disconnect();
+    }
   m_bodysize = 0;
   m_responsecode = 0;
 
@@ -113,6 +117,12 @@ bool OvmsHttpClient::Request(std::string url, const char* method)
   req.append(server);
   req.append("\r\nUser-Agent: ");
   req.append(get_user_agent());
+  if (range_start > 0)
+    {
+    char range_hdr[48];
+    snprintf(range_hdr, sizeof(range_hdr), "\r\nRange: bytes=%u-", (unsigned)range_start);
+    req.append(range_hdr);
+    }
   req.append("\r\n\r\n");
   if (Write(req.c_str(), req.length()) < 0)
     {
@@ -121,7 +131,7 @@ bool OvmsHttpClient::Request(std::string url, const char* method)
     return false;
     }
 
-  m_buf = new OvmsBuffer(1024);
+  m_buf = new OvmsBuffer(4096);
   assert(m_buf);
   bool inheaders = true;
   // ESP_LOGI(TAG,"Reading headers...");
@@ -183,7 +193,7 @@ ssize_t OvmsHttpClient::BodyRead(void *buf, size_t nbyte)
   {
   if (m_buf == NULL)
     {
-    m_buf = new OvmsBuffer(1024);
+    m_buf = new OvmsBuffer(4096);
     assert(m_buf);
     }
 
