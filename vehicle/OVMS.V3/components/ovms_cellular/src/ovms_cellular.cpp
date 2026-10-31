@@ -44,9 +44,6 @@ static const char *TAG = "cellular";
 #include "ovms_notify.h"
 #include "ovms_boot.h"
 #include "ovms_config.h"
-#ifdef CONFIG_OVMS_COMP_OTA
-#include "ovms_ota.h"
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Global convenience variables
@@ -61,8 +58,8 @@ static const int s_netloss_retry_limit = 3;
 // General utility functions
 
 #define GPS_SHALL_START() \
-  (m_gps_usermode == GUM_START || (m_gps_usermode == GUM_DEFAULT && m_gps_enabled && \
-    (m_gps_parkpause <= 0 || StdMetrics.ms_v_env_parktime->AsInt() < m_gps_parkpause)))
+  (!m_ota_flashing && (m_gps_usermode == GUM_START || (m_gps_usermode == GUM_DEFAULT && m_gps_enabled && \
+    (m_gps_parkpause <= 0 || StdMetrics.ms_v_env_parktime->AsInt() < m_gps_parkpause))))
 #define GPS_SHALL_STOP() \
   (m_gps_usermode == GUM_STOP || (m_gps_usermode == GUM_DEFAULT && m_gps_enabled && \
     (m_gps_parkpause > 0 && StdMetrics.ms_v_env_parktime->AsInt() >= m_gps_parkpause)))
@@ -366,6 +363,8 @@ modem::modem(const char* name, uart_port_t uartnum, int baud, int rxpin, int txp
   m_gps_parkpause = 0;
   m_gps_stopticker = 0;
   m_gps_startticker = 0;
+  m_ota_flashing = false;
+  m_nmea_ota_paused = false;
   m_mux = NULL;
   m_ppp = NULL;
   m_driver = NULL;
@@ -385,6 +384,9 @@ modem::modem(const char* name, uart_port_t uartnum, int baud, int rxpin, int txp
   MyEvents.RegisterEvent(TAG, "system.modem.gpsstop", std::bind(&modem::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "system.modem.gotgps", std::bind(&modem::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "system.modem.gpsstart", std::bind(&modem::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "ota.flash.starting", std::bind(&modem::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "ota.flash.done", std::bind(&modem::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "ota.flash.abort", std::bind(&modem::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&modem::ConfigChanged, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&modem::ConfigChanged, this, _1, _2));
   ConfigChanged("config.mounted", NULL);
@@ -1106,9 +1108,7 @@ modem::modem_state1_t modem::State1Ticker1()
         }
       if ((m_mux != NULL)&&(m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
         {
-#ifdef CONFIG_OVMS_COMP_OTA
-        if (!MyOTA.IsFlashStatus())
-#endif
+        if (!m_ota_flashing)
           { m_driver->StatusPoller(); }
         }
       break;
@@ -1740,8 +1740,15 @@ void modem::Ticker(std::string event, void* data)
     {
     if (!m_nmea && m_gps_enabled && m_gps_usermode == GUM_DEFAULT)
       {
-      ESP_LOGI(TAG, "Scheduled GPS start");
-      StartNMEA();
+      if (m_ota_flashing)
+        {
+        m_nmea_ota_paused = true;
+        }
+      else
+        {
+        ESP_LOGI(TAG, "Scheduled GPS start");
+        StartNMEA();
+        }
       }
     else
       {
@@ -1749,7 +1756,7 @@ void modem::Ticker(std::string event, void* data)
       }
     }
 
-    if (!m_nmea && m_gps_enabled && m_gps_usermode == GUM_DEFAULT &&
+    if (!m_nmea && !m_ota_flashing && m_gps_enabled && m_gps_usermode == GUM_DEFAULT &&
         m_gps_parkpause > 0 && StdMetrics.ms_v_env_on->AsBool() == false &&
         m_gps_reactivate > 0 &&
         m_gps_startticker == 0 && m_gps_stopticker == 0)
@@ -1774,13 +1781,43 @@ void modem::EventListener(std::string event, void* data)
       SendSetState1(PoweringOff); // We are not in the task, so queue the state change
       }
     }
+  else if (event == "ota.flash.starting")
+    {
+    m_ota_flashing = true;
+    if (m_nmea != NULL)
+      {
+      ESP_LOGI(TAG, "OTA flash starting: pausing GPS NMEA stream");
+      m_nmea_ota_paused = true;
+      StopNMEA();
+      }
+    }
+  else if (event == "ota.flash.done" || event == "ota.flash.abort")
+    {
+    m_ota_flashing = false;
+    if (m_nmea_ota_paused)
+      {
+      m_nmea_ota_paused = false;
+      if (!m_nmea && GPS_SHALL_START())
+        {
+        ESP_LOGI(TAG, "OTA flash ended: resuming GPS NMEA stream");
+        StartNMEA();
+        }
+      }
+    }
   else if (event == "vehicle.on")
     {
     if (!m_nmea && m_gps_enabled && m_gps_usermode == GUM_DEFAULT)
       {
-      ESP_LOGI(TAG, "Vehicle switched on, starting GPS");
       m_gps_startticker = 0;
-      StartNMEA();
+      if (m_ota_flashing)
+        {
+        m_nmea_ota_paused = true;
+        }
+      else
+        {
+        ESP_LOGI(TAG, "Vehicle switched on, starting GPS");
+        StartNMEA();
+        }
       }
     m_gps_stopticker = 0;
     }
@@ -1794,7 +1831,7 @@ void modem::EventListener(std::string event, void* data)
     }
   else if (event == "system.modem.gpsstop")
     {
-    if (m_gps_enabled && m_gps_usermode == GUM_DEFAULT && m_gps_parkpause > 0 && StdMetrics.ms_v_env_on->AsBool() == false)
+    if (!m_ota_flashing && m_gps_enabled && m_gps_usermode == GUM_DEFAULT && m_gps_parkpause > 0 && StdMetrics.ms_v_env_on->AsBool() == false)
       {
       int gps_reactivate_delay = m_gps_reactivate * 60;
       if (m_gps_holiday > 0 && m_gps_holiday_multi > 0 &&
@@ -1829,10 +1866,17 @@ void modem::EventListener(std::string event, void* data)
     {
     if (!m_nmea && m_gps_enabled && m_gps_usermode == GUM_DEFAULT && m_gps_parkpause > 0 && m_gps_awake_start && StdMetrics.ms_v_env_on->AsBool() == false)
       {
-      ESP_LOGI(TAG, "Vehicle awake, starting GPS");
       m_gps_startticker = 0;
-      StartNMEA();
-      m_gps_stopticker = m_gps_reactlock * 60;  // default 5 minutes
+      if (m_ota_flashing)
+        {
+        m_nmea_ota_paused = true;
+        }
+      else
+        {
+        ESP_LOGI(TAG, "Vehicle awake, starting GPS");
+        StartNMEA();
+        m_gps_stopticker = m_gps_reactlock * 60;  // default 5 minutes
+        }
       }
     }
   }

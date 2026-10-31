@@ -254,7 +254,7 @@ void ota_flash_vfs(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
   MyOTA.SetFlashStatus("OTA Flash VFS: Setting boot partition...");
   writer->puts(MyOTA.GetFlashStatus());
   err = esp_ota_set_boot_partition(target);
-  MyOTA.ClearFlashStatus();
+  MyOTA.ClearFlashStatus(err == ESP_OK);
   if (err != ESP_OK)
     {
     writer->printf("Error: ESP32 error #%d setting boot partition - check before rebooting\n",err);
@@ -326,6 +326,8 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     }
   writer->printf("Download firmware from %s to %s\n",url.c_str(),target->label);
 
+  MyOTA.NotifyFlashStarting();
+
   // Query expected size via HEAD first so we can erase the target flash partition
   // before the HTTP GET stream starts pouring data into the cellular UART:
   size_t expected = 0;
@@ -344,6 +346,7 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     writer->printf("Expected file size is %d\n",expected);
     if (expected > target->size)
       {
+      MyOTA.ClearFlashStatus();
       writer->printf("Error: target partition too small (%u bytes capacity) - aborting\n", target->size);
       if (target->size < 0x700000)
         {
@@ -379,6 +382,7 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     expected = http.BodySize();
     if (expected < 1024) // empty / HTML error page?
       {
+      MyOTA.ClearFlashStatus();
       writer->printf("Error: Expected download file size (%d) is invalid\n",expected);
       http.Disconnect();
       return;
@@ -388,6 +392,7 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
 
     if (expected > target->size)
       {
+      MyOTA.ClearFlashStatus();
       writer->printf("Error: target partition too small (%u bytes capacity) - aborting\n", target->size);
       if (target->size < 0x700000)
         {
@@ -492,7 +497,7 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
   MyOTA.SetFlashStatus("OTA Flash HTTP: Setting boot partition...");
   writer->puts(MyOTA.GetFlashStatus());
   err = esp_ota_set_boot_partition(target);
-  MyOTA.ClearFlashStatus();
+  MyOTA.ClearFlashStatus(err == ESP_OK);
   if (err != ESP_OK)
     {
     writer->printf("Error: ESP32 error #%d setting boot partition - check before rebooting\n",err);
@@ -601,7 +606,7 @@ void ota_erase(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
     writer->puts(MyOTA.GetFlashStatus());
     esp_ota_handle_t otah;
     esp_err_t err = esp_ota_begin(p, OTA_SIZE_UNKNOWN, &otah);
-    MyOTA.ClearFlashStatus();
+    MyOTA.ClearFlashStatus(err == ESP_OK);
     if (err != ESP_OK)
       {
       writer->printf("Error: ESP32 error #%d starting OTA operation\n",err);
@@ -1107,7 +1112,7 @@ bool OvmsOTA::AutoFlashSD()
 
   SetFlashStatus("OTA Auto Flash SD: Setting boot partition...",0,true);
   err = esp_ota_set_boot_partition(target);
-  ClearFlashStatus();
+  ClearFlashStatus(err == ESP_OK);
   if (err != ESP_OK)
     {
     ESP_LOGE(TAG, "AutoFlashSD Error: ESP32 error #%d setting boot partition - check before rebooting",err);
@@ -1135,6 +1140,7 @@ OvmsOTA::OvmsOTA()
   m_lastcheckday = -1;
   m_flashstatus = NULL;
   m_flashperc = 0;
+  m_flash_notified = false;
   m_stream_active = false;
   m_stream_handle = 0;
   m_stream_target = NULL;
@@ -1386,8 +1392,43 @@ bool OvmsOTA::IsFlashStatus()
   return (m_flashstatus != NULL);
   }
 
+static void ota_flash_starting_done(const char* event, void* data)
+  {
+  OvmsSemaphore* sem = (OvmsSemaphore*)data;
+  if (sem) sem->Give();
+  }
+
+void OvmsOTA::NotifyFlashStarting()
+  {
+  if (m_flash_notified)
+    return;
+  m_flash_notified = true;
+
+  if (!MyEvents.IsEventsTask())
+    {
+    OvmsSemaphore eventdone;
+    MyEvents.SignalEvent("ota.flash.starting", &eventdone, ota_flash_starting_done);
+    eventdone.Take(pdMS_TO_TICKS(5000));
+    vTaskDelay(pdMS_TO_TICKS(500));
+    }
+  else
+    {
+    MyEvents.SignalEvent("ota.flash.starting", NULL);
+    }
+  }
+
+void OvmsOTA::NotifyFlashFinished(bool success)
+  {
+  if (!m_flash_notified)
+    return;
+  m_flash_notified = false;
+  MyEvents.SignalEvent(success ? "ota.flash.done" : "ota.flash.abort", NULL);
+  }
+
 void OvmsOTA::SetFlashStatus(const char* status, int perc, bool dolog)
   {
+  if (!m_flash_notified)
+    NotifyFlashStarting();
   m_flashstatus = status;
   m_flashperc = perc;
   if (dolog)
@@ -1401,10 +1442,12 @@ void OvmsOTA::SetFlashPerc(int perc)
   m_flashperc = perc;
   }
 
-void OvmsOTA::ClearFlashStatus()
+void OvmsOTA::ClearFlashStatus(bool success /*=false*/)
   {
   m_flashstatus = NULL;
   m_flashperc = 0;
+  if (m_flash_notified)
+    NotifyFlashFinished(success);
   }
 
 const char* OvmsOTA::GetFlashStatus()
@@ -1539,7 +1582,7 @@ esp_err_t OvmsOTA::StreamFlashFinish(std::string& errmsg)
   SetFlashStatus("OTA Stream Flash: Setting boot partition...");
   err = esp_ota_set_boot_partition(m_stream_target);
   m_stream_active = false;
-  ClearFlashStatus();
+  ClearFlashStatus(err == ESP_OK);
   m_flashing.Unlock();
   if (err != ESP_OK)
     {
@@ -1692,6 +1735,8 @@ bool OvmsOTA::AutoFlash(bool force)
     url.c_str());
   MyNotify.NotifyStringf("info", "ota.update", "New OTA firmware %s is now being downloaded", info.version_server.c_str());
 
+  NotifyFlashStarting();
+
   // Query expected size via HEAD first so we can erase the target flash partition
   // before the HTTP GET stream starts pouring data into the cellular UART:
   size_t expected = 0;
@@ -1709,6 +1754,7 @@ bool OvmsOTA::AutoFlash(bool force)
     {
     if (expected > target->size)
       {
+      ClearFlashStatus();
       ESP_LOGE(TAG, "Error: target partition too small (%u bytes capacity) - aborting\n", target->size);
       if (target->size < 0x700000)
         {
@@ -1744,6 +1790,7 @@ bool OvmsOTA::AutoFlash(bool force)
     expected = http.BodySize();
     if (expected < 1024) // empty / HTML error page?
       {
+      ClearFlashStatus();
       ESP_LOGE(TAG, "AutoFlash: Expected download file size (%d) is invalid", expected);
       http.Disconnect();
       m_lastcheckday = -1; // Allow to try again within the same day
@@ -1752,6 +1799,7 @@ bool OvmsOTA::AutoFlash(bool force)
 
     if (expected > target->size)
       {
+      ClearFlashStatus();
       ESP_LOGE(TAG, "Error: target partition too small (%u bytes capacity) - aborting\n", target->size);
       if (target->size < 0x700000)
         {
@@ -1837,16 +1885,18 @@ bool OvmsOTA::AutoFlash(bool force)
 
   SetFlashStatus("OTA Auto Flash: Finalising flash partition...");
   err = esp_ota_end(otah);
-  ClearFlashStatus();
   if (err != ESP_OK)
     {
+    ClearFlashStatus();
     ESP_LOGE(TAG, "AutoFlash: ESP32 error #%d finalising OTA operation - state is inconsistent", err);
     return false;
     }
 
   // All done
+  SetFlashStatus("OTA Auto Flash: Setting boot partition...");
   ESP_LOGI(TAG, "AutoFlash: Setting boot partition...");
   err = esp_ota_set_boot_partition(target);
+  ClearFlashStatus(err == ESP_OK);
   if (err != ESP_OK)
     {
     ESP_LOGE(TAG, "AutoFlash: ESP32 error #%d setting boot partition - check before rebooting", err);

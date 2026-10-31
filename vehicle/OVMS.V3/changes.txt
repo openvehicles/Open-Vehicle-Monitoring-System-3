@@ -1,6 +1,16 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- OTA / Cellular / Server V2 & V3: improve OTA flash reliability over cellular connections by
+    pre-erasing the target partition via HTTP HEAD before starting the download, writing in
+    512-byte flash slices with HTTP Range resume support, lowering the cellular UART RX FIFO
+    full threshold, and introducing OTA flash lifecycle events to pause background traffic
+    (cellular status polling, GPS NMEA stream, Server V2 & V3 metric/notification transmissions)
+    while an OTA flash operation is in progress.
+  New events:
+    ota.flash.starting                                -- signaled before OTA flash begins
+    ota.flash.done                                    -- signaled after OTA flash succeeded
+    ota.flash.abort                                   -- signaled when OTA flash was aborted/failed
 - Server V2: disable legacy V2/MP App/client workaround of changing commas in command responses
     and text notifications into semicolons, add configuration option to enable if still needed.
   New config:
