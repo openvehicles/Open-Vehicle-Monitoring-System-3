@@ -252,6 +252,45 @@ look like this::
   }
 
 
+-----------------------------------------
+Plugin/Script Integration Recommendations
+-----------------------------------------
+
+Keep in mind Duktape is slow, single threaded, and the engine needs to process all system events in 
+a timely manner to avoid overflowing the event queue. A plugin needs to be as nice as possible to 
+the system environment, and use as little as possible Duktape processing time on each invocation.
+
+Use asynchronous API calls and patterns whenever possible. Some synchronous API calls meanwhile have 
+better asynchronous alternatives, for example ``OvmsPoller.Poll.Request()`` should be preferred over 
+the older synchronous ``OvmsVehicle.ObdRequest()`` call.
+
+Some operations are always stressful for the system, this includes especially file writes, as these 
+need to be done either on the SD card (via SPI) or on the internal flash memory, requiring flash erase 
+and reprogramming. While Duktape itself is running at a rather low process priority, flashing needs 
+to temporarily disable interrupts, so saving a file can have negative impact on time-critical tasks 
+as for example low-latency CAN responders needed by some vehicles.
+
+Some operations are stressful depending on the current network conditions. For example performing 
+periodic HTTP requests may be no issue while using a WiFi network, but use up precious bandwidth when 
+currently using a slow cellular connection.
+
+Plugins performing potentially stressful operations shall pause or reduce their activities as far as 
+possible during essential and critical system phases like an OTA update.
+
+To detect critical phases, listen to the respective system events. Stop/throttle periodic file writes 
+and network requests after receiving the ``ota.flash.starting`` event, restart/unthrottle when 
+receiving ``ota.flash.abort`` (``ota.flash.done`` normally means a reboot is due).
+
+Shut down plugin operation cleanly when receiving the ``system.shuttingdown`` event, which tells 
+the module is going to shut down either for a reboot or for a deep sleep phase.
+
+If your plugin is especially targeted towards interaction with an interactive client (e.g. an App), 
+listen to ``app.connected`` and ``app.disconnected`` and/or check the peers count metrics, to set 
+the plugin awake/dormant accordingly.
+
+Check the other available system events and metrics for more indicators applicable.
+
+
 --------------------------------------
 Internal Objects and Functions/Methods
 --------------------------------------

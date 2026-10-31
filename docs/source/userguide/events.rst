@@ -81,6 +81,9 @@ network.wifi.up                               WIFI network is up
 notify.<type>.<subtype>                       An info / alert / error notification is sent
 obd2ecu.start                                 Called after the OBD2ECU process is started.
 obd2ecu.stop                                  Called before the OBD2ECU process is stopped.
+ota.flash.starting                            Signaled before OTA flash begins
+ota.flash.done                                Signaled after OTA flash succeeded
+ota.flash.abort                               Signaled when OTA flash was aborted/failed
 retools.cleared.all                           RE frame log has been cleared
 retools.cleared.changed                       RE frame change flags cleared
 retools.cleared.discovered                    RE frame discovery flags cleared
