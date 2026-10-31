@@ -3927,6 +3927,8 @@ void OvmsPoller::PollSeriesList::InsertBefore( poll_series_t *iter, poll_series_
     {
     iter->next = before;
     iter->prev = before->prev;
+    if (iter->prev)
+      iter->prev->next = iter;
     before->prev = iter;
 
     if (before == m_first)
