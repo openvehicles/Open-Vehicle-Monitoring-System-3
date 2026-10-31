@@ -87,7 +87,7 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
     smartCANbusAccess(true); // enable CAN write access to send wakeup command
     }  
 
-  vTaskDelay(200 / portTICK_PERIOD_MS);
+  vTaskDelay(500 / portTICK_PERIOD_MS);
   if (res == Success)
     {
     if (wakeup && !can_awake) 
@@ -517,7 +517,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
   // Update xsq preset version
   map_xsq["cfg.preset.ver"] = STR(PRESET_VERSION);
   if (map_xsq.find("charge12v.threshold") == map_xsq.end())
-    map_xsq["charge12v.threshold"] = "11.75";
+    map_xsq["charge12v.threshold"] = "11.70";
 
   // modem section - single map operation
   bool need_stream = false;
@@ -587,6 +587,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     bool changed = false;
     if (m.find("wifi.ap2client.enable") == m.end())
       { m["wifi.ap2client.enable"] = "yes"; changed = true; }
+    if (m.find("wifi.bad.reconnect") == m.end())
+      { m["wifi.bad.reconnect"] = "yes"; changed = true; }
     if (m.erase("type") > 0)
       changed = true;
     if (changed)
@@ -735,9 +737,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandSetDefault(int verbosi
   // network section
   auto map_net = MyConfig.GetParamMap("network");
   map_net["wifi.ap2client.enable"] = "yes";
-  map_net.erase("wifi.bad.reconnect");
-  map_net.erase("wifi.sq.good");
-  map_net.erase("wifi.sq.bad");
+  map_net["wifi.bad.reconnect"] = "yes";
+  map_net["wifi.sq.good"] = "-86";
+  map_net["wifi.sq.bad"] = "-88";
   map_net.erase("modem.sq.good");
   map_net.erase("modem.sq.bad");
   MyConfig.SetParamMap("network", map_net);

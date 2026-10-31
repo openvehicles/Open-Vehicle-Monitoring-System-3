@@ -456,16 +456,25 @@ void OvmsVehicleSmartEQ::UpdateChargeMetrics() {
 }
 
 /**
- * Calculates minutes remaining before target is reached. Based on current charge speed.
- * TODO: Should be calculated based on actual charge curve. Maybe in a later version?
+ * Calculates minutes remaining before target is reached. Based on current charge speed,
+ * capped at 32A up to 80% SOC and 13A above 80% SOC.
  */
 int OvmsVehicleSmartEQ::calcMinutesRemaining(float target_soc, float charge_voltage, float charge_current) {
   float bat_soc = StdMetrics.ms_v_bat_soc->AsFloat(0.0f);
-  if (bat_soc > target_soc) {
+  if (bat_soc >= target_soc || charge_voltage <= 0.0f || charge_current <= 0.0f) {
     return 0;   // Done!
   }
-  float remaining_wh    = DEFAULT_BATTERY_CAPACITY * (target_soc - bat_soc) / 100.0f;
-  float remaining_hours = remaining_wh / (charge_current * charge_voltage);
+  float soc_below_80 = (bat_soc < 80.0f) ? (MIN(target_soc, 80.0f) - bat_soc) : 0.0f;
+  float soc_above_80 = (target_soc > 80.0f) ? (target_soc - MAX(bat_soc, 80.0f)) : 0.0f;
+
+  float current_below_80 = MIN(charge_current, 32.0f);
+  float current_above_80 = MIN(charge_current, 13.0f);
+
+  float wh_below_80 = DEFAULT_BATTERY_CAPACITY * soc_below_80 / 100.0f;
+  float wh_above_80 = DEFAULT_BATTERY_CAPACITY * soc_above_80 / 100.0f;
+
+  float remaining_hours = (wh_below_80 / (current_below_80 * charge_voltage)) +
+                          (wh_above_80 / (current_above_80 * charge_voltage));
   float remaining_mins  = remaining_hours * 60.0f;
 
   return MIN( 1440, (int)remaining_mins );
