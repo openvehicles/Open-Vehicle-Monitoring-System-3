@@ -3505,6 +3505,10 @@ duk_ret_t OvmsPollers::DukOvmsPollerPollRequest(duk_context *ctx)
   // register once-off poller object
   bool requested = MyPollers.PollRequest(device, string_format("!do.%" PRIx32 ".%" PRIx32 , txid, pid), poller);
 
+  // send now instead of waiting for the next poll ticker (as PollSingleRequest does)
+  if (requested)
+    MyPollers.QueuePollerSend(OvmsPoller::poller_source_t::OnceOff, MyPollers.GetBusNo(device));
+
   duk_push_int(ctx, requested ? 0 : -1);
   // duk_push_string(ctx, "added");
   ESP_LOGD(TAG, "(return success)");
@@ -3858,6 +3862,13 @@ void OvmsPoller::PollSeriesList::SetEntry(const std::string &name, std::shared_p
 
   if (blocking)
     blocking_inc();
+  else if (m_iter == nullptr && newval->style == PollEntryStyle::OnceOff)
+    {
+    // The run has already finished, so the entry would wait for the next
+    // primary tick: resume the run at the new entry instead
+    m_iter = newval;
+    m_iter_changed = true;
+    }
   ESP_LOGD(TAG, "Poll List: Added Entry %s%s", newval->name.c_str(), blocking ? " (blocking)" : "");
   }
 
