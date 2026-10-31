@@ -219,9 +219,27 @@ third argument to the ``wifi mode apclient`` command::
 This currently needs manual activation by command. Hint: use a script, for example bound to a 
 location.
 
-------------------------------
+
+------------------
+Open Wifi Networks
+------------------
+
+To connect to an open (password-less) WiFi network, set ``-`` (dash) or ``OPEN`` as the WiFi password.
+
+Open WiFi networks may require authorization by the MAC address of the client. If you need to 
+use a custom MAC address instead of the module's default (hardware) MAC to access a Wifi network, 
+you can spoof any MAC address per SSID by::
+
+  OVMS# config set wifi.ssid "<ssid>.ovms.mac" "<bssid>"
+
+Set the ``bssid`` in standard hexadecimal 6-byte MAC address notation, i.e. ``xx:xx:xx:xx:xx:xx``. 
+The WiFi driver falls back to the module's hardware MAC if the syntax doesn't match.
+
+
+--------------------------
 AP Bandwidth Configuration
-------------------------------
+--------------------------
+
 In normal operation, the default AP bandwidth is set to 20Mhz to reduce interference and improve the signal quality. If a wider 40Mhz
 bandwidth is preferred, eg for high throughput logging, set the network configuration ``wifi.ap.bw`` with the command::
  
