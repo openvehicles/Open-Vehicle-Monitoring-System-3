@@ -83,6 +83,8 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
         OvmsConfigParam* param = MyConfig.CachedParam("wifi.ssid");
         int cnt = 0;
         for (auto const& kv : param->m_instances) {
+          if (endsWith(kv.first, ".ovms.staticip") || endsWith(kv.first, ".ovms.mac"))
+            continue;
           if (kv.second != "")
             cnt++;
         }
@@ -194,8 +196,11 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
   c.input_select_start("… client mode SSID", "wifi_ssid_client");
   param = MyConfig.CachedParam("wifi.ssid");
   c.input_select_option("Any known SSID (scan mode)", "", wifi_ssid_client.empty());
-  for (auto const& kv : param->m_instances)
+  for (auto const& kv : param->m_instances) {
+    if (endsWith(kv.first, ".ovms.staticip") || endsWith(kv.first, ".ovms.mac"))
+      continue;
     c.input_select_option(kv.first.c_str(), kv.first.c_str(), (kv.first == wifi_ssid_client));
+  }
   c.input_select_end();
 
   c.print("<hr>");

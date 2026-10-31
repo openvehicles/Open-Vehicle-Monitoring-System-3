@@ -89,6 +89,7 @@ class esp32wifi : public pcp, public InternalRamAllocated
     void StartDhcpClient();
     void SetSTAWifiIP(std::string ip="", std::string sn="", std::string gw="");
     void SetAPWifiBW();
+    void SetSTAWifiMAC(std::string ssid="");
     bool WifiHasIp();
 
   public:

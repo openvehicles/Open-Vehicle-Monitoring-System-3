@@ -1,6 +1,11 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- WiFi: add support for open WiFi networks (using '-' or 'OPEN' as password placeholder) and
+    per-SSID client MAC address spoofing in the web UI and configuration, reverting to the
+    default hardware MAC address for all other networks.
+  New config:
+    [wifi.ssid] <ssid>.ovms.mac                       -- custom client MAC address (spoofed) for <ssid>
 - Power Management: add option to power off cellular modem after configurable minutes of active
     WiFi connection while not charging the 12V battery, an optional fallback to power the
     modem back on if the WiFi connection is lost, and a live power status / estimated OVMS

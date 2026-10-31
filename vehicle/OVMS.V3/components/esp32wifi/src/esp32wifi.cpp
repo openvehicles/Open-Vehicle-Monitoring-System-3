@@ -116,12 +116,14 @@ void wifi_mode_client(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int a
     return;
     }
 
-  std::string password = MyConfig.GetParamValue("wifi.ssid", argv[0]);
-  if (password.empty())
+  if (!MyConfig.IsDefined("wifi.ssid", argv[0]))
     {
-    writer->puts("Error: SSID password must be defined in config wifi.ssid");
+    writer->puts("Error: SSID must be defined in config wifi.ssid (use '-' as password for open networks)");
     return;
     }
+  std::string password = MyConfig.GetParamValue("wifi.ssid", argv[0]);
+  if (password == "-" || password == "OPEN")
+    password = "";
 
   if (argc == 1)
     {
@@ -224,12 +226,14 @@ void wifi_mode_apclient(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int
   if (argc >= 2 && argv[1][0])
     {
     stassid = argv[1];
-    stapassword = MyConfig.GetParamValue("wifi.ssid", argv[1]);
-    if (stapassword.empty())
+    if (!MyConfig.IsDefined("wifi.ssid", argv[1]))
       {
-      writer->puts("Error: SSID password must be defined in config wifi.ssid");
+      writer->puts("Error: SSID must be defined in config wifi.ssid (use '-' as password for open networks)");
       return;
       }
+    stapassword = MyConfig.GetParamValue("wifi.ssid", argv[1]);
+    if (stapassword == "-" || stapassword == "OPEN")
+      stapassword = "";
     }
 
   if (argc >= 3)
@@ -497,11 +501,17 @@ void esp32wifi::AutoInit()
       }
     else
       {
-      stapassword = MyConfig.GetParamValue("wifi.ssid", stassid);
-      if (stapassword.empty())
-        ESP_LOGE(TAG, "AutoInit: no password set for SSID %s, mode inhibited", stassid.c_str());
+      if (!MyConfig.IsDefined("wifi.ssid", stassid))
+        {
+        ESP_LOGE(TAG, "AutoInit: SSID %s not defined in wifi.ssid, mode inhibited", stassid.c_str());
+        }
       else
+        {
+        stapassword = MyConfig.GetParamValue("wifi.ssid", stassid);
+        if (stapassword == "-" || stapassword == "OPEN")
+          stapassword = "";
         StartClientMode(stassid, stapassword);
+        }
       }
     }
   else if (mode == "apclient")
@@ -525,10 +535,15 @@ void esp32wifi::AutoInit()
     stassid = MyConfig.GetParamValue("auto", "wifi.ssid.client");
     if (!stassid.empty())
       {
-      stapassword = MyConfig.GetParamValue("wifi.ssid", stassid);
-      if (stapassword.empty())
+      if (!MyConfig.IsDefined("wifi.ssid", stassid))
         {
-        ESP_LOGE(TAG, "AutoInit: Wifi client password must be specified for SSID %s", stassid.c_str());
+        ESP_LOGE(TAG, "AutoInit: Wifi client SSID %s not defined in wifi.ssid", stassid.c_str());
+        }
+      else
+        {
+        stapassword = MyConfig.GetParamValue("wifi.ssid", stassid);
+        if (stapassword == "-" || stapassword == "OPEN")
+          stapassword = "";
         }
       }
 
@@ -637,6 +652,7 @@ void esp32wifi::StartClientMode(std::string ssid, std::string password, uint8_t*
   esp_wifi_scan_stop();
 
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+  SetSTAWifiMAC(m_sta_ssid);
   memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
   strcpy((char*)m_wifi_sta_cfg.sta.ssid, m_sta_ssid.c_str());
   strcpy((char*)m_wifi_sta_cfg.sta.password, m_sta_password.c_str());
@@ -745,6 +761,7 @@ void esp32wifi::StartAccessPointClientMode(std::string apssid, std::string appas
 
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
   SetAPWifiBW();
+  SetSTAWifiMAC(m_sta_ssid);
 
   memset(&m_wifi_ap_cfg,0,sizeof(m_wifi_ap_cfg));
   m_wifi_ap_cfg.ap.ssid_len = 0;
@@ -857,6 +874,8 @@ void esp32wifi::AP2ClientSwitch() {
     ESP_LOGI(TAG, "WiFi AP2Client switch initiated");
     std::string wifi_ssid_client = MyConfig.GetParamValue("auto", "wifi.ssid.client", "");
     std::string wifi_pass_client = MyConfig.GetParamValue("wifi.ssid", wifi_ssid_client);
+    if (wifi_pass_client == "-" || wifi_pass_client == "OPEN")
+      wifi_pass_client = "";
     vTaskDelay(pdMS_TO_TICKS(500)); // wifi task cleanup time
     StartClientMode(wifi_ssid_client, wifi_pass_client);
     }
@@ -1413,9 +1432,17 @@ void esp32wifi::EventWifiScanDone(std::string event, void* data)
       if (m_sta_ssid.empty())
         {
         // scanning mode:
-        password = MyConfig.GetParamValue("wifi.ssid", (const char*)list[k].ssid);
-        if (!password.empty())
-          ap_connect = k;
+        std::string scan_ssid((const char*)list[k].ssid);
+        if (!endsWith(scan_ssid, ".ovms.staticip") &&
+            !endsWith(scan_ssid, ".ovms.mac") &&
+            MyConfig.IsDefined("wifi.ssid", scan_ssid))
+          {
+          password = MyConfig.GetParamValue("wifi.ssid", scan_ssid);
+          if (password == "-" || password == "OPEN")
+            password = "";
+          if (!password.empty() || list[k].authmode == WIFI_AUTH_OPEN)
+            ap_connect = k;
+          }
         }
       else
         {
@@ -1445,6 +1472,8 @@ void esp32wifi::EventWifiScanDone(std::string event, void* data)
           ssid = m_sta_ssid; // assume configured SSID on a hidden entry
         ESP_LOGI(TAG, "ScanDone: connect to ssid='%s' bssid='" MACSTR "' chan=%d rssi=%d",
           ssid.c_str(), MAC2STR(list[k].bssid), list[k].primary, list[k].rssi);
+
+        SetSTAWifiMAC(ssid);
 
         memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
         strcpy((char*)m_wifi_sta_cfg.sta.ssid, ssid.c_str());
@@ -1688,4 +1717,56 @@ void esp32wifi::SetAPWifiBW()
       return;
       }
     }
+  }
+
+void esp32wifi::SetSTAWifiMAC(std::string ssid)
+  {
+  uint8_t target_mac[6];
+  esp_read_mac(target_mac, ESP_MAC_WIFI_STA);
+
+  std::string mac_str;
+  if (!ssid.empty())
+    mac_str = MyConfig.GetParamValue("wifi.ssid", ssid + ".ovms.mac");
+
+  if (!mac_str.empty())
+    {
+    uint8_t custom_mac[6];
+    char tail = 0;
+    int parsed = sscanf(mac_str.c_str(), "%2hhx:%2hhx:%2hhx:%2hhx:%2hhx:%2hhx%c",
+      &custom_mac[0], &custom_mac[1], &custom_mac[2],
+      &custom_mac[3], &custom_mac[4], &custom_mac[5], &tail);
+
+    if (parsed != 6)
+      {
+      ESP_LOGE(TAG, "SetSTAWifiMAC: invalid MAC format '%s' (expected xx:xx:xx:xx:xx:xx), using hardware MAC", mac_str.c_str());
+      }
+    else if (custom_mac[0] & 0x01)
+      {
+      ESP_LOGE(TAG, "SetSTAWifiMAC: invalid MAC '%s' (bit 0 of first byte must be 0 / unicast), using hardware MAC", mac_str.c_str());
+      }
+    else
+      {
+      memcpy(target_mac, custom_mac, 6);
+      }
+    }
+
+  uint8_t current_mac[6];
+  if (esp_wifi_get_mac(WIFI_IF_STA, current_mac) == ESP_OK &&
+      memcmp(current_mac, target_mac, 6) == 0)
+    {
+    memcpy(m_mac_sta, current_mac, 6);
+    return;
+    }
+
+  esp_err_t err = esp_wifi_set_mac(WIFI_IF_STA, target_mac);
+  if (err != ESP_OK)
+    {
+    ESP_LOGE(TAG, "SetSTAWifiMAC: esp_wifi_set_mac failed; error=0x%x", err);
+    }
+  else
+    {
+    ESP_LOGI(TAG, "SetSTAWifiMAC: STA MAC for SSID '%s' set to " MACSTR,
+      ssid.empty() ? "*" : ssid.c_str(), MAC2STR(target_mac));
+    }
+  esp_wifi_get_mac(WIFI_IF_STA, m_mac_sta);
   }    
