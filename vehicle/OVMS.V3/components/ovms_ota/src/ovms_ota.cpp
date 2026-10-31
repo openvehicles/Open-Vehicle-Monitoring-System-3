@@ -367,8 +367,8 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     ota_begun = true;
     }
 
-  // HTTP client GET request (60s timeout for cellular resilience)...
-  OvmsHttpClient http(url, "GET", 60000);
+  // HTTP client GET request (30s timeout for cellular stall detection)...
+  OvmsHttpClient http(url, "GET", 30000);
   if (!http.IsOpen())
     {
     if (ota_begun) esp_ota_end(otah);
@@ -427,6 +427,7 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
   MyOTA.SetFlashStatus("OTA Flash HTTP: Downloading OTA image...");
   while (filesize < expected)
     {
+    size_t prev_filesize = filesize;
     while ((k = http.BodyRead(rbuf, sizeof(rbuf))) > 0)
       {
       filesize += k;
@@ -456,7 +457,17 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
         }
       }
 
-    if (filesize >= expected || retries >= kMaxRetries)
+    if (filesize >= expected)
+      break;
+
+    if (retries > 0 && filesize == prev_filesize)
+      {
+      writer->puts("Error: Download stalled (no progress after resume) - aborting");
+      k = -1;
+      break;
+      }
+
+    if (retries >= kMaxRetries)
       break;
 
     retries++;
@@ -1774,8 +1785,8 @@ bool OvmsOTA::AutoFlash(bool force)
     ota_begun = true;
     }
 
-  // HTTP client GET request (60s timeout for cellular resilience)...
-  OvmsHttpClient http(url, "GET", 60000);
+  // HTTP client GET request (30s timeout for cellular stall detection)...
+  OvmsHttpClient http(url, "GET", 30000);
   if (!http.IsOpen())
     {
     if (ota_begun) esp_ota_end(otah);
@@ -1831,6 +1842,7 @@ bool OvmsOTA::AutoFlash(bool force)
   const int kMaxRetries = 5;
   while (filesize < expected)
     {
+    size_t prev_filesize = filesize;
     while ((k = http.BodyRead(rbuf, sizeof(rbuf))) > 0)
       {
       filesize += k;
@@ -1854,7 +1866,17 @@ bool OvmsOTA::AutoFlash(bool force)
         }
       }
 
-    if (filesize >= expected || retries >= kMaxRetries)
+    if (filesize >= expected)
+      break;
+
+    if (retries > 0 && filesize == prev_filesize)
+      {
+      ESP_LOGE(TAG, "AutoFlash: Download stalled (no progress after resume) - aborting");
+      k = -1;
+      break;
+      }
+
+    if (retries >= kMaxRetries)
       break;
 
     retries++;
