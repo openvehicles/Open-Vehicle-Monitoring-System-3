@@ -839,7 +839,7 @@ void OvmsServerV2::CheckDuktapeJobsCompleted()
       std::string id = job->GetID();
       ESP_LOGD(TAG, "DuktapeEvalJob ID '%s' complete", id.c_str());
       // send response:
-      std::string msg = "MP-0 c8,1,";
+      std::string msg = "MP-0 c8,0,";
       msg += id;
       msg += ",";
       msg += mp_encode(job->GetOutput(), m_legacy_field_enc);
