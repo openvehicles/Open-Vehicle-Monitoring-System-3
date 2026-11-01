@@ -90,6 +90,10 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
           {
           MyOvmsServerV3->TransmitEvents();
           }
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+        // Check for completed async Javascript jobs:
+        MyOvmsServerV3->CheckDuktapeJobsCompleted();
+#endif
         }
       }
       break;
@@ -362,6 +366,15 @@ OvmsServerV3::~OvmsServerV3()
   MyEvents.DeregisterEvent(TAG);
   MyNotify.ClearReader(MyOvmsServerV3Reader);
   Disconnect();
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  while (!m_duktape_jobs.empty())
+    {
+    // delete back to front to minimize potential completion waits
+    auto job = m_duktape_jobs.back();
+    m_duktape_jobs.pop_back();
+    delete job;
+    }
+#endif
   MyEvents.SignalEvent("server.v3.stopped", NULL);
   }
 
@@ -817,6 +830,11 @@ void OvmsServerV3::IncomingMsg(std::string topic, std::string payload)
     std::string id = topic.substr(8);
     RunCommand(clientid, id, payload);
     }
+  else if (topic.compare(0,10,"jscommand/")==0)
+    {
+    std::string id = topic.substr(10);
+    RunJavascriptCommand(clientid, id, payload);
+    }
   else if (topic.compare(0,8,"request/")==0)
     {
     std::string req = topic.substr(8);
@@ -930,6 +948,90 @@ void OvmsServerV3::RunCommand(std::string client, std::string id, std::string co
     MG_MQTT_QOS(1), val.c_str(), val.length());
   }
 
+
+void OvmsServerV3::RunJavascriptCommand(std::string client, std::string id, std::string command)
+  {
+  ESP_LOGI(TAG, "Run Javascript command: %s", command.c_str());
+  std::string error = "ERROR: ";
+
+  #ifndef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+    error += "No JavaScript support in firmware";
+  #else
+    if (!MyDuktape.DukTapeAvailable())
+      {
+      error += "JavaScript engine not started";
+      }
+    else
+      {
+      // Prepare async Javascript execution:
+      auto job = new DuktapeEvalJob(command, id, client);
+      if (!job)
+        {
+        error += "Out of memory";
+        }
+      else if (!job->Dispatch(pdMS_TO_TICKS(50)))
+        {
+        error += "Duktape queue overflow";
+        delete job;
+        }
+      else
+        {
+        // The command has been queued for execution by the Duktape task,
+        // MG_EV_POLL → CheckDuktapeJobsCompleted() handles sending the result
+        ESP_LOGD(TAG, "DuktapeEvalJob client '%s' ID '%s' command '%s' queued",
+          client.c_str(), id.c_str(), command.c_str());
+        m_duktape_jobs.push_back(job);
+        return;
+        }
+      }
+  #endif
+
+  // send error:
+  std::string topic(m_topic_prefix);
+  topic.append("client/");
+  topic.append(client);
+  topic.append("/jsresponse/");
+  topic.append(id);
+  mg_mqtt_publish(m_mgconn, topic.c_str(), NextMsgId(), MG_MQTT_QOS(1), error.c_str(), error.length());
+  }
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
+void OvmsServerV3::CheckDuktapeJobsCompleted()
+  {
+  auto it = m_duktape_jobs.begin();
+  while (it != m_duktape_jobs.end())
+    {
+    DuktapeEvalJob *job = *it;
+    if (job->CheckComplete())
+      {
+      std::string client = job->GetClient();
+      std::string id = job->GetID();
+      std::string output = job->GetOutput();
+      ESP_LOGD(TAG, "DuktapeEvalJob client '%s' ID '%s' complete", client.c_str(), id.c_str());
+      // send response:
+      std::string topic(m_topic_prefix);
+      topic.append("client/");
+      topic.append(client);
+      topic.append("/jsresponse/");
+      topic.append(id);
+      mg_mqtt_publish(m_mgconn, topic.c_str(), NextMsgId(), MG_MQTT_QOS(1),
+        output.c_str(), output.length());
+      // done:
+      delete job;
+      it = m_duktape_jobs.erase(it);
+      }
+    else
+      {
+      //ESP_LOGV(TAG, "DuktapeEvalJob ID '%s' waiting", job->GetID().c_str());
+      ++it;
+      }
+    }
+  }
+
+#endif // CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
+
 void OvmsServerV3::AddClient(std::string id)
   {
   auto k = m_clients.find(id);
@@ -1029,18 +1131,12 @@ void OvmsServerV3::Connect()
   m_will_topic = std::string(m_topic_prefix);
   m_will_topic.append("metric/s/v3/connected");
 
-  m_conn_topic[0] = std::string(m_topic_prefix);
-  m_conn_topic[0].append("client/+/active");
-
-  m_conn_topic[1] = std::string(m_topic_prefix);
-  m_conn_topic[1].append("client/+/command/+");
-
-  // Request new Topics:
-  m_conn_topic[2] = std::string(m_topic_prefix);
-  m_conn_topic[2].append("client/+/request/metric");
-
-  m_conn_topic[3] = std::string(m_topic_prefix);
-  m_conn_topic[3].append("client/+/request/config");
+  m_conn_topics.reserve(5);
+  m_conn_topics.push_back(m_topic_prefix + "client/+/active");
+  m_conn_topics.push_back(m_topic_prefix + "client/+/command/+");
+  m_conn_topics.push_back(m_topic_prefix + "client/+/request/metric");
+  m_conn_topics.push_back(m_topic_prefix + "client/+/request/config");
+  m_conn_topics.push_back(m_topic_prefix + "client/+/jscommand/+");
 
   if (m_port.empty())
     {
@@ -1565,13 +1661,13 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
       {
       auto mglock = MongooseLock();
       ESP_LOGI(TAG, "Subscribe to MQTT topics");
-      struct mg_mqtt_topic_expression topics[MQTT_CONN_NTOPICS];
-      for (int k=0;k<MQTT_CONN_NTOPICS;k++)
+      struct mg_mqtt_topic_expression topics[m_conn_topics.size()];
+      for (int k=0;k<m_conn_topics.size();k++)
         {
-        topics[k].topic = m_conn_topic[k].c_str();
+        topics[k].topic = m_conn_topics[k].c_str();
         topics[k].qos = 1;
         }
-      mg_mqtt_subscribe(m_mgconn, topics, MQTT_CONN_NTOPICS, NextMsgId());
+      mg_mqtt_subscribe(m_mgconn, topics, m_conn_topics.size(), NextMsgId());
 
       ESP_LOGI(TAG, "Transmit all metrics");
       m_lasttx_sendall = now;

@@ -559,6 +559,78 @@ static duk_ret_t DukOvmsLoadModule(duk_context *ctx)
   return 1;
   }
 
+
+////////////////////////////////////////////////////////////////////////////////
+// DuktapeEvalJob: async background Javascript evaluation job
+// 
+// Basic usage:
+//  a) create job:              auto job = new DuktapeEvalJob(command)
+//  b) submit job to Duktape:   job->Dispatch()
+//  c) check job status:        if (job->CheckComplete())
+//  d) retrieve output:           job->GetOutput()
+//  e) finish:                  delete job
+// 
+
+DuktapeEvalJob::DuktapeEvalJob(std::string command, std::string id /*=""*/, std::string client /*=""*/)
+  : m_writer(1000)
+  {
+  m_command = command;
+  m_id = id;
+  m_client = client;
+  m_waitcompletion = xSemaphoreCreateBinary();
+  m_queued = false;
+  m_complete = false;
+  }
+
+DuktapeEvalJob::~DuktapeEvalJob()
+  {
+  OvmsMutexLock lock(&m_mutex);
+  if (m_waitcompletion)
+    {
+    if (m_queued)
+      {
+      // job has been queued, wait for completion:
+      xSemaphoreTake(m_waitcompletion, portMAX_DELAY);
+      }
+    vSemaphoreDelete(m_waitcompletion);
+    m_waitcompletion = NULL;
+    }
+  }
+
+bool DuktapeEvalJob::Dispatch(TickType_t queuewait /*=portMAX_DELAY*/)
+  {
+  OvmsMutexLock lock(&m_mutex);
+  // check state:
+  if (m_command.empty() || m_queued || !m_waitcompletion)
+    {
+    return false;
+    }
+  // queue job:
+  duktape_queue_t dmsg = {};
+  dmsg.type = DUKTAPE_evalnoresult;
+  dmsg.waitcompletion = m_waitcompletion;
+  dmsg.writer = &m_writer;
+  dmsg.body.dt_evalnoresult.text = m_command.c_str();
+  m_complete = false;
+  m_queued = MyDuktape.DuktapeDispatch(&dmsg, queuewait);
+  return m_queued;
+  }
+
+bool DuktapeEvalJob::CheckComplete(TickType_t semwait /*=0*/)
+  {
+  OvmsMutexLock lock(&m_mutex);
+  if (m_queued && !m_complete)
+    {
+    if (m_waitcompletion && xSemaphoreTake(m_waitcompletion, semwait) == pdTRUE)
+      {
+      m_queued = false;
+      m_complete = true;
+      }
+    }
+  return m_complete;
+  }
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // DuktapeObject
 
@@ -1118,7 +1190,6 @@ void OvmsDuktape::EventScript(std::string event, void* data)
 
 bool OvmsDuktape::DuktapeDispatch(duktape_queue_t* msg, TickType_t queuewait /*=portMAX_DELAY*/)
   {
-  msg->waitcompletion = NULL;
   if (InDukTapeTask())
     {
     ProcessJob(*msg);

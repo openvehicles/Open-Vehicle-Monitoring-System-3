@@ -181,6 +181,17 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
   {
   switch (ev)
     {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+    case MG_EV_POLL:
+      {
+      if (MyOvmsServerV2)
+        {
+        // Check for completed async Javascript jobs:
+        MyOvmsServerV2->CheckDuktapeJobsCompleted();
+        }
+      }
+      break;
+#endif
     case MG_EV_CONNECT:
       {
       int *success = (int*)p;
@@ -533,7 +544,7 @@ void OvmsServerV2::ProcessCommand(const char* payload)
       MyNotify.NotifyCommand("info","charge.stopped","stat");
       *buffer << "MP-0 c6,0";
       break;
-    case 7: // Execute command
+    case 7: // Execute shell command, parameter <cmd> → sync result <output>
       {
       BufferedShell* bs = new BufferedShell(false, COMMAND_RESULT_NORMAL);
       bs->SetSecure(true); // this is an authorized channel
@@ -543,6 +554,55 @@ void OvmsServerV2::ProcessCommand(const char* payload)
       delete bs;
       *buffer << "MP-0 c7,0,";
       *buffer << mp_encode(val, m_legacy_field_enc);
+      break;
+      }
+    case 8: // Execute javascript command, parameters <id>,<cmd> → async result <id>,<output>
+      {
+      // Parse & check parameters:
+      char *id0 = sep ? sep+1 : NULL;
+      if (!id0 || !*id0)
+        {
+        *buffer << "MP-0 c8,1," << id0 << ",Missing ID";
+        break;
+        }
+      char *cmd0 = index(id0, ',');
+      if (!cmd0 || !*cmd0)
+        {
+        *buffer << "MP-0 c8,1," << id0 << ",Missing command";
+        break;
+        }
+      std::string id(id0, cmd0-id0);
+      std::string cmd(++cmd0);
+      
+      #ifndef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+        *buffer << "MP-0 c8,1," << id << ",No JavaScript support in firmware";
+      #else
+        if (!MyDuktape.DukTapeAvailable())
+          {
+          *buffer << "MP-0 c8,1," << id << ",JavaScript engine not started";
+          }
+        else
+          {
+          // Prepare async Javascript execution:
+          auto job = new DuktapeEvalJob(cmd, id);
+          if (!job)
+            {
+            *buffer << "MP-0 c8,1," << id << ",Out of memory";
+            }
+          else if (!job->Dispatch(pdMS_TO_TICKS(50)))
+            {
+            *buffer << "MP-0 c8,1," << id << ",JavaScript queue overflow";
+            delete job;
+            }
+          else
+            {
+            // The command has been queued for execution by the Duktape task,
+            // MG_EV_POLL → CheckDuktapeJobsCompleted() handles sending the result
+            ESP_LOGD(TAG, "DuktapeEvalJob ID '%s' command '%s' queued", id.c_str(), cmd.c_str());
+            m_duktape_jobs.push_back(job);
+            }
+          }
+      #endif
       break;
       }
     case 10: // Set Charge Mode
@@ -760,9 +820,44 @@ void OvmsServerV2::ProcessCommand(const char* payload)
       break;
     }
 
-  Transmit(buffer->str().c_str());
+  if (buffer->tellp() > 0)
+    Transmit(buffer->str().c_str());
   delete buffer;
   }
+
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
+void OvmsServerV2::CheckDuktapeJobsCompleted()
+  {
+  auto it = m_duktape_jobs.begin();
+  while (it != m_duktape_jobs.end())
+    {
+    DuktapeEvalJob *job = *it;
+    if (job->CheckComplete())
+      {
+      std::string id = job->GetID();
+      ESP_LOGD(TAG, "DuktapeEvalJob ID '%s' complete", id.c_str());
+      // send response:
+      std::string msg = "MP-0 c8,1,";
+      msg += id;
+      msg += ",";
+      msg += mp_encode(job->GetOutput(), m_legacy_field_enc);
+      Transmit(msg);
+      // done:
+      delete job;
+      it = m_duktape_jobs.erase(it);
+      }
+    else
+      {
+      //ESP_LOGV(TAG, "DuktapeEvalJob ID '%s' waiting", job->GetID().c_str());
+      ++it;
+      }
+    }
+  }
+
+#endif // CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
 
 bool OvmsServerV2::Transmit(const std::string& message, TickType_t timeout /*=portMAX_DELAY*/)
   {
@@ -2394,6 +2489,15 @@ OvmsServerV2::~OvmsServerV2()
     delete m_buffer;
     m_buffer = NULL;
     }
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  while (!m_duktape_jobs.empty())
+    {
+    // delete back to front to minimize potential completion waits
+    auto job = m_duktape_jobs.back();
+    m_duktape_jobs.pop_back();
+    delete job;
+    }
+#endif
   MyEvents.SignalEvent("server.v2.stopped", NULL);
   }
 
