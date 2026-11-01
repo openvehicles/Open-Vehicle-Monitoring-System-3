@@ -31,6 +31,7 @@
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
 #include "ovms_config.h"
+#include "ovms_utils.h"
 #include "ovms_peripherals.h"
 #include "ovms_netmanager.h"
 #include "ovms_webserver.h"
@@ -60,87 +61,92 @@ void powermgmt::WebCleanup()
  void powermgmt::WebCfgPowerManagement(PageEntry_t& p, PageContext_t& c)
   {
   auto lock = MyConfig.Lock();
+  ConfigParamMap power_map = MyConfig.GetParamMap("power");
+  ConfigParamMap vehicle_map = MyConfig.GetParamMap("vehicle");
   std::string error;
-  bool enabled;
-  bool modem_wifi_fallback = false;
-  bool wifioff_if_disconnected = false;
-  bool powersaving_enabled = false;
-  std::string modemoff_delay, modemoff_wifi_delay, wifioff_delay, b12v_shutdown_delay;
-  std::string powersaving_days, powersaving_deepsleep_days, powersaving_target, powersaving_interval, powersaving_duration;
 
   if (c.method == "POST")
     {
     // process form submission:
-    enabled = (c.getvar("enabled") == "yes");
+    power_map["enabled"] = (c.getvar("enabled") == "yes") ? "yes" : "no";
 #ifdef CONFIG_OVMS_COMP_CELLULAR
-    modemoff_delay = c.getvar("modemoff_delay");
+    power_map["modemoff_delay"] = c.getvar("modemoff_delay");
 #ifdef CONFIG_OVMS_COMP_WIFI
-    modemoff_wifi_delay = c.getvar("modemoff_wifi_delay");
-    modem_wifi_fallback = (c.getvar("modem_wifi_fallback") == "yes");
+    power_map["modemoff_wifi_delay"] = c.getvar("modemoff_wifi_delay");
+    power_map["modem_wifi_fallback"] = (c.getvar("modem_wifi_fallback") == "yes") ? "yes" : "no";
 #endif
 #endif
-    wifioff_delay = c.getvar("wifioff_delay");
-    wifioff_if_disconnected = (c.getvar("wifioff_if_disconnected") == "yes");
-    b12v_shutdown_delay = c.getvar("12v_shutdown_delay");
-    powersaving_enabled = (c.getvar("powersaving_enabled") == "yes");
-    powersaving_days = c.getvar("powersaving_days");
-    powersaving_deepsleep_days = c.getvar("powersaving_deepsleep_days");
-    powersaving_target = c.getvar("powersaving_target");
-    powersaving_interval = c.getvar("powersaving_interval");
-    powersaving_duration = c.getvar("powersaving_duration");
+    power_map["wifioff_delay"] = c.getvar("wifioff_delay");
+    power_map["wifioff_if_disconnected"] = (c.getvar("wifioff_if_disconnected") == "yes") ? "yes" : "no";
+    vehicle_map["12v.shutdown_delay"] = c.getvar("12v_shutdown_delay");
+    power_map["powersaving.enabled"] = (c.getvar("powersaving_enabled") == "yes") ? "yes" : "no";
+    power_map["powersaving.days"] = c.getvar("powersaving_days");
+    power_map["powersaving.deepsleep_days"] = c.getvar("powersaving_deepsleep_days");
+    power_map["powersaving.target"] = c.getvar("powersaving_target");
+    power_map["powersaving.interval"] = c.getvar("powersaving_interval");
+    power_map["powersaving.duration"] = c.getvar("powersaving_duration");
 
     // check values
 #ifdef CONFIG_OVMS_COMP_CELLULAR
-    if (modemoff_delay.empty() || modemoff_delay.find_first_not_of("0123456789") != std::string::npos)
+    if (!power_map["modemoff_delay"].empty() && power_map["modemoff_delay"].find_first_not_of("0123456789") != std::string::npos)
       error += "<li data-input=\"modemoff_delay\">Invalid Modem off delay!</li>";
 #ifdef CONFIG_OVMS_COMP_WIFI
-    if (modemoff_wifi_delay.empty() || modemoff_wifi_delay.find_first_not_of("0123456789") != std::string::npos)
+    if (!power_map["modemoff_wifi_delay"].empty() && power_map["modemoff_wifi_delay"].find_first_not_of("0123456789") != std::string::npos)
       error += "<li data-input=\"modemoff_wifi_delay\">Invalid Modem off (WiFi) delay!</li>";
 #endif
 #endif
-    if (wifioff_delay.empty() || wifioff_delay.find_first_not_of("0123456789") != std::string::npos)
+    if (!power_map["wifioff_delay"].empty() && power_map["wifioff_delay"].find_first_not_of("0123456789") != std::string::npos)
       error += "<li data-input=\"wifioff_delay\">Invalid WiFi off delay!</li>";
 
-    if (b12v_shutdown_delay.empty() || b12v_shutdown_delay.find_first_not_of("0123456789") != std::string::npos)
+    if (!vehicle_map["12v.shutdown_delay"].empty() && vehicle_map["12v.shutdown_delay"].find_first_not_of("0123456789") != std::string::npos)
       error += "<li data-input=\"12v_shutdown_delay\">Invalid shutdown delay!</li>";
 
-    if (powersaving_days.empty() || powersaving_days.find_first_not_of("0123456789") != std::string::npos || atoi(powersaving_days.c_str()) < 1)
+    if (!power_map["powersaving.days"].empty() && (power_map["powersaving.days"].find_first_not_of("0123456789") != std::string::npos || atoi(power_map["powersaving.days"].c_str()) < 1))
       error += "<li data-input=\"powersaving_days\">Invalid powersaving days!</li>";
 
-    if (powersaving_deepsleep_days.empty() || powersaving_deepsleep_days.find_first_not_of("0123456789") != std::string::npos)
+    if (!power_map["powersaving.deepsleep_days"].empty() && power_map["powersaving.deepsleep_days"].find_first_not_of("0123456789") != std::string::npos)
       error += "<li data-input=\"powersaving_deepsleep_days\">Invalid deep sleep limit days!</li>";
 
-    if (powersaving_target != "modem" && powersaving_target != "wifi" &&
-        powersaving_target != "both" && powersaving_target != "deepsleep")
+    if (!power_map["powersaving.target"].empty() && power_map["powersaving.target"] != "modem" && power_map["powersaving.target"] != "wifi" &&
+        power_map["powersaving.target"] != "both" && power_map["powersaving.target"] != "deepsleep")
       error += "<li data-input=\"powersaving_target\">Invalid powersaving target!</li>";
 
-    if (powersaving_interval.empty() || powersaving_interval.find_first_not_of("0123456789") != std::string::npos || atoi(powersaving_interval.c_str()) < 1)
+    if (!power_map["powersaving.interval"].empty() && (power_map["powersaving.interval"].find_first_not_of("0123456789") != std::string::npos || atoi(power_map["powersaving.interval"].c_str()) < 1))
       error += "<li data-input=\"powersaving_interval\">Invalid powersaving interval!</li>";
 
-    if (powersaving_duration.empty() || powersaving_duration.find_first_not_of("0123456789") != std::string::npos || atoi(powersaving_duration.c_str()) < 1)
+    if (!power_map["powersaving.duration"].empty() && (power_map["powersaving.duration"].find_first_not_of("0123456789") != std::string::npos || atoi(power_map["powersaving.duration"].c_str()) < 1))
       error += "<li data-input=\"powersaving_duration\">Invalid powersaving duration!</li>";
 
 
     if (error == "")
       {
-      // store:
-      MyConfig.SetParamValueBool("power", "enabled", enabled);
+      // remove empty instances before storing:
+      if (vehicle_map["12v.shutdown_delay"].empty())
+        vehicle_map.erase("12v.shutdown_delay");
+      MyConfig.SetParamMap("vehicle", vehicle_map);
+
 #ifdef CONFIG_OVMS_COMP_CELLULAR
-      MyConfig.SetParamValue("power", "modemoff_delay", modemoff_delay);
+      if (power_map["modemoff_delay"].empty())
+        power_map.erase("modemoff_delay");
 #ifdef CONFIG_OVMS_COMP_WIFI
-      MyConfig.SetParamValue("power", "modemoff_wifi_delay", modemoff_wifi_delay);
-      MyConfig.SetParamValueBool("power", "modem_wifi_fallback", modem_wifi_fallback);
+      if (power_map["modemoff_wifi_delay"].empty())
+        power_map.erase("modemoff_wifi_delay");
 #endif
 #endif
-      MyConfig.SetParamValue("power", "wifioff_delay", wifioff_delay);
-      MyConfig.SetParamValueBool("power", "wifioff_if_disconnected", wifioff_if_disconnected);
-      MyConfig.SetParamValue("vehicle", "12v.shutdown_delay", b12v_shutdown_delay);
-      MyConfig.SetParamValueBool("power", "powersaving.enabled", powersaving_enabled);
-      MyConfig.SetParamValue("power", "powersaving.days", powersaving_days);
-      MyConfig.SetParamValue("power", "powersaving.deepsleep_days", powersaving_deepsleep_days);
-      MyConfig.SetParamValue("power", "powersaving.target", powersaving_target);
-      MyConfig.SetParamValue("power", "powersaving.interval", powersaving_interval);
-      MyConfig.SetParamValue("power", "powersaving.duration", powersaving_duration);
+      if (power_map["wifioff_delay"].empty())
+        power_map.erase("wifioff_delay");
+      if (power_map["powersaving.days"].empty())
+        power_map.erase("powersaving.days");
+      if (power_map["powersaving.deepsleep_days"].empty())
+        power_map.erase("powersaving.deepsleep_days");
+      if (power_map["powersaving.target"].empty())
+        power_map.erase("powersaving.target");
+      if (power_map["powersaving.interval"].empty())
+        power_map.erase("powersaving.interval");
+      if (power_map["powersaving.duration"].empty())
+        power_map.erase("powersaving.duration");
+
+      MyConfig.SetParamMap("power", power_map);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">Power management configuration saved.</p>");
@@ -156,26 +162,29 @@ void powermgmt::WebCleanup()
     }
   else
     {
-    // read configuration:
-    enabled = MyConfig.GetParamValueBool("power", "enabled", false);
+    // fill in defaults:
+    if (vehicle_map["12v.shutdown_delay"].empty())
+      vehicle_map["12v.shutdown_delay"] = STR(POWERMGMT_12V_SHUTDOWN_DELAY);
 #ifdef CONFIG_OVMS_COMP_CELLULAR
-    modemoff_delay = MyConfig.GetParamValue("power", "modemoff_delay", STR(POWERMGMT_MODEMOFF_DELAY));
+    if (power_map["modemoff_delay"].empty())
+      power_map["modemoff_delay"] = STR(POWERMGMT_MODEMOFF_DELAY);
 #ifdef CONFIG_OVMS_COMP_WIFI
-    modemoff_wifi_delay = MyConfig.GetParamValue("power", "modemoff_wifi_delay", STR(POWERMGMT_MODEMOFF_WIFI_DELAY));
-    modem_wifi_fallback = MyConfig.GetParamValueBool("power", "modem_wifi_fallback", false);
+    if (power_map["modemoff_wifi_delay"].empty())
+      power_map["modemoff_wifi_delay"] = STR(POWERMGMT_MODEMOFF_WIFI_DELAY);
 #endif
 #endif
-    wifioff_delay = MyConfig.GetParamValue("power", "wifioff_delay", STR(POWERMGMT_WIFIOFF_DELAY));
-    wifioff_if_disconnected = MyConfig.GetParamValueBool("power", "wifioff_if_disconnected", false);
-    b12v_shutdown_delay = MyConfig.GetParamValue("vehicle", "12v.shutdown_delay", STR(POWERMGMT_12V_SHUTDOWN_DELAY));
-    if (b12v_shutdown_delay.empty())
-      b12v_shutdown_delay = STR(POWERMGMT_12V_SHUTDOWN_DELAY);
-    powersaving_enabled = MyConfig.GetParamValueBool("power", "powersaving.enabled", false);
-    powersaving_days = MyConfig.GetParamValue("power", "powersaving.days", STR(POWERMGMT_POWERSAVING_DAYS));
-    powersaving_deepsleep_days = MyConfig.GetParamValue("power", "powersaving.deepsleep_days", STR(POWERMGMT_POWERSAVING_DEEPSLEEP_DAYS));
-    powersaving_target = MyConfig.GetParamValue("power", "powersaving.target", STR(POWERMGMT_POWERSAVING_TARGET));
-    powersaving_interval = MyConfig.GetParamValue("power", "powersaving.interval", STR(POWERMGMT_POWERSAVING_INTERVAL));
-    powersaving_duration = MyConfig.GetParamValue("power", "powersaving.duration", STR(POWERMGMT_POWERSAVING_DURATION));
+    if (power_map["wifioff_delay"].empty())
+      power_map["wifioff_delay"] = STR(POWERMGMT_WIFIOFF_DELAY);
+    if (power_map["powersaving.days"].empty())
+      power_map["powersaving.days"] = STR(POWERMGMT_POWERSAVING_DAYS);
+    if (power_map["powersaving.deepsleep_days"].empty())
+      power_map["powersaving.deepsleep_days"] = STR(POWERMGMT_POWERSAVING_DEEPSLEEP_DAYS);
+    if (power_map["powersaving.target"].empty())
+      power_map["powersaving.target"] = STR(POWERMGMT_POWERSAVING_TARGET);
+    if (power_map["powersaving.interval"].empty())
+      power_map["powersaving.interval"] = STR(POWERMGMT_POWERSAVING_INTERVAL);
+    if (power_map["powersaving.duration"].empty())
+      power_map["powersaving.duration"] = STR(POWERMGMT_POWERSAVING_DURATION);
 
     c.head(200);
     }
@@ -278,7 +287,7 @@ void powermgmt::WebCleanup()
   c.print("<hr>");
   c.print("<h3>Power saving settings</h3>");
 
-  c.input_checkbox("Enable automatic power management", "enabled", enabled,
+  c.input_checkbox("Enable automatic power management", "enabled", strtobool(power_map["enabled"]),
     "<p>Most electric cars have a small 12V battery which could get depleted if OVMS is left active for long periods (weeks) without charging. "
     "12V battery usually is charged concurrently with the larger main battery or when the drive train is enabled and the Auxiliary Power Module provides "
     "electricity from the main battery to 12V peripherals. If power saving features are enabled, some modules can be switched off after certain time period of "
@@ -286,29 +295,29 @@ void powermgmt::WebCleanup()
   c.fieldset_end();
 
 #ifdef CONFIG_OVMS_COMP_CELLULAR
-  c.input("number", "Delay before modem is turned off", "modemoff_delay", modemoff_delay.c_str(),
+  c.input("number", "Delay before modem is turned off", "modemoff_delay", power_map["modemoff_delay"].c_str(),
     "Default: " STR(POWERMGMT_MODEMOFF_DELAY) " hours",
     "<p>0 = disabled</p>",
     "min=\"0\" step=\"1\"", "hours");
 #ifdef CONFIG_OVMS_COMP_WIFI
-  c.input("number", "Delay before modem is turned off (when WiFi connected)", "modemoff_wifi_delay", modemoff_wifi_delay.c_str(),
+  c.input("number", "Delay before modem is turned off (when WiFi connected)", "modemoff_wifi_delay", power_map["modemoff_wifi_delay"].c_str(),
     "Default: " STR(POWERMGMT_MODEMOFF_WIFI_DELAY) " minutes",
     "<p>0 = disabled. Turns off the cellular modem after the specified minutes of active WiFi connection while not charging the 12V battery. "
     "The modem is turned back on when 12V battery charging starts or the vehicle wakes up.</p>",
     "min=\"0\" step=\"1\"", "minutes");
-  c.input_checkbox("Turn on modem when WiFi disconnects (fallback)", "modem_wifi_fallback", modem_wifi_fallback,
+  c.input_checkbox("Turn on modem when WiFi disconnects (fallback)", "modem_wifi_fallback", strtobool(power_map["modem_wifi_fallback"]),
     "<p>If enabled, the cellular modem will be powered back on automatically when the WiFi connection is lost (as long as the general modem off delay has not been exceeded).</p>");
 #endif
 #endif
 
-  c.input("number", "Delay before WiFi is turned off", "wifioff_delay", wifioff_delay.c_str(),
+  c.input("number", "Delay before WiFi is turned off", "wifioff_delay", power_map["wifioff_delay"].c_str(),
     "Default: " STR(POWERMGMT_WIFIOFF_DELAY) " hours",
     "<p>0 = disabled</p>",
     "min=\"0\" step=\"1\"", "hours");
-  c.input_checkbox("Turn off WiFi only when disconnected", "wifioff_if_disconnected", wifioff_if_disconnected,
+  c.input_checkbox("Turn off WiFi only when disconnected", "wifioff_if_disconnected", strtobool(power_map["wifioff_if_disconnected"]),
     "<p>If enabled, the WiFi off delay will only turn off WiFi when there is no active WiFi connection.</p>");
 
-  c.input("number", "Delay before OVMS is shut down (after initial 12V battery level alert)", "12v_shutdown_delay", b12v_shutdown_delay.c_str(),
+  c.input("number", "Delay before OVMS is shut down (after initial 12V battery level alert)", "12v_shutdown_delay", vehicle_map["12v.shutdown_delay"].c_str(),
     "Default: " STR(POWERMGMT_12V_SHUTDOWN_DELAY) " minutes",
     "<p>0 = disabled</p>"
     "<p><b class=\"text-danger\">⚠</b> This depends on a proper 12V calibration "
@@ -320,28 +329,28 @@ void powermgmt::WebCleanup()
 
   c.print("<hr>");
   c.print("<h3>Periodic Power Saving (Long-term Inactivity)</h3>");
-  c.input_checkbox("Enable periodic power saving", "powersaving_enabled", powersaving_enabled,
+  c.input_checkbox("Enable periodic power saving", "powersaving_enabled", strtobool(power_map["powersaving.enabled"]),
     "<p>After the specified days of vehicle inactivity (tracked independently of 12V trickle charging), periodically perform the selected action until vehicle is turned on again.</p>");
 
-  c.input("number", "Inactivity threshold (days)", "powersaving_days", powersaving_days.c_str(),
+  c.input("number", "Inactivity threshold (days)", "powersaving_days", power_map["powersaving.days"].c_str(),
     "Default: " STR(POWERMGMT_POWERSAVING_DAYS) " days", "", "min=\"1\" step=\"1\"", "days");
 
   c.input_radiobtn_start("Periodic power saving target / action", "powersaving_target");
-  c.input_radiobtn_option("powersaving_target", "Cellular Modem", "modem", powersaving_target == "modem");
-  c.input_radiobtn_option("powersaving_target", "WiFi", "wifi", powersaving_target == "wifi");
-  c.input_radiobtn_option("powersaving_target", "Both Modem & WiFi", "both", powersaving_target == "both" || powersaving_target.empty());
-  c.input_radiobtn_option("powersaving_target", "Deep Sleep", "deepsleep", powersaving_target == "deepsleep");
+  c.input_radiobtn_option("powersaving_target", "Cellular Modem", "modem", power_map["powersaving.target"] == "modem");
+  c.input_radiobtn_option("powersaving_target", "WiFi", "wifi", power_map["powersaving.target"] == "wifi");
+  c.input_radiobtn_option("powersaving_target", "Both Modem & WiFi", "both", power_map["powersaving.target"] == "both" || power_map["powersaving.target"].empty());
+  c.input_radiobtn_option("powersaving_target", "Deep Sleep", "deepsleep", power_map["powersaving.target"] == "deepsleep");
   c.input_radiobtn_end("");
 
-  c.input("number", "Deep sleep max duration (days)", "powersaving_deepsleep_days", powersaving_deepsleep_days.c_str(),
+  c.input("number", "Deep sleep max duration (days)", "powersaving_deepsleep_days", power_map["powersaving.deepsleep_days"].c_str(),
     "Default: " STR(POWERMGMT_POWERSAVING_DEEPSLEEP_DAYS) " days (0 = unlimited)",
     "<p>0 = unlimited. Limits the deep sleep mode to the specified number of days, after which periodic power saving continues with 'Both Modem &amp; WiFi' until the vehicle is turned on.</p>",
     "min=\"0\" step=\"1\"", "days");
 
-  c.input("number", "Duty-cycle interval", "powersaving_interval", powersaving_interval.c_str(),
+  c.input("number", "Duty-cycle interval", "powersaving_interval", power_map["powersaving.interval"].c_str(),
     "Default: " STR(POWERMGMT_POWERSAVING_INTERVAL) " hours", "", "min=\"1\" step=\"1\"", "hours");
 
-  c.input("number", "Duty-cycle duration (or deep sleep duration)", "powersaving_duration", powersaving_duration.c_str(),
+  c.input("number", "Duty-cycle duration (or deep sleep duration)", "powersaving_duration", power_map["powersaving.duration"].c_str(),
     "Default: " STR(POWERMGMT_POWERSAVING_DURATION) " minutes", "", "min=\"1\" step=\"1\"", "minutes");
 
   c.print("<hr>");
