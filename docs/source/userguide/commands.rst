@@ -262,6 +262,9 @@ as described there:
     example: ``*100#`` will query the cellular account balance on many networks
   - Modem command syntax: ``@<modemcommand>``;
     example: ``@AT+CPSI?`` = query current cellular network mode
+  - V3 JavaScript command syntax: ``$<scriptcommand>``;
+    example: ``$JSON.print(meminfo())`` = show Duktape heap status;
+    needs firmware ``3.3.006-435`` or higher
 
 Any other command is expected to be a shell command. To execute Javascript, pass
 the expression to the ``script eval`` command as shown above.
@@ -291,8 +294,11 @@ curl example::
     --data-urlencode 'fn.reqid=start' \
     --data-urlencode 'fn.cmd=charge start'
 
-**Note:** this command API only supports V3 shell (text) commands, V2/MP or direct USSD commands are 
-not supported. Modem commands can be sent using the V3 ``cellular cmd`` command.
+**Note:** this command API only supports V3 shell (text) and JavaScript commands, V2/MP or direct USSD 
+commands are not supported. Modem commands can be sent using the V3 ``cellular cmd`` command.
+
+With firmware ``3.3.006-435`` or higher, JavaScript commands can be given as ``$<scriptcommand>``, for 
+example ``$JSON.print(meminfo())`` outputs the Duktape heap status.
 
 
 ------------------
