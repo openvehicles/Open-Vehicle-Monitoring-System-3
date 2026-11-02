@@ -44,6 +44,7 @@ OvmsHttpClient::OvmsHttpClient(long timeout_ms /*= 10000*/)
   m_bodysize = 0;
   m_responsecode = 0;
   m_chunked = false;
+  m_has_content_length = false;
   m_timeout_ms = timeout_ms;
   }
 
@@ -53,6 +54,7 @@ OvmsHttpClient::OvmsHttpClient(std::string url, const char* method, long timeout
   m_bodysize = 0;
   m_responsecode = 0;
   m_chunked = false;
+  m_has_content_length = false;
   m_timeout_ms = timeout_ms;
   Request(url, method, range_start);
   }
@@ -74,7 +76,8 @@ bool OvmsHttpClient::Request(std::string url, const char* method, size_t range_s
     }
   m_bodysize = 0;
   m_responsecode = 0;
-    m_chunked = false;
+  m_chunked = false;
+  m_has_content_length = false;
 
   // First, split URL into server and path components
   if (url.compare(0, 7, "http://", 7) == 0)
@@ -160,6 +163,7 @@ bool OvmsHttpClient::Request(std::string url, const char* method, size_t range_s
         if (strncasecmp(header.c_str(), "Content-Length:", 15) == 0)
           {
           m_bodysize = atoi(header.substr(15).c_str());
+          m_has_content_length = true;
           }
         else if (strncasecmp(header.c_str(), "Transfer-Encoding:", 18) == 0)
           {
@@ -399,6 +403,10 @@ std::string OvmsHttpClient::GetBodyAsString()
       ESP_LOGE(TAG, "Invalid or incomplete chunked HTTP response body");
       body.clear();
       }
+    else
+      {
+      m_bodysize = body.size();
+      }
     Disconnect();
     return body;
     }
@@ -416,13 +424,15 @@ std::string OvmsHttpClient::GetBodyAsString()
     }
   Disconnect();
 
-  if (filesize != expected)
+  if (m_has_content_length && filesize != expected)
     {
     ESP_LOGE(TAG, "Download file size (%d) does not match expected (%d)", filesize, expected);
     body.clear();
     }
-
-  Disconnect();
+  else if (!m_has_content_length)
+    {
+    m_bodysize = filesize;
+    }
 
   return body;
   }
@@ -437,4 +447,5 @@ void OvmsHttpClient::Reset()
   m_bodysize = 0;
   m_responsecode = 0;
   m_chunked = false;
+  m_has_content_length = false;
   }
