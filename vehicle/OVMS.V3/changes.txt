@@ -1,6 +1,16 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Time / Cellular: added automatic timezone detection via cellular network (NITZ) and GPS lookup.
+    Cellular NITZ updates the timezone dynamically in memory from network signaling (without flash wear).
+    A new CLI command `time autoset` and a web UI button under Vehicle configuration allow one-click
+    timezone detection via the Open-Meteo HTTP API based on the vehicle's GPS coordinates, with an automatic
+    fallback to the cellular NITZ timezone if GPS or network is unavailable.
+    NITZ additionally updates system time as a stratum 3 provider if neither NTP nor GPS time is available.
+  New command:
+    time autoset                                      -- lookup and set timezone from GPS coordinates via HTTP API (with NITZ fallback)
+  New config:
+    [modem] enable.autotz (bool, default false)       -- automatically set timezone dynamically from cellular network (NITZ)
 - Server V3 (MQTT): added topic API for asynchronous JavaScript execution/evaluation.
     Topic scheme:
       <prefix>/client/<clientid>/jscommand/<cmdid>    -- payload: JavaScript code/scriptlet

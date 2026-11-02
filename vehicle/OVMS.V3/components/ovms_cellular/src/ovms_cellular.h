@@ -181,6 +181,7 @@ class modem : public pcp, public InternalRamAllocated
     bool                   m_gps_hot_start;
 
     bool                   m_gps_enabled;           // = config modem enable.gps
+    bool                   m_autotz_enabled;        // = config modem enable.autotz
     gps_usermode_t         m_gps_usermode;          // manual GPS control status
     int                    m_gps_parkpause;         // = config modem gps.parkpause (seconds, 0=off)
     int                    m_gps_holiday;           // = config modem gps.parkholiday (days, 0=off), parking days threshold to consider as holiday
@@ -254,6 +255,7 @@ class modem : public pcp, public InternalRamAllocated
     void SetSignalQuality(int newsq);
     void ClearNetMetrics();
     void UpdateNetMetrics();
+    void SetAutoTimezone(int quarters);
 
   public:
     // Development assistance functions

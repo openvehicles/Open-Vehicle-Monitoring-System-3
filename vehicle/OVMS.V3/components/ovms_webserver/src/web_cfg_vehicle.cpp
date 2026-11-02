@@ -236,6 +236,59 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     , _attr(timezone_region)
     , _attr(timezone));
 
+  c.print(
+    "<div class=\"form-group\">"
+      "<div class=\"col-sm-9 col-sm-offset-3\">"
+        "<button type=\"button\" class=\"btn btn-default\" data-cmd=\"time autoset\" data-target=\"#tz-autoset-res\" id=\"btn-tz-autoset\">"
+          "Auto-detect timezone (GPS / NITZ)"
+        "</button>&nbsp;"
+        "<samp id=\"tz-autoset-res\" class=\"samp-inline\"></samp>"
+      "</div>"
+    "</div>"
+    "<script>"
+    "$('#btn-tz-autoset').on('click', function() {"
+      "var $res = $('#tz-autoset-res').empty();"
+      "var timer = setInterval(function() {"
+        "var t = $res.text();"
+        "if (t) {"
+          "clearInterval(timer);"
+          "var m = t.match(/Timezone set .*?to ([^\\s(]+)/);"
+          "if (m && m[1]) {"
+            "var tz = m[1];"
+            "var $opt = $('#input-timezone_select option').filter(function(){"
+              "return $(this).data('tz') == tz;"
+            "});"
+            "if ($opt.length > 0) {"
+              "$('#input-timezone_select').val($opt.val()).trigger('change');"
+            "} else {"
+              "$('#input-timezone').val(tz).trigger('change');"
+            "}"
+          "}"
+        "}"
+      "}, 200);"
+      "setTimeout(function(){ clearInterval(timer); }, 15000);"
+    "});"
+    "</script>");
+
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+  bool autotz = MyConfig.GetParamValueBool("modem", "enable.autotz", false);
+  if (autotz) {
+    c.print(
+      "<div class=\"form-group\"><div class=\"col-sm-9 col-sm-offset-3\">"
+      "<p class=\"text-info\">"
+      "<strong>Note:</strong> Auto timezone is active: Timezone is dynamically adjusted in memory via cellular network (NITZ) "
+      "without modifying the stored configuration. You can configure this under <a href=\"/cfg/cellular\">Cellular / GPS</a>.</p>"
+      "</div></div>");
+  } else {
+    c.print(
+      "<div class=\"form-group\"><div class=\"col-sm-9 col-sm-offset-3\">"
+      "<p class=\"text-muted\">"
+      "<em>Hint:</em> Automatic timezone detection via cellular network (NITZ) can be enabled under <a href=\"/cfg/cellular\">Cellular / GPS</a> "
+      "(dynamically adjusts timezone in memory without modifying the stored configuration).</p>"
+      "</div></div>");
+  }
+#endif
+
   for ( auto grpiter = unit_groups.begin(); grpiter != unit_groups.end(); ++grpiter) {
     std::string name = OvmsMetricGroupName(*grpiter);
     metric_unit_set_t group_units;

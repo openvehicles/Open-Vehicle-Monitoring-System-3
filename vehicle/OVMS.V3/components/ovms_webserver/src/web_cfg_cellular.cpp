@@ -39,7 +39,7 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
 {
   auto lock = MyConfig.Lock();
   std::string apn, apn_user, apn_pass, network_dns, pincode, error, gps_parkpause, gps_parkreactivate, gps_parkreactlock, gps_parkholiday, gps_parkholiday_multi, vehicle_stream, model, modem_net_type, modem_net_types_avail;
-  bool enable_gps, enable_gpstime, enable_net, enable_sms, wrongpincode, gps_parkreactawake;
+  bool enable_gps, enable_gpstime, enable_autotz, enable_net, enable_sms, wrongpincode, gps_parkreactawake;
   float cfg_sq_good, cfg_sq_bad;
 
   if (c.method == "POST") {
@@ -53,6 +53,7 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
     enable_sms = (c.getvar("enable_sms") == "yes");
     enable_gps = (c.getvar("enable_gps") == "yes");
     enable_gpstime = (c.getvar("enable_gpstime") == "yes");
+    enable_autotz = (c.getvar("enable_autotz") == "yes");
     gps_parkpause = c.getvar("gps_parkpause");
     gps_parkreactivate = c.getvar("gps_parkreactivate");
     gps_parkreactlock = c.getvar("gps_parkreactlock");
@@ -85,6 +86,7 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValueBool("modem", "enable.sms", enable_sms);
       MyConfig.SetParamValueBool("modem", "enable.gps", enable_gps);
       MyConfig.SetParamValueBool("modem", "enable.gpstime", enable_gpstime);
+      MyConfig.SetParamValueBool("modem", "enable.autotz", enable_autotz);
       MyConfig.SetParamValue("modem", "gps.parkpause", gps_parkpause);
       MyConfig.SetParamValue("modem", "gps.parkreactivate", gps_parkreactivate);
       MyConfig.SetParamValue("modem", "gps.parkreactlock", gps_parkreactlock);
@@ -133,6 +135,7 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
   enable_sms = MyConfig.GetParamValueBool("modem", "enable.sms", true);
   enable_gps = MyConfig.GetParamValueBool("modem", "enable.gps", false);
   enable_gpstime = MyConfig.GetParamValueBool("modem", "enable.gpstime", false);
+  enable_autotz = MyConfig.GetParamValueBool("modem", "enable.autotz", false);
   gps_parkpause = MyConfig.GetParamValue("modem", "gps.parkpause","0");
   gps_parkreactivate = MyConfig.GetParamValue("modem", "gps.parkreactivate","0");
   gps_parkreactlock = MyConfig.GetParamValue("modem", "gps.parkreactlock","5");
@@ -206,6 +209,8 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
   c.input_checkbox("Enable SMS", "enable_sms", enable_sms);
   c.input_checkbox("Enable GPS", "enable_gps", enable_gps);
   c.input_checkbox("Use GPS time", "enable_gpstime", enable_gpstime);
+  c.input_checkbox("Auto timezone", "enable_autotz", enable_autotz,
+    "<p>Automatically set timezone from cellular network (NITZ). Adjustments are applied dynamically in memory only and do not modify the stored vehicle configuration.</p>");
   c.fieldset_end();
 
   c.fieldset_start("Cellular client options");
