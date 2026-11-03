@@ -264,6 +264,13 @@ void OvmsVehicleSmartEQ::HandleServerCon(){
 
     if (--m_reboot_ticker == 0) 
       {
+      if (v2_disconnected && MyOvmsServerV2)
+        MyOvmsServerV2->Reconnect(5);
+      if (v3_disconnected && MyOvmsServerV3)
+        {
+        MyOvmsServerV3->Disconnect();
+        MyOvmsServerV3->m_connretry = 5;
+        }
       MyNetManager.RestartNetwork();
       m_reboot_ticker = m_reboot_time;
       ESP_LOGD(TAG, "Server connection lost for %d minutes, restarting network", m_reboot_time);
