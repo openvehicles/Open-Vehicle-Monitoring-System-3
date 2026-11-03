@@ -220,18 +220,12 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
       break;
     case MG_EV_CLOSE:
       ESP_LOGD(TAG, "OvmsServerV2MongooseCallback(MG_EV_CLOSE)");
-      if (MyOvmsServerV2)
+      if (MyOvmsServerV2 && MyOvmsServerV2->m_mgconn == nc)
         {
-        // The only case of a scheduled disconnect is by "server v2 stop", in which case MyOvmsServerV2 is
-        // alread NULL, so this can only be an unexpected connection drop; check cause:
         if (MyOvmsServerV2->m_state == OvmsServerV2::Authenticating)
           {
-          // Auth issue, user needs to fix config, suspend reconnect to avoid IP blocking:
-          MyOvmsServerV2->SetStatus("Authentication error (wrong ID/password)", true, OvmsServerV2::Disconnected);
-          MyOvmsServerV2->Reconnect(-1);
-          MyNotify.NotifyString("alert", "server.v2.auth.failure",
-            "Incorrect server V2 login credentials\n"
-            "V2 server connection suspended, verify configuration");
+          MyOvmsServerV2->SetStatus("Authentication error (wrong ID/password)", true, OvmsServerV2::WaitReconnect);
+          MyOvmsServerV2->Reconnect(120);
           }
         else if (MyOvmsServerV2->m_state != OvmsServerV2::WaitReconnect)
           {
