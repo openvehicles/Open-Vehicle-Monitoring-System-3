@@ -225,25 +225,54 @@ void OvmsVehicleSmartEQ::HandleTripcounter(){
 void OvmsVehicleSmartEQ::HandleServerCon(){
   // Handle Server connection
 #if defined(CONFIG_OVMS_COMP_WIFI) || defined(CONFIG_OVMS_COMP_CELLULAR)
-  bool modem_off = false;
+  if (m_reboot_time <= 0)
+    return;
+
+  bool wifi_off = true;
+#if defined(CONFIG_OVMS_COMP_WIFI)
+  if (MyPeripherals && MyPeripherals->m_esp32wifi)
+    wifi_off = (MyPeripherals->m_esp32wifi->GetPowerMode() == Off ||
+                MyPeripherals->m_esp32wifi->GetMode() == ESP32WIFI_MODE_OFF);
+#endif
+
+  bool modem_off = true;
 #if defined(CONFIG_OVMS_COMP_CELLULAR)
   if (MyPeripherals && MyPeripherals->m_cellular_modem)
     modem_off = (MyPeripherals->m_cellular_modem->GetPowerMode() == Off);
 #endif
 
-  bool active_v2 = (MyOvmsServerV2 != NULL) && StdMetrics.ms_s_v2_connected->AsBool();
-  bool active_v3 = (MyOvmsServerV3 != NULL) && StdMetrics.ms_s_v3_connected->AsBool();
-
-  if (modem_off || active_v2 || active_v3)
+  // Ignore restart if both WiFi and modem are off
+  if (wifi_off && modem_off)
     {
-    m_reboot_ticker = m_reboot_time; // reset reboot ticker when server connection is detected or cellular is off by power management/user
-    ESP_LOGD(TAG, "Server connection active/detected, reboot ticker reset to %d", m_reboot_time);
-    }
-  else if (m_reboot_ticker > 0 && --m_reboot_ticker == 0) 
-    {
-    MyNetManager.RestartNetwork();
     m_reboot_ticker = m_reboot_time;
-    ESP_LOGD(TAG, "Server connection lost for %d minutes, restarting network", m_reboot_time);
+    ESP_LOGD(TAG, "WiFi and modem off, network restart ignored");
+    return;
+    }
+
+  bool v2_started = (MyOvmsServerV2 != NULL);
+  bool v2_connected = v2_started && StdMetrics.ms_s_v2_connected->AsBool();
+  bool v2_disconnected = v2_started && !v2_connected;
+
+  bool v3_started = (MyOvmsServerV3 != NULL);
+  bool v3_connected = v3_started && StdMetrics.ms_s_v3_connected->AsBool();
+  bool v3_disconnected = v3_started && !v3_connected;
+
+  if (v2_disconnected || v3_disconnected)
+    {
+    if (m_reboot_ticker <= 0)
+      m_reboot_ticker = m_reboot_time;
+
+    if (--m_reboot_ticker == 0) 
+      {
+      MyNetManager.RestartNetwork();
+      m_reboot_ticker = m_reboot_time;
+      ESP_LOGD(TAG, "Server connection lost for %d minutes, restarting network", m_reboot_time);
+      }
+    }
+  else
+    {
+    m_reboot_ticker = m_reboot_time; // reset reboot ticker when all started servers are connected
+    ESP_LOGD(TAG, "Server connection active/detected, reboot ticker reset to %d", m_reboot_time);
     }
 #endif
 }
