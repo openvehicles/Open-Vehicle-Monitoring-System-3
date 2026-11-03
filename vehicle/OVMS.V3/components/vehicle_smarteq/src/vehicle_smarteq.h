@@ -499,7 +499,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool m_can_last_acc_state = false;      // last active/listen state from CAN bus
     bool m_climate_trickle = false;         // flag to indicate if trickle charge is active
     float m_trickle_voltage = 0.0f;         // 12V voltage before trickle charge is activated
-    int m_adc_samples = 5;                  // number of samples for ADC factor calculation
+    static constexpr int ADC_SAMPLES = 5;   // number of samples for ADC factor calculation
     int m_ddt4all_ticker = 0;               // DDT4ALL active ticker
     int m_ddt4all_exec = 0;                 // DDT4ALL ticker for next execution
     int m_led_state = 4;                    // Online LED State: 0=off, 1=red, 2=green, 3=blue, 4=default (configurable)

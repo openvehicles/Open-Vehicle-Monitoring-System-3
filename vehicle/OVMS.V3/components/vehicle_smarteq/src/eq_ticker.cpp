@@ -230,8 +230,8 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker)
         // calculate new ADC factor         
         if (Is12VchargeEQ())
           {
-          ReCalcADCfactor(can12V, nullptr);  // nullptr = no Log-Output
           ESP_LOGI(TAG, "Auto ADC recalibration started (%.2fV)", can12V);
+          ReCalcADCfactor(can12V, nullptr);  // nullptr = no OvmsWriter output
           } 
         else 
           {
