@@ -590,9 +590,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
     if (m.find("wifi.bad.reconnect") == m.end())
       { m["wifi.bad.reconnect"] = "yes"; changed = true; }
     if (m.find("wifi.sq.good") == m.end())
-      { m["wifi.sq.good"] = "-79"; changed = true; }
+      { m["wifi.sq.good"] = "-80"; changed = true; }
     if (m.find("wifi.sq.bad") == m.end())
-      { m["wifi.sq.bad"] = "-83"; changed = true; }
+      { m["wifi.sq.bad"] = "-85"; changed = true; }
     if (m.erase("type") > 0)
       changed = true;
     if (changed)
@@ -742,8 +742,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandSetDefault(int verbosi
   auto map_net = MyConfig.GetParamMap("network");
   map_net["wifi.ap2client.enable"] = "yes";
   map_net["wifi.bad.reconnect"] = "yes";
-  map_net["wifi.sq.good"] = "-79";
-  map_net["wifi.sq.bad"] = "-83";
+  map_net["wifi.sq.good"] = "-80";
+  map_net["wifi.sq.bad"] = "-85";
   map_net.erase("modem.sq.good");
   map_net.erase("modem.sq.bad");
   MyConfig.SetParamMap("network", map_net);
