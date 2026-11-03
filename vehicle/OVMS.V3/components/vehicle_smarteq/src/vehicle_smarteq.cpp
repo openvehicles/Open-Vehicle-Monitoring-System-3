@@ -304,6 +304,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     m_12v_charge           = map->GetValueBool("12v.charge", true);
     m_enable_calcADCfactor = map->GetValueBool("calc.adcfactor", false);
     m_gps_log_enable       = map->GetValueBool("gps.log", false);
+    m_dcdc_log_enable      = map->GetValueBool("dcdc.log", false);
     m_indicator            = map->GetValueBool("indicator", false);
     m_extendedStats        = map->GetValueBool("extended.stats", false);
     obdii_79b              = map->GetValueBool("obdii.79b", true);

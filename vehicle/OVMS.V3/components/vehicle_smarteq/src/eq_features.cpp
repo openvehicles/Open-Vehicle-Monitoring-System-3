@@ -359,6 +359,22 @@ void OvmsVehicleSmartEQ::smart12VHistory()
   MyNotify.NotifyStringf("data", "xsq.12v.log.undervoltage", "XSQ-12V-undervoltagelog,1,%d,%.2f,%.2f,%.2f", 86400 * 30, volt, usm12v, bms12v);
 }
 
+void OvmsVehicleSmartEQ::smartDCDCHistory()
+{
+  float volt          = StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f);
+  float dcdc_volt     = mt_evc_dcdc->GetElemValue(1);      // DCDC 12V voltage
+  float dcdc_volt_req = mt_evc_dcdc->GetElemValue(0);      // DCDC voltage request
+  float dcdc_load     = mt_evc_dcdc->GetElemValue(7);      // DCDC load (%)
+  float dcdc_power    = mt_evc_dcdc->GetElemValue(2);      // DCDC power (W)
+  float dcdc_current  = mt_evc_dcdc->GetElemValue(6);      // DCDC current (A)
+
+  // Send data log XSQ-DCDC-charging
+  // V1: <12Vvoltage>,<dcdc_volt>,<dcdc_volt_req>,<dcdc_load>,<dcdc_power>,<dcdc_current>
+  MyNotify.NotifyStringf("data", "xsq.dcdc.log.charging",
+    "XSQ-DCDC-charging,1,%d,%.2f,%.2f,%.2f,%.2f,%.0f,%.2f",
+    86400 * 10, volt, dcdc_volt, dcdc_volt_req, dcdc_load, dcdc_power, dcdc_current);
+}
+
 void OvmsVehicleSmartEQ::smartOn()
 {
   // Reset trip values

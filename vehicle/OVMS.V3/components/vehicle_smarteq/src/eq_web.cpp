@@ -546,6 +546,7 @@ void OvmsVehicleSmartEQ::WebCfgTrickle(PageEntry_t& p, PageContext_t& c) {
   else if (c.method == "POST") {
     // Process form submission
     map["12v.charge"]          = (c.getvar("charge12v") == "yes") ? "yes" : "no";
+    map["dcdc.log"]            = (c.getvar("dcdclog") == "yes") ? "yes" : "no";
     map["charge12v.threshold"] = c.getvar("charge12v_threshold");
     map_veh["12v.ref"]         = c.getvar("ref12V");
     map["12v.trickle.time"]    = c.getvar("trickle_time");
@@ -575,6 +576,7 @@ void OvmsVehicleSmartEQ::WebCfgTrickle(PageEntry_t& p, PageContext_t& c) {
       snprintf(tbuf, sizeof(tbuf), "%d", trickle_time);
       map["12v.trickle.time"] = tbuf;
       sq->m_12v_charge = strtobool(map["12v.charge"]);
+      sq->m_dcdc_log_enable = strtobool(map["dcdc.log"]);
       sq->m_12v_trickle_time = trickle_time;
 
       float new_ref = atof(map_veh["12v.ref"].c_str());
@@ -723,6 +725,9 @@ void OvmsVehicleSmartEQ::WebCfgTrickle(PageEntry_t& p, PageContext_t& c) {
   c.input_slider("Start 12V trickle charge at", "charge12v_threshold", 3, "V", -1, atof(map["charge12v.threshold"].c_str()), 11.70, 11.25, 12.25, 0.05,
     "<p>Voltage threshold to initiate 12V trickle charging (default: 11.70V).</p>"
     "<p>Sets <code>[vehicle] 12v.alert</code> to <i>Reference Voltage &minus; Start Threshold</i>.</p>");
+
+  c.input_checkbox("Enable DCDC charging log", "dcdclog", strtobool(map["dcdc.log"]),
+    "<p>Opt in to send a DCDC history log record (<code>XSQ-DCDC-charging</code>) every minute while 12V charging is active.</p>");
 
   c.fieldset_end();
 

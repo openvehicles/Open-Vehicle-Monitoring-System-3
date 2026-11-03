@@ -181,6 +181,8 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker)
     setTPMSValue();   // update TPMS metrics
   if(!Is12VchargeEQ() && (StdMetrics.ms_v_charge_12v_voltage->AsFloat(0.0f) > 0.1f))
     StdMetrics.ms_v_charge_12v_voltage->SetValue(0.0f); // reset 12V voltage when not charging to prevent desync
+  if(m_dcdc_log_enable && Is12VchargeEQ() && ticker % 2 == 0) // log DCDC history every 2 minutes
+    smartDCDCHistory();  // log DCDC history and send data log
 
   #if defined(CONFIG_OVMS_COMP_WIFI) || defined(CONFIG_OVMS_COMP_CELLULAR)
     if((MyOvmsServerV2 || MyOvmsServerV3) && m_reboot_time > 0)
