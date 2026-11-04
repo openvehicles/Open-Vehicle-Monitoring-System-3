@@ -52,6 +52,10 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
     return Fail;
     }
 
+  if (wakeup) 
+    CommandWakeup();         // enable CAN write access and wakeup vehicle
+  if (!wakeup && !m_can_last_acc_state) 
+    smartCANbusAccess(true); // enable CAN write access
   m_ddt4all_exec = 10; // 10 seconds delay for next DDT4ALL command execution
 
   ESP_LOGI(TAG, "CommandCanVector");
@@ -76,27 +80,12 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
       return Fail;
       }
     }
-
+  
   mt_canbyte->SetValue(hexbytes[0].c_str());
 
   OvmsVehicle::vehicle_command_t res = Fail;
-  res = wakeup ? CommandWakeup() : Success;
-  
-  if (!m_can_last_acc_state) 
+  if (can_awake)
     {
-    smartCANbusAccess(true); // enable CAN write access to send wakeup command
-    }  
-
-  vTaskDelay(500 / portTICK_PERIOD_MS);
-  if (res == Success)
-    {
-    if (wakeup && !can_awake) 
-      {
-      ESP_LOGE(TAG, "vehicle not awake");
-      m_ddt4all_exec = 5; // reduce cooldown on error
-      return Fail;
-      }
-
     uint8_t protocol = ISOTP_STD;
     int timeout_ms = 200;
     int err = 0;
@@ -143,6 +132,7 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
     } 
   else
     {
+    ESP_LOGE(TAG, "vehicle not awake");
     m_ddt4all_exec = 5; // reduce cooldown on error
     MyNotify.NotifyString("error", "CommandCanVector.fail","Command failed during wakeup");
     return res;
