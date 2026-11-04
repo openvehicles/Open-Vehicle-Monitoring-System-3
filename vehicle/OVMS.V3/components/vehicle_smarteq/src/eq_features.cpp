@@ -369,7 +369,7 @@ void OvmsVehicleSmartEQ::smartDCDCHistory()
   float dcdc_current  = mt_evc_dcdc->GetElemValue(6);      // DCDC current (A)
 
   // Send data log XSQ-DCDC-charging
-  // V1: <12Vsys>,<volt>,<vreq>,load>,<power>,<cur>
+  // V1: <12Vsys>,<volt>,<vreq>,<load>,<power>,<cur>
   MyNotify.NotifyStringf("data", "xsq.dcdc.log.charging",
     "XSQ-DCDC-charging,1,%d,%.2f,%.2f,%.2f,%.2f,%.0f,%.2f",
     86400 * 10, volt, dcdc_volt, dcdc_volt_req, dcdc_load, dcdc_power, dcdc_current);
