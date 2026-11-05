@@ -548,6 +548,27 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
       res = Success;
       break;
     }
+    case 70:
+    {
+      // SeatHeatingCDEConfig/FDBKConfig off
+      CommandCanVector(0x744, 0x764, {"3B2A01,3B2E01"}, false, true);
+      res = Success;
+      break;
+    }
+    case 71:
+    {
+      // SeatHeatingCDEConfig/FDBKConfig activate for 2 seats
+      CommandCanVector(0x744, 0x764, {"3B2A06,3B2E06"}, false, true);
+      res = Success;
+      break;
+    }
+    case 72:
+    {
+      // SeatHeatingCDEConfig/FDBKConfig activate for 4 seats
+      CommandCanVector(0x744, 0x764, {"3B2A1E,3B2E1E"}, false, true);
+      res = Success;
+      break;
+    }
     case 100:
     {
       // ClearDiagnosticInformation.All
@@ -721,5 +742,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4List(int verbosity
   writer->puts("  Digital Speedometer in mph: 67");
   writer->puts("  Digital Speedometer in km/h: 68");
   writer->puts("  Digital Speedometer always km/h: 69");
+  writer->puts("  -------------------------------");
+  writer->puts("--Seat heating at pre-conditioning");
+  writer->puts("  Seat heating off: 70");
+  writer->puts("  Seat heating for 2 seats: 71");
+  writer->puts("  Seat heating for 4 seats: 72");
+  writer->puts("  -------------------------------"); 
   return Success;
 }
