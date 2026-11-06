@@ -147,8 +147,11 @@ void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker)
   else if(!canCANbusActive() && (m_can_active || m_can_last_acc_state)) 
     {    
     // stop polling when conditions are not met and the car is in polling mode
-    smartCoolDownPolling();
-    smartOBDpolling(false);
+    if (!m_ddt4all)
+      {
+      smartCoolDownPolling();
+      smartOBDpolling(false);
+      }
     }
   // check for CAN bus error state and stop CAN access if error state is detected
   if (m_can1 &&

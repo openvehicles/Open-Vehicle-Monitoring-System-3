@@ -52,9 +52,9 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
     return Fail;
     }
 
-  if (wakeup) 
+  if (wakeup && !IsAwakeEQ())
     CommandWakeup();         // enable CAN write access and wakeup vehicle
-  if (!wakeup && !m_can_last_acc_state) 
+  if (IsAwakeEQ() && !m_can_last_acc_state) 
     smartCANbusAccess(true); // enable CAN write access
   m_ddt4all_exec = 10; // 10 seconds delay for next DDT4ALL command execution
 
@@ -82,9 +82,10 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
     }
   
   mt_canbyte->SetValue(hexbytes[0].c_str());
-
   OvmsVehicle::vehicle_command_t res = Fail;
-  if (can_awake)
+  
+  // Check if CAN bus access state is active
+  if (m_can_last_acc_state)
     {
     uint8_t protocol = ISOTP_STD;
     int timeout_ms = 200;
@@ -132,9 +133,9 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
     } 
   else
     {
-    ESP_LOGE(TAG, "vehicle not awake");
+    ESP_LOGE(TAG, "CAN bus access state not active, cannot send command");
     m_ddt4all_exec = 5; // reduce cooldown on error
-    MyNotify.NotifyString("error", "CommandCanVector.fail","Command failed during wakeup");
+    MyNotify.NotifyString("error", "CommandCanVector.fail","Command failed during CAN bus access state not active");
     return res;
     }
 }
@@ -199,6 +200,9 @@ void OvmsVehicleSmartEQ::xsq_canwrite(int verbosity, OvmsWriter* writer, OvmsCom
     writer->puts("Multiple data: xsq canwrite 0x745,0x765,30082002/30082002,false,true");
     return;
   }
+  
+  if (!smarteq->m_can_last_acc_state) 
+    smarteq->smartCANbusAccess(true); // enable CAN write access
   
   smarteq->CommandCanWrite(argv[0], writer);
 }
