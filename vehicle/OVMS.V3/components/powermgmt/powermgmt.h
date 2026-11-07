@@ -44,6 +44,7 @@
 #define POWERMGMT_MODEMOFF_WIFI_DELAY     0  // minutes (0 = disabled)
 #define POWERMGMT_WIFIOFF_DELAY           24 // hours
 #define POWERMGMT_12V_SHUTDOWN_DELAY      15 // minutes
+#define POWERMGMT_NOTCHARGING_RESTORE_DELAY 600 // seconds (10 minutes)
 #define POWERMGMT_POWERSAVING_DAYS        4  // days exceeding which periodic power saving is activated
 #define POWERMGMT_POWERSAVING_DEEPSLEEP_DAYS 9 // days (0 = unlimited), days exceeding + deep sleep days = 13 days default
 #define POWERMGMT_POWERSAVING_INTERVAL    6  // hours
@@ -105,6 +106,7 @@ class powermgmt
   private:
     bool m_enabled;
     unsigned int m_notcharging_timer;
+    unsigned int m_notcharging_restore_delay;
     unsigned int m_modemoff_wifi_timer;
     unsigned int m_12v_alert_timer;
     unsigned int m_powersaving_timer;

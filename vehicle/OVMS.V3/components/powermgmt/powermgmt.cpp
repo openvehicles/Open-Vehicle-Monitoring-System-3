@@ -126,6 +126,7 @@ powermgmt::powermgmt()
 
   m_enabled = false;
   m_notcharging_timer = 0;
+  m_notcharging_restore_delay = 0;
   m_modemoff_wifi_timer = 0;
   m_12v_alert_timer = 0;
   m_powersaving_timer = 0;
@@ -246,7 +247,7 @@ void powermgmt::ConfigChanged(std::string event, void* data)
       {
       m_charging = StandardMetrics.ms_v_env_charging12v->AsBool();
       if (m_enabled && park_secs > 1)
-        m_notcharging_timer = park_secs;
+        m_notcharging_restore_delay = POWERMGMT_NOTCHARGING_RESTORE_DELAY;
       }
 
     if (!m_powersaving_enabled)
@@ -289,6 +290,7 @@ void powermgmt::ConfigChanged(std::string event, void* data)
 void powermgmt::EventVehicleOn(std::string event, void* data)
   {
   m_notcharging_timer = 0;
+  m_notcharging_restore_delay = 0;
   m_modemoff_wifi_timer = 0;
 
   if (m_powersaving_active || m_powersaving_timer > 0 || m_powersaving_deepsleep_fallback)
@@ -370,6 +372,7 @@ void powermgmt::EventCharge12VStart(std::string event, void* data)
   {
   ESP_LOGI(TAG, "Charging 12V battery..");
   m_charging = true;
+  m_notcharging_restore_delay = 0;
   m_modemoff_wifi_timer = 0;
   if (m_powersaving_active)
     m_powersaving_cycle_timer = 0;
@@ -691,6 +694,7 @@ void powermgmt::CommandPowerOn(int verbosity, OvmsWriter* writer, const char* ta
   bool was_powersaving_active = m_powersaving_active;
 
   m_notcharging_timer = 0;
+  m_notcharging_restore_delay = 0;
   m_modemoff_wifi_timer = 0;
   m_powersaving_timer = 0;
   m_powersaving_cycle_timer = 0;
@@ -819,6 +823,21 @@ void powermgmt::Ticker1(std::string event, void* data)
   else
     {
     m_modemoff_wifi_timer = 0;
+    }
+
+  if (m_notcharging_restore_delay > 0)
+    {
+    m_notcharging_restore_delay--;
+    if (m_notcharging_restore_delay == 0 && m_enabled && !m_charging &&
+        !StandardMetrics.ms_v_env_on->AsBool())
+      {
+      int park_secs = StandardMetrics.ms_v_env_parktime->AsInt(0);
+      if (park_secs > 1 && m_notcharging_timer < (unsigned int)park_secs)
+        {
+        m_notcharging_timer = (unsigned int)park_secs;
+        ESP_LOGI(TAG, "Restored notcharging timer from parktime (%d s)", park_secs);
+        }
+      }
     }
 
   // Periodic power saving inactive tracking (independent of 12V charging / trickle charging)
