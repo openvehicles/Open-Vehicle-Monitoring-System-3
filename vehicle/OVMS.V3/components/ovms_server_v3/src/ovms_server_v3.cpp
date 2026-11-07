@@ -1131,6 +1131,7 @@ void OvmsServerV3::Connect()
   m_will_topic = std::string(m_topic_prefix);
   m_will_topic.append("metric/s/v3/connected");
 
+  m_conn_topics.clear();
   m_conn_topics.reserve(5);
   m_conn_topics.push_back(m_topic_prefix + "client/+/active");
   m_conn_topics.push_back(m_topic_prefix + "client/+/command/+");
