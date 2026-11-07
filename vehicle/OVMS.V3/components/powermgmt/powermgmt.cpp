@@ -679,6 +679,7 @@ void powermgmt::PowerOnWifi()
         MyPeripherals->m_esp32wifi->AutoInit();
       }
     m_wifi_off = false;
+    m_modemoff_wifi_timer = 0;
     }
 #endif
   }
@@ -696,6 +697,7 @@ void powermgmt::PowerOnModem()
     m_modem_off = false;
     m_modem_off_wifi = false;
     m_wifi_fallback_timer = 0;
+    m_modemoff_wifi_timer = 0;
     }
 #endif
   }
