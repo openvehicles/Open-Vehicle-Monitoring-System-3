@@ -105,6 +105,7 @@ class OvmsOTA
     int m_flashperc;
     bool m_flash_notified;
     TaskHandle_t m_autotask;
+    volatile bool m_abort_flash;
     int m_lastcheckday;
     std::string m_lastnotifyversion;
     bool m_stream_active;

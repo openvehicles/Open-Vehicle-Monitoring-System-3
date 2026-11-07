@@ -157,6 +157,7 @@ void ota_flash_vfs(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     writer->puts("Error: Flash operation already in progress - cannot flash again");
     return;
     }
+  MyOTA.m_abort_flash = false;
 
   if (running==NULL)
     {
@@ -228,6 +229,15 @@ void ota_flash_vfs(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
   size_t done = 0;
   while(size_t n = fread(buf, sizeof(char), sizeof(buf), f))
     {
+    if (MyOTA.m_abort_flash)
+      {
+      MyOTA.ClearFlashStatus();
+      writer->puts("Error: OTA flash aborted by user");
+      esp_ota_end(otah);
+      esp_partition_erase_range(target, 0, SPI_FLASH_SEC_SIZE);
+      fclose(f);
+      return;
+      }
     err = esp_ota_write(otah, buf, n);
     if (err != ESP_OK)
       {
@@ -278,6 +288,7 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     writer->puts("Error: Flash operation already in progress - cannot flash again");
     return;
     }
+  MyOTA.m_abort_flash = false;
 
   if (running==NULL)
     {
@@ -367,6 +378,14 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     ota_begun = true;
     }
 
+  if (MyOTA.m_abort_flash)
+    {
+    if (ota_begun) esp_ota_end(otah);
+    MyOTA.ClearFlashStatus();
+    writer->puts("Error: OTA flash aborted by user");
+    return;
+    }
+
   // HTTP client GET request (30s timeout for cellular stall detection)...
   OvmsHttpClient http(url, "GET", 30000);
   if (!http.IsOpen())
@@ -430,6 +449,15 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     size_t prev_filesize = filesize;
     while ((k = http.BodyRead(rbuf, sizeof(rbuf))) > 0)
       {
+      if (MyOTA.m_abort_flash)
+        {
+        MyOTA.ClearFlashStatus();
+        writer->puts("Error: OTA flash aborted by user");
+        esp_ota_end(otah);
+        esp_partition_erase_range(target, 0, SPI_FLASH_SEC_SIZE);
+        http.Disconnect();
+        return;
+        }
       filesize += k;
       sofar += k;
       MyOTA.SetFlashPerc((filesize*100)/expected);
@@ -459,6 +487,16 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
 
     if (filesize >= expected)
       break;
+
+    if (MyOTA.m_abort_flash)
+      {
+      MyOTA.ClearFlashStatus();
+      writer->puts("Error: OTA flash aborted by user");
+      esp_ota_end(otah);
+      esp_partition_erase_range(target, 0, SPI_FLASH_SEC_SIZE);
+      http.Disconnect();
+      return;
+      }
 
     if (retries > 0 && filesize == prev_filesize)
       {
@@ -526,6 +564,25 @@ void ota_flash_auto(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
 
   writer->puts("Triggering automatic firmware update...");
   MyOTA.LaunchAutoFlash(force ? OTA_FlashCfg_Force : OTA_FlashCfg_Default);
+  }
+
+void ota_flash_abort(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  bool active = MyOTA.IsFlashStatus() || (MyOTA.m_autotask != NULL) || MyOTA.StreamFlashActive();
+  if (!active)
+    {
+    OvmsMutexLock m_lock(&MyOTA.m_flashing, 0);
+    if (!m_lock.IsLocked())
+      active = true;
+    }
+  if (!active)
+    {
+    writer->puts("No OTA flash operation in progress");
+    return;
+    }
+
+  MyOTA.m_abort_flash = true;
+  writer->puts("Aborting OTA flash operation...");
   }
 
 void ota_boot(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -1097,6 +1154,15 @@ bool OvmsOTA::AutoFlashSD()
   size_t done = 0;
   while(size_t n = fread(buf, sizeof(char), sizeof(buf), f))
     {
+    if (m_abort_flash)
+      {
+      ClearFlashStatus();
+      ESP_LOGW(TAG, "AutoFlashSD: Aborted by user");
+      esp_ota_end(otah);
+      esp_partition_erase_range(target, 0, SPI_FLASH_SEC_SIZE);
+      fclose(f);
+      return false;
+      }
     err = esp_ota_write(otah, buf, n);
     if (err != ESP_OK)
       {
@@ -1148,6 +1214,7 @@ OvmsOTA::OvmsOTA()
   ESP_LOGI(TAG, "Initialising OTA (4400)");
 
   m_autotask = NULL;
+  m_abort_flash = false;
   m_lastcheckday = -1;
   m_flashstatus = NULL;
   m_flashperc = 0;
@@ -1182,6 +1249,7 @@ OvmsOTA::OvmsOTA()
   cmd_otaflash->RegisterCommand("http","OTA flash http",ota_flash_http,"[<url>]",0,1);
   OvmsCommand* cmd_otaflash_auto = cmd_otaflash->RegisterCommand("auto","Automatic regular OTA flash (over web)",ota_flash_auto);
   cmd_otaflash_auto->RegisterCommand("force","…force update (even if server version older)",ota_flash_auto);
+  cmd_otaflash->RegisterCommand("abort","Abort active OTA flash operation",ota_flash_abort);
 
   OvmsCommand* cmd_otaboot = cmd_ota->RegisterCommand("boot","OTA boot");
   if (ovms_partition_table_has_factory())
@@ -1543,6 +1611,7 @@ esp_err_t OvmsOTA::StreamFlashBegin(size_t expected_size, std::string& errmsg)
   m_stream_expected = expected_size;
   m_stream_done = 0;
   m_stream_active = true;
+  m_abort_flash = false;
   SetFlashStatus("OTA Stream Flash: Flashing image partition...");
   return ESP_OK;
   }
@@ -1552,6 +1621,12 @@ esp_err_t OvmsOTA::StreamFlashWrite(const void* buf, size_t len, std::string& er
   if (!m_stream_active)
     {
     errmsg = "No flash session active";
+    return ESP_ERR_INVALID_STATE;
+    }
+  if (m_abort_flash)
+    {
+    errmsg = "OTA flash aborted by user";
+    StreamFlashAbort();
     return ESP_ERR_INVALID_STATE;
     }
   esp_err_t err = esp_ota_write(m_stream_handle, buf, len);
@@ -1574,6 +1649,12 @@ esp_err_t OvmsOTA::StreamFlashFinish(std::string& errmsg)
   if (!m_stream_active)
     {
     errmsg = "No flash session active";
+    return ESP_ERR_INVALID_STATE;
+    }
+  if (m_abort_flash)
+    {
+    errmsg = "OTA flash aborted by user";
+    StreamFlashAbort();
     return ESP_ERR_INVALID_STATE;
     }
 
@@ -1610,6 +1691,8 @@ void OvmsOTA::StreamFlashAbort()
   if (!m_stream_active)
     return;
   esp_ota_end(m_stream_handle);
+  if (m_stream_target)
+    esp_partition_erase_range(m_stream_target, 0, SPI_FLASH_SEC_SIZE);
   m_stream_active = false;
   ClearFlashStatus();
   m_flashing.Unlock();
@@ -1637,15 +1720,23 @@ static void OTAFlashTask(void *pvParameters)
     success = MyOTA.AutoFlash(force);
     }
 
-  if (success)
+  if (success && !MyOTA.m_abort_flash)
     {
     // Flash has completed. We now need to reboot
-    vTaskDelay(pdMS_TO_TICKS(5000));
+    for (int i = 0; i < 50 && !MyOTA.m_abort_flash; i++)
+      vTaskDelay(pdMS_TO_TICKS(100));
 
-    // All done. Let's restart...
-    ESP_LOGI(TAG, "AutoFlash %s: Task complete. Requesting restart...", (fromsd)?"SD":"OTA");
-    MyBoot.Restart();
-    MyBoot.SetFirmwareUpdate();
+    if (!MyOTA.m_abort_flash)
+      {
+      // All done. Let's restart...
+      ESP_LOGI(TAG, "AutoFlash %s: Task complete. Requesting restart...", (fromsd)?"SD":"OTA");
+      MyBoot.Restart();
+      MyBoot.SetFirmwareUpdate();
+      }
+    else
+      {
+      ESP_LOGW(TAG, "AutoFlash %s: Restart aborted by user", (fromsd)?"SD":"OTA");
+      }
     }
 
   MyOTA.m_autotask = NULL;
@@ -1660,6 +1751,7 @@ void OvmsOTA::LaunchAutoFlash(ota_flashcfg_t cfg /*=OTA_FlashCfg_Default*/)
     return;
     }
 
+  m_abort_flash = false;
   xTaskCreatePinnedToCore(OTAFlashTask, "OVMS AutoFlash",
     6144, (void*)cfg, 5, &m_autotask, CORE(1));
   }
@@ -1692,6 +1784,13 @@ bool OvmsOTA::AutoFlash(bool force)
 
   ota_info info;
   MyOTA.GetStatus(info, true);
+
+  if (m_abort_flash)
+    {
+    ESP_LOGW(TAG, "AutoFlash: Aborted by user");
+    m_lastcheckday = -1;
+    return false;
+    }
 
   if (info.version_server.length() == 0)
     {
@@ -1785,6 +1884,15 @@ bool OvmsOTA::AutoFlash(bool force)
     ota_begun = true;
     }
 
+  if (m_abort_flash)
+    {
+    if (ota_begun) esp_ota_end(otah);
+    ClearFlashStatus();
+    ESP_LOGW(TAG, "AutoFlash: Aborted by user");
+    m_lastcheckday = -1;
+    return false;
+    }
+
   // HTTP client GET request (30s timeout for cellular stall detection)...
   OvmsHttpClient http(url, "GET", 30000);
   if (!http.IsOpen())
@@ -1845,6 +1953,16 @@ bool OvmsOTA::AutoFlash(bool force)
     size_t prev_filesize = filesize;
     while ((k = http.BodyRead(rbuf, sizeof(rbuf))) > 0)
       {
+      if (m_abort_flash)
+        {
+        ClearFlashStatus();
+        ESP_LOGW(TAG, "AutoFlash: Aborted by user");
+        esp_ota_end(otah);
+        esp_partition_erase_range(target, 0, SPI_FLASH_SEC_SIZE);
+        http.Disconnect();
+        m_lastcheckday = -1;
+        return false;
+        }
       filesize += k;
       SetFlashPerc((filesize*100)/expected);
       if (filesize > target->size)
@@ -1868,6 +1986,17 @@ bool OvmsOTA::AutoFlash(bool force)
 
     if (filesize >= expected)
       break;
+
+    if (m_abort_flash)
+      {
+      ClearFlashStatus();
+      ESP_LOGW(TAG, "AutoFlash: Aborted by user");
+      esp_ota_end(otah);
+      esp_partition_erase_range(target, 0, SPI_FLASH_SEC_SIZE);
+      http.Disconnect();
+      m_lastcheckday = -1;
+      return false;
+      }
 
     if (retries > 0 && filesize == prev_filesize)
       {
