@@ -21,7 +21,11 @@ Open Vehicle Monitor System v3 - Change log
     512-byte flash slices with HTTP Range resume support, lowering the cellular UART RX FIFO
     full threshold, and introducing OTA flash lifecycle events to pause background traffic
     (cellular status polling, GPS NMEA stream, Server V2 & V3 metric/notification transmissions)
-    while an OTA flash operation is in progress.
+    while an OTA flash operation is in progress. Added command and web UI button to
+    cooperatively abort an active OTA flash operation and invalidate the incomplete target
+    partition header.
+  New command:
+    ota flash abort                                   -- abort active OTA flash operation
   New events:
     ota.flash.starting                                -- signaled before OTA flash begins
     ota.flash.done                                    -- signaled after OTA flash succeeded

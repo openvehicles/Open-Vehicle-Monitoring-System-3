@@ -69,6 +69,16 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     return;
   }
 
+  if (c.getvar("action") == "abort") {
+    MyOTA.m_abort_flash = true;
+    c.head(200,
+      "Content-Type: text/plain; charset=utf-8\r\n"
+      "Cache-Control: no-cache");
+    c.print("Aborting OTA flash operation...\n");
+    c.done();
+    return;
+  }
+
   if (c.method == "POST") {
     // process form submission:
     bool error = false, showform = true, reboot = false;
@@ -408,6 +418,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
             "<pre id=\"output\"></pre>"
           "</div>"
           "<div class=\"modal-footer\">"
+            "<button type=\"button\" class=\"btn btn-danger action-abort\" style=\"display:none\">Abort</button>"
             "<button type=\"button\" class=\"btn btn-default action-reboot\">Reboot now</button>"
             "<button type=\"button\" class=\"btn btn-default action-close\">Close</button>"
           "</div>"
@@ -426,8 +437,10 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     "}' />\n"
     "\n"
     "<script>\n"
+      "var fwxhr = null;"
       "function setloading(sel, on){"
-        "$(sel+\" button\").prop(\"disabled\", on);"
+        "$(sel+\" button:not(.action-abort)\").prop(\"disabled\", on);"
+        "$(sel+\" .action-abort\").prop(\"disabled\", false).toggle(on);"
         "if (on) $(sel).addClass(\"loading\");"
         "else $(sel).removeClass(\"loading\");"
       "}"
@@ -491,7 +504,8 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
           "$(\"#output\").append(\"\\nReboot to activate the new firmware.\");"
           "$(\".action-reboot\").removeClass(\"btn-default\").addClass(\"btn-primary\");"
         "} else {"
-          "fwbar({ pct: 100, text: \"Failed\", klass: \"progress-bar-danger\" });"
+          "var aborted = /aborted by user/i.test($(\"#output\").text());"
+          "fwbar({ pct: 100, text: aborted ? \"Aborted\" : \"Failed\", klass: \"progress-bar-danger\" });"
         "}"
       "}"
       // loadcmd stream filter: drive the progress bar from the command's text
@@ -582,6 +596,17 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
         "ev.stopPropagation();"
         "return false;"
       "});"
+      "$(\".action-abort\").on(\"click\", function(ev){"
+        "$(this).prop(\"disabled\", true);"
+        "fwbar({ mode: \"indeterminate\", text: \"Aborting\\u2026\" });"
+        "if (fwxhr) {"
+          "fwxhr.abort();"
+        "} else {"
+          "$.get(\"" + p.uri + "?action=abort\");"
+        "}"
+        "ev.stopPropagation();"
+        "return false;"
+      "});"
       "$(\".action-reboot\").on(\"click\", function(ev){"
         "$(\"#flash-dialog\").removeClass(\"fade\").modal(\"hide\");"
         "loaduri(\"#main\", \"post\", \"/cfg/firmware\", { \"action\": \"reboot\" });"
@@ -615,7 +640,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
         "fwbar({ pct: 0, text: \"0%\" });"
         "setloading(\"#flash-dialog\", true);"
         "$(\"#flash-dialog\").modal(\"show\");"
-        "var xhr = new XMLHttpRequest();"
+        "var xhr = fwxhr = new XMLHttpRequest();"
         // Pass the size so the module erases only what's needed (faster start) and
         // can reject an oversized image up front:
         "xhr.open(\"POST\", \"/api/firmware/upload?size=\" + file.size, true);"
@@ -631,6 +656,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
           "fwbar({ mode: \"indeterminate\", text: \"Finalising… (writing to flash)\" });"
         "};"
         "xhr.onload = function(){"
+          "fwxhr = null;"
           "if (xhr.status == 200) {"
             "$(\"#output\").text(xhr.responseText);"
             "flashFinish(true);"
@@ -640,7 +666,14 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
           "}"
         "};"
         "xhr.onerror = function(){"
+          "fwxhr = null;"
           "$(\"#output\").text(\"Error: upload failed (connection lost).\");"
+          "flashFinish(false);"
+        "};"
+        "xhr.onabort = function(){"
+          "fwxhr = null;"
+          "$.get(\"" + p.uri + "?action=abort\");"
+          "$(\"#output\").append(\"Error: OTA flash aborted by user\\n\");"
           "flashFinish(false);"
         "};"
         "xhr.send(fd);"
