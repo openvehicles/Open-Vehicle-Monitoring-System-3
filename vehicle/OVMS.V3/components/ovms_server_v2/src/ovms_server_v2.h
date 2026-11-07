@@ -56,6 +56,7 @@ class OvmsServerV2 : public OvmsServer, MongooseClient
     virtual void SetPowerMode(PowerMode powermode);
     void Connect();
     void SendLogin(struct mg_connection *nc);
+    void HandleClose(struct mg_connection *nc);
     void Disconnect();
     void Reconnect(int connretry);
     size_t IncomingData(uint8_t* data, size_t len);
@@ -115,6 +116,7 @@ class OvmsServerV2 : public OvmsServer, MongooseClient
   public:
     struct mg_connection *m_mgconn;
     int m_connretry;
+    int m_auth_errcnt;
     bool m_loggedin;
 
   protected:

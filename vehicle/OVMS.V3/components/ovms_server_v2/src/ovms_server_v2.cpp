@@ -222,23 +222,7 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
       ESP_LOGD(TAG, "OvmsServerV2MongooseCallback(MG_EV_CLOSE)");
       if (MyOvmsServerV2)
         {
-        // The only case of a scheduled disconnect is by "server v2 stop", in which case MyOvmsServerV2 is
-        // alread NULL, so this can only be an unexpected connection drop; check cause:
-        if (MyOvmsServerV2->m_state == OvmsServerV2::Authenticating)
-          {
-          // Auth issue, user needs to fix config, suspend reconnect to avoid IP blocking:
-          MyOvmsServerV2->SetStatus("Authentication error (wrong ID/password)", true, OvmsServerV2::Disconnected);
-          MyOvmsServerV2->Reconnect(-1);
-          MyNotify.NotifyString("alert", "server.v2.auth.failure",
-            "Incorrect server V2 login credentials\n"
-            "V2 server connection suspended, verify configuration");
-          }
-        else if (MyOvmsServerV2->m_state != OvmsServerV2::WaitReconnect)
-          {
-          // Unscheduled connection drop from any other state, not already waiting to reconnect:
-          MyOvmsServerV2->SetStatus("Connection lost, reconnecting", true, OvmsServerV2::WaitReconnect);
-          MyOvmsServerV2->Reconnect(10);
-          }
+        MyOvmsServerV2->HandleClose(nc);
         }
       break;
     case MG_EV_RECV:
@@ -338,6 +322,7 @@ void OvmsServerV2::ProcessServerMsg()
     m_pending_notify_data_last = 0;
     m_pending_notify_data_retransmit = 0;
     m_connretry = 0;
+    m_auth_errcnt = 0;
     m_ping_ticker = 0;
 
     StandardMetrics.ms_s_v2_connected->SetValue(true);
@@ -1104,6 +1089,40 @@ void OvmsServerV2::SendLogin(struct mg_connection *nc)
 
   mg_send(nc, hello, strlen(hello));
   m_connretry = 60; // Give the server 60 seconds to respond
+  }
+
+void OvmsServerV2::HandleClose(struct mg_connection *nc)
+  {
+  // The only case of a scheduled disconnect is by "server v2 stop", in which case MyOvmsServerV2 is
+  // alread NULL, so this can only be an unexpected connection drop; check cause:
+  if (m_state == OvmsServerV2::Authenticating)
+    {
+    // A disconnect during the Authenticating phase may be caused by either an auth issue (server closes
+    // connection), or by losing the connection due to some network issue.
+    // Allow for three consecutive failing attempts (with growing retry intervals), then stop & alert
+    // to avoid IP blocking:
+    if (m_auth_errcnt < 3)
+      {
+      SetStatus("Authentication error (wrong ID/password), retrying", true, OvmsServerV2::Disconnected);
+      ++m_auth_errcnt;
+      Reconnect(m_auth_errcnt * 60);
+      }
+    else
+      {
+      // final:
+      SetStatus("Authentication error (wrong ID/password), fix & restart", true, OvmsServerV2::Disconnected);
+      Reconnect(-1);
+      MyNotify.NotifyString("alert", "server.v2.auth.failure",
+        "Incorrect server V2 login credentials\n"
+        "V2 server connection suspended, verify configuration");
+      }
+    }
+  else if (m_state != OvmsServerV2::WaitReconnect)
+    {
+    // Unscheduled connection drop from any other state, not already waiting to reconnect:
+    SetStatus("Connection lost, reconnecting", true, OvmsServerV2::WaitReconnect);
+    Reconnect(10);
+    }
   }
 
 void OvmsServerV2::TransmitMsgStat(bool always)
@@ -2232,6 +2251,7 @@ void OvmsServerV2::ConfigChanged(OvmsConfigParam* param)
     {
     Reconnect(2);
     SetStatus("Server/credentials changed, reconnecting...", false, WaitReconnect);
+    m_auth_errcnt = 0;
     }
   }
 
@@ -2419,6 +2439,7 @@ OvmsServerV2::OvmsServerV2(const char* name)
   m_lasttx_stream = 0;
   m_peers = 0;
   m_connretry = 0;
+  m_auth_errcnt = 0;
   m_mgconn = NULL;
 
   m_pending_notify_info = false;
