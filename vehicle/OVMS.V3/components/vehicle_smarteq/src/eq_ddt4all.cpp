@@ -511,6 +511,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     case 745:
     {
       std::string hexbytes = mt_canbyte->AsString();
+      res = CommandCanVector(0x745, 0x765, {hexbytes}, false, true);
       break;
     }
     case 746: // 746 is used for the 74d
