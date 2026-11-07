@@ -39,7 +39,7 @@
 void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
 {
   auto lock = MyConfig.Lock();
-  bool cfg_bad_reconnect, cfg_reboot_no_ip, cfg_v2v3_check, cfg_ap2client_enabled, cfg_ap2client_notify;
+  bool cfg_bad_reconnect, cfg_reboot_no_ip, cfg_v2v3_check, cfg_modem_prefer_on, cfg_ap2client_enabled, cfg_ap2client_notify;
   float cfg_sq_good, cfg_sq_bad;
   int cfg_ap2client_timeout;
   bool v2v3_default =
@@ -63,6 +63,7 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
     cfg_bad_reconnect     = (c.getvar("cfg_bad_reconnect") == "yes");
     cfg_reboot_no_ip      = (c.getvar("cfg_reboot_no_ip") == "yes");
     cfg_v2v3_check        = (c.getvar("cfg_v2v3_check") == "yes");
+    cfg_modem_prefer_on   = (c.getvar("cfg_modem_prefer_on") == "yes");
     cfg_ap2client_timeout = atof((c.getvar("cfg_ap2client_timeout")).c_str());
     cfg_ap2client_enabled = (c.getvar("cfg_ap2client_enabled") == "yes");
     cfg_ap2client_notify  = (c.getvar("cfg_ap2client_notify") == "yes");
@@ -87,6 +88,10 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
       else
         MyConfig.SetParamValueBool("network", "reboot.no.ip", cfg_reboot_no_ip);
       MyConfig.SetParamValueBool("network", "wifi.conncheck.v2v3", cfg_v2v3_check);
+      if (!cfg_modem_prefer_on)
+        MyConfig.DeleteInstance("network", "modem.prefer.on");
+      else
+        MyConfig.SetParamValueBool("network", "modem.prefer.on", cfg_modem_prefer_on);
       if (cfg_ap2client_timeout == 30)    // default is 30 minutes
         MyConfig.DeleteInstance("network", "wifi.ap2client.timeout");
       else
@@ -124,6 +129,7 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
     cfg_bad_reconnect       = MyConfig.GetParamValueBool("network", "wifi.bad.reconnect", false);
     cfg_reboot_no_ip        = MyConfig.GetParamValueBool("network", "reboot.no.ip", false);
     cfg_v2v3_check          = MyConfig.GetParamValueBool("network", "wifi.conncheck.v2v3", v2v3_default);
+    cfg_modem_prefer_on     = MyConfig.GetParamValueBool("network", "modem.prefer.on", false);
     cfg_ap2client_timeout   = MyConfig.GetParamValueInt("network", "wifi.ap2client.timeout", 30);
     cfg_ap2client_enabled   = MyConfig.GetParamValueBool("network", "wifi.ap2client.enable", false);
     cfg_ap2client_notify    = MyConfig.GetParamValueBool("network", "wifi.ap2client.notify", false);
@@ -177,6 +183,8 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
     " Takes into consideration both wifi and cellular connections.</p>");
   c.input_checkbox("V2/V3 connection check", "cfg_v2v3_check", cfg_v2v3_check,
     "<p>Require active OVMS V2/V3 server connection (if enabled) to consider the Wifi client connection online.</p>");
+  c.input_checkbox("Prefer cellular modem when vehicle is on", "cfg_modem_prefer_on", cfg_modem_prefer_on,
+    "<p>Prioritize cellular modem over Wifi when the vehicle is turned on (v.e.on = yes).</p>");
   c.fieldset_end();
 
   c.print(

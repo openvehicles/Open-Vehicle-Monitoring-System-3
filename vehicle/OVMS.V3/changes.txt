@@ -34,6 +34,7 @@ Open Vehicle Monitor System v3 - Change log
     with automatic WiFi reconnect / 300s fallback disconnect if the check fails for 120s.
   New configs:
     [wifi.ssid] <ssid>.ovms.mac                       -- custom client MAC address (spoofed) for <ssid>
+    [network] modem.prefer.on                         -- prioritize cellular modem over WiFi when vehicle is on (default false)
     [network] wifi.conncheck.v2v3                     -- require active V2/V3 server connection for WiFi online status (default true if V2/V3 enabled)
 - Power Management: add option to power off cellular modem after configurable minutes of active
     WiFi connection while not charging the 12V battery, an optional fallback to power the

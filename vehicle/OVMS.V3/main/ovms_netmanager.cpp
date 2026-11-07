@@ -363,6 +363,8 @@ OvmsNetManager::OvmsNetManager()
   m_wifi_ap = false;
   m_network_any = false;
   m_cfg_dnslist = "";
+  m_cfg_reboot_no_connection = false;
+  m_cfg_modem_prefer_on = false;
   m_cfg_wifi_sq_good = -87;
   m_cfg_wifi_sq_bad = -89;
   m_cfg_wifi_bad_reconnect = false;
@@ -417,14 +419,18 @@ OvmsNetManager::OvmsNetManager()
   MyEvents.RegisterEvent(TAG,"system.wifi.ap.sta.disconnected", std::bind(&OvmsNetManager::WifiApStaDisconnect, this, _1, _2));
 #endif // #ifdef CONFIG_OVMS_COMP_WIFI
 
-  MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsNetManager::Ticker1, this, _1, _2));
+#ifdef CONFIG_OVMS_COMP_CELLULAR  
   MyEvents.RegisterEvent(TAG,"system.modem.gotip", std::bind(&OvmsNetManager::ModemUp, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.modem.stop", std::bind(&OvmsNetManager::ModemDown, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.modem.down", std::bind(&OvmsNetManager::ModemDown, this, _1, _2));
+#endif // CONFIG_OVMS_COMP_CELLULAR
 
+  MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsNetManager::Ticker1, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"config.mounted", std::bind(&OvmsNetManager::ConfigChanged, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"config.changed", std::bind(&OvmsNetManager::ConfigChanged, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.shuttingdown", std::bind(&OvmsNetManager::EventSystemShuttingDown, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"vehicle.on", std::bind(&OvmsNetManager::VehicleOn, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"vehicle.off", std::bind(&OvmsNetManager::VehicleOff, this, _1, _2));
 
   MyConfig.RegisterParam("network", "Network Configuration", true, true);
   // Our instances:
@@ -782,6 +788,7 @@ void OvmsNetManager::ConfigChanged(std::string event, void* data)
     // Network config has been changed, apply:
     m_cfg_dnslist = MyConfig.GetParamValue("network", "dns");
     m_cfg_reboot_no_connection = MyConfig.GetParamValueBool("network", "reboot.no.ip", false);
+    m_cfg_modem_prefer_on = MyConfig.GetParamValueBool("network", "modem.prefer.on", false);
     m_cfg_wifi_sq_good = MyConfig.GetParamValueFloat("network", "wifi.sq.good", -87);
     m_cfg_wifi_sq_bad = MyConfig.GetParamValueFloat("network", "wifi.sq.bad",  -89);
     m_cfg_wifi_bad_reconnect = MyConfig.GetParamValueBool("network", "wifi.bad.reconnect");
@@ -804,6 +811,24 @@ void OvmsNetManager::EventSystemShuttingDown(std::string event, void* data)
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   StopMongooseTask();
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+  }
+
+void OvmsNetManager::VehicleOn(std::string event, void* data)
+  {
+  if (m_cfg_modem_prefer_on)
+    {
+    ESP_LOGI(TAG, "Vehicle is ON: preferring cellular modem connection");
+    PrioritiseAndIndicate();
+    }
+  }
+
+void OvmsNetManager::VehicleOff(std::string event, void* data)
+  {
+  if (m_cfg_modem_prefer_on)
+    {
+    ESP_LOGI(TAG, "Vehicle is OFF: restoring normal network preferences");
+    PrioritiseAndIndicate();
+    }
   }
 
 void OvmsNetManager::SaveDNSServer(ip_addr_t* dnsstore)
@@ -918,19 +943,13 @@ void OvmsNetManager::DoSafePrioritiseAndIndicate()
   StdMetrics.ms_m_net_connected->SetValue(m_connected_any);
   m_has_ip = false;
 
+  // Check if vehicle is on and cellular modem priority while on is requested:
+  bool prefer_modem = m_cfg_modem_prefer_on && StandardMetrics.ms_v_env_on->AsBool();
+
   // Priority order...
-  if (m_connected_wifi && MyPeripherals && MyPeripherals->m_esp32wifi &&
-      (MyPeripherals->m_esp32wifi->WifiHasIp() || !m_connected_modem))
+  if (m_connected_modem && (prefer_modem || !m_connected_wifi || !MyPeripherals || !MyPeripherals->m_esp32wifi || !MyPeripherals->m_esp32wifi->WifiHasIp()))
     {
-    // Wifi is up (or no modem fallback available)
-    SetNetType("wifi");
-    search = "st";
-    dns = m_dns_wifi;
-    m_has_ip = MyPeripherals->m_esp32wifi->WifiHasIp();
-    }
-  else if (m_connected_modem)
-    {
-    // Modem is up
+    // Modem is up and preferred (or Wifi is not available/ready)
     SetNetType("modem");
     search = "pp";
     dns = m_dns_modem;
@@ -940,6 +959,15 @@ void OvmsNetManager::DoSafePrioritiseAndIndicate()
               MyPeripherals->m_cellular_modem->m_mux->IsMuxUp() &&
               MyPeripherals->m_cellular_modem->m_ppp &&
               MyPeripherals->m_cellular_modem->m_ppp->m_connected;
+    }
+  else if (m_connected_wifi && MyPeripherals && MyPeripherals->m_esp32wifi &&
+           (MyPeripherals->m_esp32wifi->WifiHasIp() || !m_connected_modem))
+    {
+    // Wifi is up (or no modem fallback available)
+    SetNetType("wifi");
+    search = "st";
+    dns = m_dns_wifi;
+    m_has_ip = MyPeripherals->m_esp32wifi->WifiHasIp();
     }
   StdMetrics.ms_m_net_ip->SetValue(m_has_ip);
 
