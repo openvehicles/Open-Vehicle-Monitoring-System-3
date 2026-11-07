@@ -106,7 +106,8 @@ Command parameter is:
 * Shell (V2: "SMS") command with parameters
 
 Response is the output of the shell command that would otherwise have been sent as the reply / printed on 
-the console, with LF and CR-LF line breaks converted to CR.
+the console, with LF and CR-LF line breaks converted to CR. With config option "legacy field encoding" 
+enabled, all commas in the output will also be changed to semicolon.
 
 **On V2 modules**, the caller id is set to the registered phone number. Return code 1 is used for all errors, 
 i.e. authorization failure, command failure and unknown/unhandled commands. SMS commands with multiple replies 
@@ -115,6 +116,45 @@ are not supported, only the last reply will be returned.
 **V3 version note**: up to firmware version ``3.3.006``, all commas ``,`` in the command response were 
 changed into ``;``. Beginning with ``3.3.007``, this behaviour is disabled by default, if some of your
 clients still need this, enable by ``config set server.v2 workaround.legacy_field_enc yes``.
+
+Note that execution of the command is done **synchronously** from within the network context, so blocks all 
+other network activities until done. Calling JavaScript functions via ``script eval`` that need the 
+network will fail, because the network context is blocked (for example, ``HTTP.Request()`` will fail 
+with error "Network manager busy"). Use the ``run`` command to execute a command in the background, 
+or use MP command 8 for asynchronous JavaScript command execution.
+
+
+------------------------------
+8 - Execute JavaScript command
+------------------------------
+
+Only available on V3 modules. JavaScript support needs to be included in the firmware, and the JavaScript 
+engine (Duktape) needs to be running (if not, an error will be returned).
+
+This enables execution of JavaScript commands without the need to pass these through the ``script eval`` 
+command, i.e. avoiding the need to use additional shell quoting around the actual JavaScript code, and 
+especially avoiding the need to use additional background processes, as command execution is performed 
+asynchronously (non-blocking) by the Duktape task.
+
+Command parameters (comma separated):
+
+* ID -- string to identify the response for a command (note: no comma allowed)
+* Rest = JavaScript command/call/scriptlet with parameters
+
+Response structure: ID given followed by the command output, separated by a comma.
+
+Use the ID to match responses to commands if sending multiple commands in sequence without waiting for 
+the respective response. Be aware any single call can fail temporarily due to a Duktape command queue 
+overflow, this will be signaled by "ERROR: Duktape queue overflow".
+
+Output means the textual output of the JavaScript command that would otherwise have been displayed on the 
+console or in the log, if any. JavaScript values and objects returned by methods do not get serialized, 
+if that's needed, apply a suitable serialization method (see :ref:`javascript-serialization`).
+
+Line breaks LF and CR-LF in the output are converted to CR. With V2 config option "legacy field encoding" 
+enabled (not recommended), all commas in the output will also be changed to semicolon.
+
+**Version note**: added in firmware release ``3.3.007``.
 
 
 --------------------

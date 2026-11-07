@@ -1,6 +1,21 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Server V3 (MQTT): added topic API for asynchronous JavaScript execution/evaluation.
+    Topic scheme:
+      <prefix>/client/<clientid>/jscommand/<cmdid>    -- payload: JavaScript code/scriptlet
+      <prefix>/client/<clientid>/jsresponse/<cmdid>   -- payload: text output of execution
+    The V3 perl client `ovms_v3shell.pl` now supports calling JavaScript methods via this API
+    by entering a '$' at the prompt followed by the JavaScript command to execute, example:
+      OVMS# $JSON.print(meminfo())
+    Note: no automatic serialization of native JavaScript types returned.
+- Server V2 (MP): added MP API command 8 for asynchronous JavaScript execution/evaluation.
+    Message scheme:
+      Request:  `C8,<cmdid>,<command>`
+      Response: `c8,<retcode>,<cmdid>,<output>`
+    Perl client example: `cmd.pl 8 '1,JSON.print(meminfo())'`
+    Details: https://docs.openvehicles.com/en/latest/protocol_v2/commands.html
+    Note: no automatic serialization of native JavaScript types returned.
 - OTA / Cellular / Server V2 & V3: improve OTA flash reliability over cellular connections by
     pre-erasing the target partition via HTTP HEAD before starting the download, writing in
     512-byte flash slices with HTTP Range resume support, lowering the cellular UART RX FIFO

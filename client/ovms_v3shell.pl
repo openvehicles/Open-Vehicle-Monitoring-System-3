@@ -58,6 +58,15 @@ Vehicle ID to access.
 This program provides a textual console to an OVMS module, using
 the server v3 (MQTT) protocol.
 
+Enter shell commands or '$' followed by a JavaScript command/call/scriptlet.
+
+Examples:
+
+OVMS# stat
+
+OVMS# $JSON.print(meminfo())
+
+
 =cut
 
 our $verbose = 0;       # "1" if verbose output is requested
@@ -205,6 +214,8 @@ $mqtt = AnyEvent::MQTT->new(
 
 my $response_cv = $mqtt->subscribe(topic => "$prefix/client/$clientid/response/#",
                           callback => \&mqtt_response);
+my $jsresponse_cv = $mqtt->subscribe(topic => "$prefix/client/$clientid/jsresponse/#",
+                          callback => \&mqtt_response);
 my $event_cv = $mqtt->subscribe(topic => "$prefix/event",
                           callback => \&mqtt_event);
 my $metric_cv = $mqtt->subscribe(topic => "$prefix/metric/#",
@@ -227,8 +238,18 @@ $rl = new AnyEvent::ReadLine::Gnu prompt => "OVMS# ", on_line => sub {
     {
     $commandsoutstanding++;
     &newprompt();
-    $mqtt->publish(topic => "$prefix/client/$clientid/command/1",
-                   message => $_[0]);
+    if (substr($_[0],0,1) eq '$')
+      {
+      # Javascript command
+      $mqtt->publish(topic => "$prefix/client/$clientid/jscommand/1",
+                    message => substr($_[0],1));
+      }
+    else
+      {
+      # Standard shell command
+      $mqtt->publish(topic => "$prefix/client/$clientid/command/1",
+                    message => $_[0]);
+      }
     }
   };
 $rl->ornaments(1);

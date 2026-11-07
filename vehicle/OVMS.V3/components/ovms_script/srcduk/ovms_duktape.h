@@ -33,6 +33,7 @@
 
 #include "ovms_command.h"
 #include "ovms_utils.h"
+#include "string_writer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
@@ -216,6 +217,42 @@ typedef struct
 
 
 ////////////////////////////////////////////////////////////////////////////////
+// DuktapeEvalJob: async background Javascript evaluation job
+// 
+// Basic usage:
+//  a) create job:              auto job = new DuktapeEvalJob(command)
+//  b) submit job to Duktape:   job->Dispatch()
+//  c) check job status:        if (job->CheckComplete())
+//  d) retrieve output:           job->GetOutput()
+//  e) finish:                  delete job
+// 
+class DuktapeEvalJob
+  {
+  public:
+    DuktapeEvalJob(std::string command, std::string id="", std::string client="");
+    ~DuktapeEvalJob();
+
+  public:
+    bool Dispatch(TickType_t queuewait=portMAX_DELAY);
+    bool CheckComplete(TickType_t semwait=0);
+    std::string& GetCommand() { return m_command; }
+    StringWriter& GetOutput() { return m_writer; }
+    std::string& GetID() { return m_id; }
+    std::string& GetClient() { return m_client; }
+
+  protected:
+    std::string           m_command;                // command to execute/evaluate
+    std::string           m_id;                     // arbitrary caller id for the job
+    std::string           m_client;                 // arbitrary caller id for the client
+    QueueHandle_t         m_waitcompletion;         // IPC semaphore
+    bool                  m_queued;                 // job has been queued
+    bool                  m_complete;               // job has been completed
+    StringWriter          m_writer;                 // output buffer
+    OvmsMutex             m_mutex;                  // concurrency protection
+  };
+
+
+////////////////////////////////////////////////////////////////////////////////
 // DuktapeObject: coupled C++ / JS object
 //
 //  Intended for API methods to attach internal API state to a JS object and provide
@@ -318,6 +355,8 @@ class DuktapeConsoleCommand : public DuktapeObject
 
 class OvmsDuktape
   {
+  friend DuktapeEvalJob;
+
   public:
     OvmsDuktape();
     ~OvmsDuktape();

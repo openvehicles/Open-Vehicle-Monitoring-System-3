@@ -43,8 +43,6 @@
 
 typedef std::map<std::string, uint32_t> OvmsServerV3ClientMap;
 
-#define MQTT_CONN_NTOPICS 4   // active, command, request/metric, request/config
-
 class OvmsServerV3 : public OvmsServer, MongooseClient
   {
   public:
@@ -94,7 +92,7 @@ class OvmsServerV3 : public OvmsServer, MongooseClient
     bool m_tls;
     std::string m_topic_prefix;
     std::string m_will_topic;
-    std::string m_conn_topic[MQTT_CONN_NTOPICS];
+    std::vector<std::string> m_conn_topics;
     struct mg_connection *m_mgconn;
     int m_connretry;
     int m_connection_counter;
@@ -161,6 +159,7 @@ class OvmsServerV3 : public OvmsServer, MongooseClient
     void IncomingPubRec(uint16_t id);
     void IncomingEvent(std::string event, void* data);
     void RunCommand(std::string client, std::string id, std::string command);
+    void RunJavascriptCommand(std::string client, std::string id, std::string command);
     void AddClient(std::string id);
     void RemoveClient(std::string id);
     void CountClients();
@@ -171,6 +170,13 @@ class OvmsServerV3 : public OvmsServer, MongooseClient
     IdIncludeExcludeFilter m_metrics_filter;    // server.v3.include, server.v3.exclude
     IdIncludeExcludeFilter m_metrics_priority;  // server.v3.priority
     IdIncludeExcludeFilter m_metrics_immediately;  // server.v3.immediately
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  public:
+    void CheckDuktapeJobsCompleted();
+  private:
+    std::list<DuktapeEvalJob*> m_duktape_jobs;
+#endif
   };
 
 class OvmsServerV3Init

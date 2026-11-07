@@ -389,6 +389,8 @@ Global Context
     Returns monotonic time since boot in milliseconds, with microsecond resolution.
 
 
+.. _javascript-serialization:
+
 JSON
 ^^^^
 
