@@ -22,6 +22,12 @@
 */
 
 #include "ovms_webserver.h"
+#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V2)
+#include "ovms_server_v2.h"
+#endif
+#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V3)
+#include "ovms_server_v3.h"
+#endif
 
 #define _attr(text) (c.encode_html(text).c_str())
 #define _html(text) (c.encode_html(text).c_str())
@@ -33,9 +39,17 @@
 void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
 {
   auto lock = MyConfig.Lock();
-  bool cfg_bad_reconnect, cfg_reboot_no_ip, cfg_ap2client_enabled, cfg_ap2client_notify;
+  bool cfg_bad_reconnect, cfg_reboot_no_ip, cfg_v2v3_check, cfg_modem_prefer_on, cfg_ap2client_enabled, cfg_ap2client_notify;
   float cfg_sq_good, cfg_sq_bad;
   int cfg_ap2client_timeout;
+  bool v2v3_default =
+#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V2)
+    MyConfig.GetParamValueBool("auto", "server.v2", false) || (MyOvmsServerV2 != NULL) ||
+#endif
+#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V3)
+    MyConfig.GetParamValueBool("auto", "server.v3", false) || (MyOvmsServerV3 != NULL) ||
+#endif
+    false;
 
   if (c.method == "POST") {
     std::string warn, error;
@@ -48,6 +62,8 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
     cfg_sq_bad            = atof(c.getvar("cfg_sq_bad").c_str());
     cfg_bad_reconnect     = (c.getvar("cfg_bad_reconnect") == "yes");
     cfg_reboot_no_ip      = (c.getvar("cfg_reboot_no_ip") == "yes");
+    cfg_v2v3_check        = (c.getvar("cfg_v2v3_check") == "yes");
+    cfg_modem_prefer_on   = (c.getvar("cfg_modem_prefer_on") == "yes");
     cfg_ap2client_timeout = atof((c.getvar("cfg_ap2client_timeout")).c_str());
     cfg_ap2client_enabled = (c.getvar("cfg_ap2client_enabled") == "yes");
     cfg_ap2client_notify  = (c.getvar("cfg_ap2client_notify") == "yes");
@@ -71,6 +87,11 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
         MyConfig.DeleteInstance("network", "reboot.no.ip");
       else
         MyConfig.SetParamValueBool("network", "reboot.no.ip", cfg_reboot_no_ip);
+      MyConfig.SetParamValueBool("network", "wifi.conncheck.v2v3", cfg_v2v3_check);
+      if (!cfg_modem_prefer_on)
+        MyConfig.DeleteInstance("network", "modem.prefer.on");
+      else
+        MyConfig.SetParamValueBool("network", "modem.prefer.on", cfg_modem_prefer_on);
       if (cfg_ap2client_timeout == 30)    // default is 30 minutes
         MyConfig.DeleteInstance("network", "wifi.ap2client.timeout");
       else
@@ -107,6 +128,8 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
     cfg_sq_bad              = MyConfig.GetParamValueFloat("network", "wifi.sq.bad", -89);
     cfg_bad_reconnect       = MyConfig.GetParamValueBool("network", "wifi.bad.reconnect", false);
     cfg_reboot_no_ip        = MyConfig.GetParamValueBool("network", "reboot.no.ip", false);
+    cfg_v2v3_check          = MyConfig.GetParamValueBool("network", "wifi.conncheck.v2v3", v2v3_default);
+    cfg_modem_prefer_on     = MyConfig.GetParamValueBool("network", "modem.prefer.on", false);
     cfg_ap2client_timeout   = MyConfig.GetParamValueInt("network", "wifi.ap2client.timeout", 30);
     cfg_ap2client_enabled   = MyConfig.GetParamValueBool("network", "wifi.ap2client.enable", false);
     cfg_ap2client_notify    = MyConfig.GetParamValueBool("network", "wifi.ap2client.notify", false);
@@ -158,6 +181,10 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
   c.input_checkbox("Reboot when no IP is aquired after 5 minutes with a good connection", "cfg_reboot_no_ip", cfg_reboot_no_ip,
     "<p>Reboot device when there is good signal but the connection fails to obtain an IP address after 5 minutes."
     " Takes into consideration both wifi and cellular connections.</p>");
+  c.input_checkbox("V2/V3 connection check", "cfg_v2v3_check", cfg_v2v3_check,
+    "<p>Require active OVMS V2/V3 server connection (if enabled) to consider the Wifi client connection online.</p>");
+  c.input_checkbox("Prefer cellular modem when vehicle is on", "cfg_modem_prefer_on", cfg_modem_prefer_on,
+    "<p>Prioritize cellular modem over Wifi when the vehicle is turned on (v.e.on = yes).</p>");
   c.fieldset_end();
 
   c.print(

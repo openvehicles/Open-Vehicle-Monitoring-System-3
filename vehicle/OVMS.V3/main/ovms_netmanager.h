@@ -121,6 +121,8 @@ class OvmsNetManager
     void Ticker1(std::string event, void *data);
     void ModemUp(std::string event, void* data);
     void ModemDown(std::string event, void* data);
+    void VehicleOn(std::string event, void* data);
+    void VehicleOff(std::string event, void* data);
     void InterfaceUp(std::string event, void* data);
     void ConfigChanged(std::string event, void* data);
     void EventSystemShuttingDown(std::string event, void* data);
@@ -158,6 +160,7 @@ class OvmsNetManager
   protected:
     std::string m_cfg_dnslist;              // config network dns            [iplist] default ""
     bool m_cfg_reboot_no_connection;        // config network reboot.no.ip   [bool] default false
+    bool m_cfg_modem_prefer_on;             // config network modem.prefer.on [bool] default false
     float m_cfg_wifi_sq_good;               // config network wifi.sq.good   [dBm] default -87
     float m_cfg_wifi_sq_bad;                // config network wifi.sq.bad    [dBm] default -89
     bool m_cfg_wifi_bad_reconnect;          // config network wifi.bad.reconnect [bool] default false
