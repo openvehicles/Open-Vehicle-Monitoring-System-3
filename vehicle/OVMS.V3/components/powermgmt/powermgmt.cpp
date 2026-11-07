@@ -36,6 +36,12 @@ static const char *TAG = "powermgmt";
 #include "ovms_netmanager.h"
 #include "ovms_boot.h"
 #include "metrics_standard.h"
+#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V2)
+#include "ovms_server_v2.h"
+#endif
+#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V3)
+#include "ovms_server_v3.h"
+#endif
 
 powermgmt MyPowerMgmt __attribute__ ((init_priority (8500)));
 
@@ -128,6 +134,7 @@ powermgmt::powermgmt()
   m_notcharging_timer = 0;
   m_notcharging_restore_delay = 0;
   m_modemoff_wifi_timer = 0;
+  m_wifi_fallback_timer = 0;
   m_12v_alert_timer = 0;
   m_powersaving_timer = 0;
   m_modem_wifi_fallback = false;
@@ -433,6 +440,40 @@ void powermgmt::EventCharge12VStop(std::string event, void* data)
     }
   }
 
+bool powermgmt::IsWifiOnline() const
+  {
+#ifdef CONFIG_OVMS_COMP_WIFI
+  if (!MyPeripherals || !MyPeripherals->m_esp32wifi)
+    return false;
+  if (MyPeripherals->m_esp32wifi->GetPowerMode() == Off ||
+      MyPeripherals->m_esp32wifi->GetMode() == ESP32WIFI_MODE_OFF)
+    return false;
+  if (!MyNetManager.m_connected_wifi)
+    return false;
+
+  bool v2_started = false;
+  bool v2_connected = false;
+#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V2)
+  v2_started = (MyOvmsServerV2 != NULL);
+  v2_connected = v2_started && StandardMetrics.ms_s_v2_connected->AsBool();
+#endif
+
+  bool v3_started = false;
+  bool v3_connected = false;
+#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V3)
+  v3_started = (MyOvmsServerV3 != NULL);
+  v3_connected = v3_started && StandardMetrics.ms_s_v3_connected->AsBool();
+#endif
+
+  if ((v2_started && !v2_connected) || (v3_started && !v3_connected))
+    return false;
+
+  return true;
+#else
+  return false;
+#endif
+  }
+
 void powermgmt::GetEstimatedConsumption(powermgmt_consumption_t& out)
   {
   // Approximate OVMS v3.3 current draw at ~12.6V in mA based on official hardware specs
@@ -612,10 +653,12 @@ void powermgmt::PowerOffModem(bool wifi_triggered)
       MyEvents.SignalEvent("powermgmt.modem.off", NULL);
       MyPeripherals->m_cellular_modem->SetPowerMode(Off);
       m_modem_off_wifi = wifi_triggered;
+      m_wifi_fallback_timer = 0;
       }
     else if (!wifi_triggered)
       {
       m_modem_off_wifi = false;
+      m_wifi_fallback_timer = 0;
       }
     m_modem_off = true;
     }
@@ -652,6 +695,7 @@ void powermgmt::PowerOnModem()
       }
     m_modem_off = false;
     m_modem_off_wifi = false;
+    m_wifi_fallback_timer = 0;
     }
 #endif
   }
@@ -666,7 +710,7 @@ void powermgmt::CommandPowerOff(int verbosity, OvmsWriter* writer, const char* t
 #ifdef CONFIG_OVMS_COMP_CELLULAR
     bool wifi_trig = false;
 #ifdef CONFIG_OVMS_COMP_WIFI
-    if (!do_wifi && MyNetManager.m_connected_wifi)
+    if (!do_wifi && IsWifiOnline())
       wifi_trig = true;
 #endif
     PowerOffModem(wifi_trig);
@@ -812,10 +856,12 @@ void powermgmt::CommandPowerSaving(int verbosity, OvmsWriter* writer, const char
 
 void powermgmt::Ticker1(std::string event, void* data)
   {
+  bool wifi_online = IsWifiOnline();
+
   if (!m_charging)
     {
     m_notcharging_timer++;
-    if (MyNetManager.m_connected_wifi)
+    if (wifi_online)
       m_modemoff_wifi_timer++;
     else
       m_modemoff_wifi_timer = 0;
@@ -939,13 +985,27 @@ void powermgmt::Ticker1(std::string event, void* data)
   bool ps_sleep_modem = m_powersaving_active && !m_powersaving_awake_phase &&
     (m_powersaving_target == "modem" || m_powersaving_target == "both" || m_powersaving_target == "deepsleep");
 
-  if (m_modem_wifi_fallback && m_modem_off_wifi && !MyNetManager.m_connected_wifi)
+  if (m_modem_wifi_fallback && m_modem_off_wifi)
     {
-    if (!ps_sleep_modem && (!m_enabled || !(m_modemoff_delay && m_notcharging_timer > m_modemoff_delay*60*60)))
+    if (!wifi_online)
       {
-      ESP_LOGI(TAG,"WiFi disconnected, powering on cellular modem (fallback)");
-      PowerOnModem();
+      if (!ps_sleep_modem && (!m_enabled || !(m_modemoff_delay && m_notcharging_timer > m_modemoff_delay*60*60)))
+        {
+        if (!MyNetManager.m_connected_wifi || ++m_wifi_fallback_timer >= POWERMGMT_WIFI_FALLBACK_DELAY)
+          {
+          ESP_LOGI(TAG, "WiFi connection or server data link lost, powering on cellular modem (fallback)");
+          PowerOnModem();
+          }
+        }
       }
+    else
+      {
+      m_wifi_fallback_timer = 0;
+      }
+    }
+  else
+    {
+    m_wifi_fallback_timer = 0;
     }
 
   if (!m_enabled)
