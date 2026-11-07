@@ -155,6 +155,9 @@ powermgmt::powermgmt()
   MyEvents.RegisterEvent(TAG, "vehicle.awake", std::bind(&powermgmt::EventVehicleAwake, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "vehicle.charge.12v.start", std::bind(&powermgmt::EventCharge12VStart, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "vehicle.charge.12v.stop", std::bind(&powermgmt::EventCharge12VStop, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "network.wifi.sta.bad", std::bind(&powermgmt::EventNetworkWifiBad, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "network.wifi.down", std::bind(&powermgmt::EventNetworkWifiBad, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "network.modem.up", std::bind(&powermgmt::EventNetworkWifiBad, this, _1, _2));
 
   OvmsCommand* cmd_pmgmt = MyCommandApp.RegisterCommand("pmgmt", "Power management framework", pmgmt_status, "", 0, 0, false);
   cmd_pmgmt->RegisterCommand("status", "Show power status and estimated consumption", pmgmt_status, "", 0, 0, false);
@@ -431,6 +434,45 @@ void powermgmt::EventCharge12VStop(std::string event, void* data)
       if (m_notcharging_timer > max_timer)
         m_notcharging_timer = max_timer;
       }
+    }
+  }
+
+void powermgmt::EventNetworkWifiBad(std::string event, void* data)
+  {
+  if (!m_modem_wifi_fallback)
+    return;
+
+  bool ps_sleep_modem = m_powersaving_active && !m_powersaving_awake_phase &&
+    (m_powersaving_target == "modem" || m_powersaving_target == "both" || m_powersaving_target == "deepsleep");
+  bool modemoff_exceeded = m_enabled && !m_charging && m_modemoff_delay &&
+    (m_notcharging_timer > m_modemoff_delay * 60 * 60);
+
+  if (ps_sleep_modem || modemoff_exceeded)
+    return;
+
+  if (event == "network.modem.up")
+    {
+    if (m_modem_off || m_modem_off_wifi)
+      {
+      ESP_LOGI(TAG, "Cellular modem active (%s), updating powermgmt state", event.c_str());
+      m_modem_off = false;
+      m_modem_off_wifi = false;
+      m_wifi_fallback_timer = 0;
+      m_modemoff_wifi_timer = 0;
+      }
+    return;
+    }
+
+  m_modemoff_wifi_timer = 0;
+  if (m_modem_off || m_modem_off_wifi
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+      || (MyPeripherals && MyPeripherals->m_cellular_modem &&
+          MyPeripherals->m_cellular_modem->GetPowerMode() == Off)
+#endif
+     )
+    {
+    ESP_LOGI(TAG, "Netmanager reported %s, powering on cellular modem (fallback)", event.c_str());
+    PowerOnModem();
     }
   }
 
@@ -951,7 +993,7 @@ void powermgmt::Ticker1(std::string event, void* data)
   bool ps_sleep_modem = m_powersaving_active && !m_powersaving_awake_phase &&
     (m_powersaving_target == "modem" || m_powersaving_target == "both" || m_powersaving_target == "deepsleep");
 
-  if (m_modem_wifi_fallback && m_modem_off_wifi)
+  if (m_modem_wifi_fallback && (m_modem_off_wifi || m_modem_off))
     {
     if (!wifi_online)
       {
@@ -979,7 +1021,7 @@ void powermgmt::Ticker1(std::string event, void* data)
 
   if (!m_charging && !ps_keep_wifi && !ps_sleep_wifi && m_wifioff_delay && m_notcharging_timer > m_wifioff_delay*60*60) // hours to seconds
     {
-    if (!m_wifioff_if_disconnected || !MyNetManager.m_connected_wifi)
+    if (!m_wifioff_if_disconnected || !wifi_online)
       {
       PowerOffWifi();
       }

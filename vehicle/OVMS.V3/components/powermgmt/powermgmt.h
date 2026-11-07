@@ -94,6 +94,7 @@ class powermgmt
     void EventVehicleAwake(std::string event, void* data);
     void EventCharge12VStart(std::string event, void* data);
     void EventCharge12VStop(std::string event, void* data);
+    void EventNetworkWifiBad(std::string event, void* data);
     unsigned int GetNotChargingTimer() const { return m_notcharging_timer; }
     unsigned int GetModemOffWifiTimer() const { return m_modemoff_wifi_timer; }
     unsigned int Get12VAlertTimer() const { return m_12v_alert_timer; }
