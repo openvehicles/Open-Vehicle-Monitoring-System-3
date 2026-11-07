@@ -26,11 +26,15 @@ Open Vehicle Monitor System v3 - Change log
     ota.flash.starting                                -- signaled before OTA flash begins
     ota.flash.done                                    -- signaled after OTA flash succeeded
     ota.flash.abort                                   -- signaled when OTA flash was aborted/failed
-- WiFi: add support for open WiFi networks (using '-' or 'OPEN' as password placeholder) and
-    per-SSID client MAC address spoofing in the web UI and configuration, reverting to the
-    default hardware MAC address for all other networks.
-  New config:
+- WiFi: add support for open WiFi networks (using '-' or 'OPEN' as password placeholder),
+    per-SSID client MAC address spoofing in the web UI and configuration (reverting to the
+    default hardware MAC address for all other networks), and a configurable 'V2/V3 connection
+    check' option (`esp32wifi::IsWifiOnline()`) to require an active Server V2/V3 connection
+    before considering the WiFi client connection online (default true when V2/V3 is enabled),
+    with automatic WiFi reconnect / 300s fallback disconnect if the check fails for 120s.
+  New configs:
     [wifi.ssid] <ssid>.ovms.mac                       -- custom client MAC address (spoofed) for <ssid>
+    [network] wifi.conncheck.v2v3                     -- require active V2/V3 server connection for WiFi online status (default true if V2/V3 enabled)
 - Power Management: add option to power off cellular modem after configurable minutes of active
     WiFi connection while not charging the 12V battery, an optional fallback to power the
     modem back on if the WiFi connection is lost, and a live power status / estimated OVMS

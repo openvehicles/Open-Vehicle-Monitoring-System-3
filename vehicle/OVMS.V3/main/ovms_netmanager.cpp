@@ -357,6 +357,7 @@ OvmsNetManager::OvmsNetManager()
   m_connected_wifi = false;
   m_connected_modem = false;
   m_connected_any = false;
+  m_has_ip = false;
   m_wifi_sta = false;
   m_wifi_good = false;
   m_wifi_ap = false;
@@ -915,12 +916,13 @@ void OvmsNetManager::DoSafePrioritiseAndIndicate()
   m_connected_any = m_connected_wifi || m_connected_modem;
   m_network_any = m_connected_wifi || m_connected_modem || m_wifi_ap;
   StdMetrics.ms_m_net_connected->SetValue(m_connected_any);
-
+  m_has_ip = false;
 
   // Priority order...
-  if (m_connected_wifi)
+  if (m_connected_wifi && MyPeripherals && MyPeripherals->m_esp32wifi &&
+      (MyPeripherals->m_esp32wifi->WifiHasIp() || !m_connected_modem))
     {
-    // Wifi is up
+    // Wifi is up (or no modem fallback available)
     SetNetType("wifi");
     search = "st";
     dns = m_dns_wifi;
@@ -932,8 +934,11 @@ void OvmsNetManager::DoSafePrioritiseAndIndicate()
     SetNetType("modem");
     search = "pp";
     dns = m_dns_modem;
-    m_has_ip = MyPeripherals->m_cellular_modem->ModemIsNetMode() &&
+    m_has_ip = MyPeripherals && MyPeripherals->m_cellular_modem &&
+              MyPeripherals->m_cellular_modem->ModemIsNetMode() &&
+              MyPeripherals->m_cellular_modem->m_mux &&
               MyPeripherals->m_cellular_modem->m_mux->IsMuxUp() &&
+              MyPeripherals->m_cellular_modem->m_ppp &&
               MyPeripherals->m_cellular_modem->m_ppp->m_connected;
     }
   StdMetrics.ms_m_net_ip->SetValue(m_has_ip);

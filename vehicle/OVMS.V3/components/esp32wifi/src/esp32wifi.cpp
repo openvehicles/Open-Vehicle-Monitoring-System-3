@@ -40,10 +40,17 @@ static const char *TAG = "esp32wifi";
 #include "ovms.h"
 #include "ovms_config.h"
 #include "ovms_peripherals.h"
+#include "ovms_netmanager.h"
 #include "ovms_events.h"
 #include "metrics_standard.h"
 #include "ovms_notify.h"
 #include "string_writer.h"
+#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V2)
+#include "ovms_server_v2.h"
+#endif
+#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V3)
+#include "ovms_server_v3.h"
+#endif
 #if ESP_IDF_VERSION_MAJOR >= 4
 #include <esp_wifi_types.h>
 #endif
@@ -423,6 +430,10 @@ esp32wifi::esp32wifi(const char* name)
   m_sta_rssi = -1270;
   m_good_signal = false;
   m_ap2client_active = false;
+  m_v2v3_conncheck = false;
+  m_v2v3_conncheck_defined = false;
+  m_v2v3_offline_timer = 0;
+  m_v2v3_fail_count = 0;
   memset(&m_wifi_ap_cfg,0,sizeof(m_wifi_ap_cfg));
   memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
   memset(&m_mac_ap,0,sizeof(m_mac_ap));
@@ -841,6 +852,8 @@ void esp32wifi::StopStation()
 
   m_sta_reconnect = 0;
   m_sta_connected = false;
+  m_v2v3_offline_timer = 0;
+  m_v2v3_fail_count = 0;
 
   memset(&m_wifi_ap_cfg,0,sizeof(m_wifi_ap_cfg));
   memset(&m_wifi_sta_cfg,0,sizeof(m_wifi_sta_cfg));
@@ -1145,9 +1158,42 @@ void esp32wifi::EventWifiGotIp(std::string event, void* data)
 
 bool esp32wifi::WifiHasIp()
   {
-  char numstr[150];
-  sprintf(numstr, IPSTR, IP2STR(&m_ip_info_sta.ip));
-  return strcmp(numstr, "0.0.0.0") == 1;
+  if (!m_poweredup || !m_sta_connected || (m_mode != ESP32WIFI_MODE_CLIENT && m_mode != ESP32WIFI_MODE_APCLIENT))
+    return false;
+#if ESP_IDF_VERSION_MAJOR >= 4
+  esp_netif_get_ip_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), &m_ip_info_sta);
+#else
+  tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &m_ip_info_sta);
+#endif
+  return (m_ip_info_sta.ip.addr != 0);
+  }
+
+bool esp32wifi::IsWifiOnline()
+  {
+  if (m_powermode == Off || m_mode == ESP32WIFI_MODE_OFF)
+    return false;
+  if (!MyNetManager.m_connected_wifi || !WifiHasIp())
+    return false;
+
+  bool v2_started = false;
+  bool v2_connected = false;
+#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V2)
+  v2_started = (MyOvmsServerV2 != NULL);
+  v2_connected = v2_started && StandardMetrics.ms_s_v2_connected->AsBool();
+#endif
+
+  bool v3_started = false;
+  bool v3_connected = false;
+#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V3)
+  v3_started = (MyOvmsServerV3 != NULL);
+  v3_connected = v3_started && StandardMetrics.ms_s_v3_connected->AsBool();
+#endif
+
+  bool check_v2v3 = m_v2v3_conncheck_defined ? m_v2v3_conncheck : (m_v2v3_conncheck || v2_started || v3_started);
+  if (check_v2v3 && ((v2_started && !v2_connected) || (v3_started && !v3_connected)))
+    return false;
+
+  return true;
   }
 
 void esp32wifi::EventWifiLostIp(std::string event, void* data)
@@ -1344,6 +1390,39 @@ void esp32wifi::EventTimer1(std::string event, void* data)
       }
     }
 
+  // Check V2/V3 online status while STA is active:
+  if ((m_mode == ESP32WIFI_MODE_CLIENT || m_mode == ESP32WIFI_MODE_APCLIENT) &&
+      m_sta_connected && MyNetManager.m_connected_wifi)
+    {
+    if (IsWifiOnline())
+      {
+      m_v2v3_offline_timer = 0;
+      m_v2v3_fail_count = 0;
+      }
+    else if (++m_v2v3_offline_timer >= 120)
+      {
+      m_v2v3_offline_timer = 0;
+      m_v2v3_fail_count++;
+      if (m_v2v3_fail_count == 1)
+        {
+        ESP_LOGW(TAG, "V2/V3 connection check failed for 120s, reconnecting WIFI client");
+        StartConnect();
+        }
+      else
+        {
+        ESP_LOGW(TAG, "V2/V3 connection check failed (%u), disconnecting WIFI client for 300s (fallback)",
+          (unsigned)m_v2v3_fail_count);
+        m_sta_reconnect = monotonictime + 300;
+        esp_wifi_disconnect();
+        }
+      return;
+      }
+    }
+  else
+    {
+    m_v2v3_offline_timer = 0;
+    }
+
   // reconnect?
   if ((m_mode == ESP32WIFI_MODE_CLIENT || m_mode == ESP32WIFI_MODE_APCLIENT)
       && !m_sta_connected && m_sta_reconnect && monotonictime >= m_sta_reconnect)
@@ -1535,10 +1614,12 @@ void esp32wifi::OutputStatus(int verbosity, OvmsWriter* writer)
 
   if (m_mode == ESP32WIFI_MODE_CLIENT || m_mode == ESP32WIFI_MODE_APCLIENT)
     {
-    writer->printf("\nSTA SSID: %s (%.1f dBm) [%s]\n  MAC: " MACSTR "\n  IP: " IPSTR "/" IPSTR "\n  GW: " IPSTR "\n  AP: " MACSTR "\n",
+    writer->printf("\nSTA SSID: %s (%.1f dBm) [%s]\n  MAC: " MACSTR "\n  IP: " IPSTR "/" IPSTR "\n  GW: " IPSTR "\n  AP: " MACSTR "\n  Online: %s (V2/V3 check: %s)\n",
       m_wifi_sta_cfg.sta.ssid, (float)m_sta_rssi/10, (m_sta_ssid.empty()) ? "scanning" : "fixed", MAC2STR(m_mac_sta),
       IP2STR(&m_ip_info_sta.ip), IP2STR(&m_ip_info_sta.netmask), IP2STR(&m_ip_info_sta.gw),
-      MAC2STR(m_sta_ap_info.bssid));
+      MAC2STR(m_sta_ap_info.bssid),
+      IsWifiOnline() ? "yes" : "no",
+      m_v2v3_conncheck ? "enabled" : "disabled");
     }
 
   if (m_mode == ESP32WIFI_MODE_AP || m_mode == ESP32WIFI_MODE_APCLIENT)
@@ -1596,6 +1677,19 @@ void esp32wifi::ConfigChanged(std::string event, void* data)
     m_ap2client_timeout  = MyConfig.GetParamValueInt("network", "wifi.ap2client.timeout", 30) * 60;        //!< Wifi Mode APClient to client timeout in minutes to seconds for ticker1
     m_ap2client_enabled  = MyConfig.GetParamValueInt("network", "wifi.ap2client.enable", false);           //!< Wifi Mode APClient to client enable/disable    
     m_ap2client_active = m_ap2client_enabled;                                                              // Mirror enabled to active
+    }
+  if (event == "config.mounted" || !param || param->GetName() == "network" || param->GetName() == "auto")
+    {
+    bool v2v3_default =
+#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V2)
+      MyConfig.GetParamValueBool("auto", "server.v2", false) || (MyOvmsServerV2 != NULL) ||
+#endif
+#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V3)
+      MyConfig.GetParamValueBool("auto", "server.v3", false) || (MyOvmsServerV3 != NULL) ||
+#endif
+      false;
+    m_v2v3_conncheck_defined = MyConfig.IsDefined("network", "wifi.conncheck.v2v3");
+    m_v2v3_conncheck = MyConfig.GetParamValueBool("network", "wifi.conncheck.v2v3", v2v3_default);
     }
   }
 
