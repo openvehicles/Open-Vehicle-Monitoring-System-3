@@ -44,6 +44,7 @@ static const char *TAG = "cellular";
 #include "ovms_notify.h"
 #include "ovms_boot.h"
 #include "ovms_config.h"
+#include "ovms_time.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // Global convenience variables
@@ -359,6 +360,7 @@ modem::modem(const char* name, uart_port_t uartnum, int baud, int rxpin, int txp
   m_nmea = NULL;
   m_gps_hot_start = false;
   m_gps_enabled = false;
+  m_autotz_enabled = false;
   m_gps_usermode = GUM_DEFAULT;
   m_gps_parkpause = 0;
   m_gps_stopticker = 0;
@@ -604,6 +606,8 @@ void modem::SupportSummary(OvmsWriter* writer, bool debug /*=FALSE*/)
         MyConfig.GetParamValueBool("modem", "enable.gps", false) ? "enabled" : "disabled");
       writer->printf("     Time: %s\n",
         MyConfig.GetParamValueBool("modem", "enable.gpstime", false) ? "enabled" : "disabled");
+      writer->printf("     Auto TZ: %s\n",
+        MyConfig.GetParamValueBool("modem", "enable.autotz", false) ? "enabled" : "disabled");
       }
     }
   }
@@ -1302,6 +1306,58 @@ void modem::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
         }
       }
     }
+  else if (line.compare(0, 7, "+CCLK: ") == 0)
+    {
+    // Format: +CCLK: "yy/MM/dd,hh:mm:ss±zz"
+    // e.g. +CCLK: "24/11/02,16:45:00+08"
+    // zz is timezone offset from GMT in 15-minute quarters
+    size_t q1 = line.find('"');
+    if (q1 != string::npos)
+      {
+      size_t q2 = line.find('"', q1 + 1);
+      if (q2 != string::npos && q2 >= q1 + 18)
+        {
+        std::string ts = line.substr(q1 + 1, q2 - q1 - 1);
+        size_t comma = ts.find(',');
+        if (comma != string::npos)
+          {
+          size_t tz_pos = ts.find_first_of("+-", comma);
+          if (tz_pos != string::npos && tz_pos + 2 < ts.length())
+            {
+            char sign = ts[tz_pos];
+            int quarters = atoi(ts.substr(tz_pos + 1, 2).c_str());
+            if (sign == '-') quarters = -quarters;
+            SetAutoTimezone(quarters);
+
+            int yy=0, MM=0, dd=0, hh=0, mm=0, ss=0;
+            if (sscanf(ts.c_str(), "%2d/%2d/%2d,%2d:%2d:%2d", &yy, &MM, &dd, &hh, &mm, &ss) == 6)
+              {
+              if (yy >= 20 && MM >= 1 && MM <= 12 && dd >= 1 && dd <= 31)
+                {
+                int year = 2000 + yy;
+                unsigned long jd = dd-32075+1461L*(year+4800+(MM-14)/12)/4+367*(MM-2-(MM-14)/12*12)/12-3*((year+4900+(MM-14)/12)/100)/4;
+                int64_t local_sec = (int64_t)(jd - 2440588L) * 86400L + (hh * 3600) + (mm * 60) + ss;
+                int64_t utc_sec = local_sec - (quarters * 15 * 60);
+                MyTime.Set(TAG, 3, true, (time_t)utc_sec);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  else if (line.compare(0, 7, "+CTZV: ") == 0 || line.compare(0, 8, "+CTZEU: ") == 0)
+    {
+    // Format: +CTZV: <tz> or +CTZEU: <tz>,<dst>
+    size_t start = line.find_first_of("+-");
+    if (start != string::npos && start + 2 < line.length())
+      {
+      char sign = line[start];
+      int quarters = atoi(line.substr(start + 1, 2).c_str());
+      if (sign == '-') quarters = -quarters;
+      SetAutoTimezone(quarters);
+      }
+    }
 
   // SMS received (URC):
   else if (line.compare(0, 6, "+CMT: ") == 0)
@@ -1888,6 +1944,7 @@ void modem::ConfigChanged(std::string event, void* data)
   if (!param || param->GetName() == "modem")
     {
     bool enable_gps = MyConfig.GetParamValueBool("modem", "enable.gps", false);
+    bool enable_autotz = MyConfig.GetParamValueBool("modem", "enable.autotz", false);
     bool gps_reactawake = MyConfig.GetParamValueBool("modem", "gps.parkreactawake", false);
     int gps_parkpause = MyConfig.GetParamValueInt("modem", "gps.parkpause", 0);
     int gps_reactivate = MyConfig.GetParamValueInt("modem", "gps.parkreactivate", 0);
@@ -1901,6 +1958,7 @@ void modem::ConfigChanged(std::string event, void* data)
     if (event == "config.mounted")
       {
       // Init:
+      m_autotz_enabled = enable_autotz;
       m_gps_enabled = enable_gps;
       m_gps_parkpause = gps_parkpause;
       m_gps_reactivate = gps_reactivate;
@@ -1910,6 +1968,7 @@ void modem::ConfigChanged(std::string event, void* data)
       m_gps_awake_start = gps_reactawake;
       }
     else if (enable_gps != m_gps_enabled ||
+            enable_autotz != m_autotz_enabled ||
             gps_parkpause != m_gps_parkpause || 
             gps_reactivate != m_gps_reactivate ||
             gps_reactlock != m_gps_reactlock ||
@@ -1918,6 +1977,7 @@ void modem::ConfigChanged(std::string event, void* data)
             gps_reactawake != m_gps_awake_start)
       {
       // User changed GPS configuration; translate to status change:
+      m_autotz_enabled = enable_autotz;
       m_gps_usermode = GUM_DEFAULT;
       m_gps_enabled = enable_gps;
       m_gps_awake_start = gps_reactawake;
@@ -2422,6 +2482,38 @@ void cellular_drivers(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int a
     }
   }
 
+void modem::SetAutoTimezone(int quarters)
+  {
+  if (quarters < -48 || quarters > 56)
+    {
+    ESP_LOGW(TAG, "Invalid timezone offset quarters: %d", quarters);
+    return;
+    }
+
+  int total_mins = quarters * 15;
+  char buf[32];
+  if (total_mins == 0)
+    {
+    snprintf(buf, sizeof(buf), "UTC");
+    }
+  else
+    {
+    // POSIX TZ specifies offset to ADD to local time to get UTC.
+    // Hence, east of GMT (total_mins > 0) has a negative sign in POSIX!
+    // Note: Do NOT use '<>' angle brackets because newlib in ESP-IDF 3.3.x does not support them!
+    char posix_sign = (total_mins > 0) ? '-' : '+';
+    int abs_mins = abs(total_mins);
+    int hours = abs_mins / 60;
+    int mins = abs_mins % 60;
+    if (mins != 0)
+      snprintf(buf, sizeof(buf), "UTC%c%d:%02d", posix_sign, hours, mins);
+    else
+      snprintf(buf, sizeof(buf), "UTC%c%d", posix_sign, hours);
+    }
+
+  MyTime.SetAutoTimezone(buf);
+  }
+
 ////////////////////////////////////////////////////////////////////////////////
 // Development assistance functions
 
@@ -2490,4 +2582,5 @@ CellularModemInit::CellularModemInit()
   //   'enable.net': Is NET enabled? yes/no (default: yes)
   //   'enable.gps': Is GPS enabled? yes/no (default: no)
   //   'enable.gpstime': use GPS time as system time? yes/no (default: no)
+  //   'enable.autotz': automatically set timezone from cellular network (NITZ)? yes/no (default: no)
   }

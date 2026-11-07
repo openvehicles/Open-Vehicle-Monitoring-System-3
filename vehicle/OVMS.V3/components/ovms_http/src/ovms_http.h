@@ -59,6 +59,8 @@ class OvmsHttpClient : public OvmsNetTcpConnection
     OvmsBuffer* m_buf;
     size_t m_bodysize;
     int m_responsecode;
+    bool m_chunked;
+    bool m_has_content_length;
     long m_timeout_ms = 10000;
   };
 

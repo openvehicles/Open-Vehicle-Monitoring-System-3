@@ -34,18 +34,27 @@ static const char *TAG = "http";
 #include "ovms_http.h"
 #include "ovms_config.h"
 #include "metrics_standard.h"
+#include <ctype.h>
+#include <errno.h>
+#include <stdlib.h>
 
 OvmsHttpClient::OvmsHttpClient(long timeout_ms /*= 10000*/)
   {
   m_buf = NULL;
   m_bodysize = 0;
   m_responsecode = 0;
+  m_chunked = false;
+  m_has_content_length = false;
   m_timeout_ms = timeout_ms;
   }
 
 OvmsHttpClient::OvmsHttpClient(std::string url, const char* method, long timeout_ms /*= 10000*/, size_t range_start /*= 0*/)
   {
   m_buf = NULL;
+  m_bodysize = 0;
+  m_responsecode = 0;
+  m_chunked = false;
+  m_has_content_length = false;
   m_timeout_ms = timeout_ms;
   Request(url, method, range_start);
   }
@@ -67,6 +76,8 @@ bool OvmsHttpClient::Request(std::string url, const char* method, size_t range_s
     }
   m_bodysize = 0;
   m_responsecode = 0;
+  m_chunked = false;
+  m_has_content_length = false;
 
   // First, split URL into server and path components
   if (url.compare(0, 7, "http://", 7) == 0)
@@ -152,6 +163,14 @@ bool OvmsHttpClient::Request(std::string url, const char* method, size_t range_s
         if (strncasecmp(header.c_str(), "Content-Length:", 15) == 0)
           {
           m_bodysize = atoi(header.substr(15).c_str());
+          m_has_content_length = true;
+          }
+        else if (strncasecmp(header.c_str(), "Transfer-Encoding:", 18) == 0)
+          {
+          std::string encoding = header.substr(18);
+          for (std::string::iterator it = encoding.begin(); it != encoding.end(); ++it)
+            *it = tolower((unsigned char)*it);
+          m_chunked = encoding.find("chunked") != std::string::npos;
           }
         if (header.compare(0,5,"HTTP/") == 0)
           {
@@ -246,6 +265,26 @@ int OvmsHttpClient::ResponseCode()
   return m_responsecode;
   }
 
+static bool http_read_line(OvmsHttpClient& http, std::string& line)
+  {
+  line.clear();
+  char ch;
+  while (line.size() < 1024)
+    {
+    ssize_t n = http.BodyRead(&ch, 1);
+    if (n != 1)
+      return false;
+    if (ch == '\n')
+      {
+      if (!line.empty() && line[line.size() - 1] == '\r')
+        line.erase(line.size() - 1);
+      return true;
+      }
+    line += ch;
+    }
+  return false;
+  }
+
 std::string OvmsHttpClient::GetBodyAsString()
   {
   std::string body;
@@ -253,6 +292,122 @@ std::string OvmsHttpClient::GetBodyAsString()
   if (!IsOpen())
     {
     ESP_LOGE(TAG, "http request failed");
+    return body;
+    }
+
+  if (m_chunked)
+    {
+    char rbuf[512];
+    std::string line;
+    bool failed = false;
+    bool done = false;
+
+    while (!done && !failed)
+      {
+      if (!http_read_line(*this, line))
+        {
+        failed = true;
+        break;
+        }
+
+      if (line.empty())
+        {
+        failed = true;
+        break;
+        }
+
+      size_t extension = line.find(';');
+      if (extension != std::string::npos)
+        line.erase(extension);
+
+      if (line.empty())
+        {
+        failed = true;
+        break;
+        }
+      for (std::string::const_iterator it = line.begin(); it != line.end(); ++it)
+        {
+        if (!isxdigit((unsigned char)*it))
+          {
+          failed = true;
+          break;
+          }
+        }
+      if (failed)
+        break;
+
+      errno = 0;
+      char* end = NULL;
+      unsigned long chunk_size = strtoul(line.c_str(), &end, 16);
+      if (errno == ERANGE || end == line.c_str() || *end != '\0')
+        {
+        failed = true;
+        break;
+        }
+
+      if (chunk_size == 0)
+        {
+        while (true)
+          {
+          if (!http_read_line(*this, line))
+            {
+            failed = true;
+            break;
+            }
+          if (line.empty())
+            {
+            done = true;
+            break;
+            }
+          }
+        break;
+        }
+
+      size_t remaining = chunk_size;
+      while (remaining > 0)
+        {
+        size_t request_size = (remaining < sizeof(rbuf)) ? remaining : sizeof(rbuf);
+        ssize_t n = BodyRead(rbuf, request_size);
+        if (n <= 0)
+          {
+          failed = true;
+          break;
+          }
+        body.append(rbuf, (size_t)n);
+        remaining -= n;
+        }
+      if (failed)
+        break;
+
+      char delimiter[2];
+      size_t received = 0;
+      while (received < sizeof(delimiter))
+        {
+        ssize_t n = BodyRead(delimiter + received, sizeof(delimiter) - received);
+        if (n <= 0)
+          {
+          failed = true;
+          break;
+          }
+        received += n;
+        }
+      if (failed || delimiter[0] != '\r' || delimiter[1] != '\n')
+        {
+        failed = true;
+        break;
+        }
+      }
+
+    if (failed || !done)
+      {
+      ESP_LOGE(TAG, "Invalid or incomplete chunked HTTP response body");
+      body.clear();
+      }
+    else
+      {
+      m_bodysize = body.size();
+      }
+    Disconnect();
     return body;
     }
 
@@ -269,13 +424,15 @@ std::string OvmsHttpClient::GetBodyAsString()
     }
   Disconnect();
 
-  if (filesize != expected)
+  if (m_has_content_length && filesize != expected)
     {
     ESP_LOGE(TAG, "Download file size (%d) does not match expected (%d)", filesize, expected);
     body.clear();
     }
-
-  Disconnect();
+  else if (!m_has_content_length)
+    {
+    m_bodysize = filesize;
+    }
 
   return body;
   }
@@ -289,4 +446,6 @@ void OvmsHttpClient::Reset()
     }
   m_bodysize = 0;
   m_responsecode = 0;
+  m_chunked = false;
+  m_has_content_length = false;
   }
