@@ -135,7 +135,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControlEQ(bool 
       else
         {
         // minutes to display time if restart is true, because climate will be restarted after 5/10/.. minutes
-        int minutes_display = m_climate_restart ? minutes : 5;
+        int minutes_display = m_climate_restart ? minutes + 2 : 5;
         snprintf(msg, sizeof(msg), "%d minutes Pre-conditioning started, HV SOC is %d%%", minutes_display, StdMetrics.ms_v_bat_soc->AsInt(can_soc));
         ESP_LOGI(TAG, "%s", msg);
         MyNotify.NotifyString("info", "climatecontrol.schedule", msg);

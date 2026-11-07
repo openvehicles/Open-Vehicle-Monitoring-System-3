@@ -130,6 +130,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void setTPMSValue();
     void ReCalcADCfactor(float can12V, OvmsWriter* writer=nullptr);
     void smart12VHistory();
+    void smartDCDCHistory();
 
     // --- Notification methods ---
     void NotifyTripReset();
@@ -462,6 +463,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool m_extendedStats = false;           // extended stats for trip and maintenance data
     bool m_enable_calcADCfactor = false;    // enable calculation of ADC factor
     bool m_gps_log_enable = false;          // enable GPS history log (V2 L message), opt-in only
+    bool m_dcdc_log_enable = false;         // enable DCDC history log (XSQ-DCDC-charging), opt-in only
     bool m_cmd_wakeup = false;              // wakeup command issued
     int m_reboot_ticker = 0;                // ticker for network restart
     int m_reboot_time = 30;                 // Restart Network time (minutes), when Server connection is lost
@@ -499,7 +501,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool m_can_last_acc_state = false;      // last active/listen state from CAN bus
     bool m_climate_trickle = false;         // flag to indicate if trickle charge is active
     float m_trickle_voltage = 0.0f;         // 12V voltage before trickle charge is activated
-    int m_adc_samples = 5;                  // number of samples for ADC factor calculation
+    static constexpr int ADC_SAMPLES = 5;   // number of samples for ADC factor calculation
     int m_ddt4all_ticker = 0;               // DDT4ALL active ticker
     int m_ddt4all_exec = 0;                 // DDT4ALL ticker for next execution
     int m_led_state = 4;                    // Online LED State: 0=off, 1=red, 2=green, 3=blue, 4=default (configurable)

@@ -32,6 +32,7 @@
 
 static const char *TAG = "v-smarteq";
 
+#include <algorithm>
 #include "vehicle_smarteq.h"
 #include "buffered_shell.h"
 #include "pcp.h"
@@ -220,6 +221,9 @@ void OvmsVehicleSmartEQ::Check12vState() {
 
 void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {
   #ifdef CONFIG_OVMS_COMP_ADC
+    static constexpr float ADC_CALIB_FACTOR = 0.993f;  // empirical calibration factor
+    static_assert(ADC_SAMPLES >= 3, "ADC_SAMPLES must be at least 3 for trimmed average");
+
     if (can12V < 11.0f || can12V > 16.0f)
       {
       ESP_LOGW(TAG, "Skip ADC factor recalculation (invalid 12V input %.2f)", can12V);
@@ -230,56 +234,46 @@ void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {
     // Configure ADC
     adc1_config_width(ADC_WIDTH_BIT_12);
     adc1_config_channel_atten(ADC1_CHANNEL_0, ADC_ATTEN_DB_11);
-    uint16_t samples_adc[m_adc_samples];
+    uint16_t samples_adc[ADC_SAMPLES];
 
     // Collect samples and accumulate sum in one pass (sort doesn't affect sum)
     uint32_t summid = 0;
-    for (int i = 0; i < m_adc_samples; i++)
+    for (int i = 0; i < ADC_SAMPLES; i++)
       {
-      vTaskDelay(5 / portTICK_PERIOD_MS);
+      if (writer)
+        vTaskDelay(5 / portTICK_PERIOD_MS);  // only delay in interactive command task, never in Ticker context
       samples_adc[i] = adc1_get_raw(ADC1_CHANNEL_0);
       summid += samples_adc[i];
       }
 
-    // Bubble sort (needed for median)
-    for (int i = 0; i < m_adc_samples - 1; i++)
-      {
-      for (int j = 0; j < m_adc_samples - i - 1; j++)
-        {
-        if (samples_adc[j] > samples_adc[j + 1])
-          {
-          uint16_t tmp   = samples_adc[j];
-          samples_adc[j] = samples_adc[j + 1];
-          samples_adc[j + 1] = tmp;
-          }
-        }
-      }
+    std::sort(samples_adc, samples_adc + ADC_SAMPLES);
 
     // Median (used as the new factor; can12V >= 11.0f is guaranteed above)
-    float median_raw = (m_adc_samples % 2 == 0)
-      ? (samples_adc[(m_adc_samples / 2) - 1] + samples_adc[m_adc_samples / 2]) / 2.0f
-      : samples_adc[m_adc_samples / 2];
+    float median_raw = (ADC_SAMPLES % 2 == 0)
+      ? (samples_adc[(ADC_SAMPLES / 2) - 1] + samples_adc[ADC_SAMPLES / 2]) / 2.0f
+      : (float)samples_adc[ADC_SAMPLES / 2];
 
-    float adc_factor_new  = median_raw / can12V;
+    float adc_factor_new  = (median_raw / can12V) * ADC_CALIB_FACTOR;
     float adc_factor_prev = MyConfig.GetParamValueFloat("system.adc", "factor12v", 195.7f);
 
     // Diagnostic output (only computed when a writer is attached)
     if (writer)
       {
       uint16_t min_val  = samples_adc[0];
-      uint16_t max_val  = samples_adc[m_adc_samples - 1];
-      float avg_raw     = summid / (float)m_adc_samples;
-      float trimmed_avg = (summid - min_val - max_val) / (float)(m_adc_samples - 2);
+      uint16_t max_val  = samples_adc[ADC_SAMPLES - 1];
+      float avg_raw     = summid / (float)ADC_SAMPLES;
+      float trimmed_avg = (summid - min_val - max_val) / (float)(ADC_SAMPLES - 2);
       writer->printf("ADC samples (sorted): min=%u max=%u median=%.2f avg=%.2f trimmed=%.2f\n",
                       min_val, max_val, median_raw, avg_raw, trimmed_avg);
       writer->printf("     factor_median=%.3f factor_avg=%.3f factor_trimmed=%.3f\n",
-                      adc_factor_new, avg_raw / can12V, trimmed_avg / can12V);
+                      adc_factor_new, (avg_raw / can12V) * ADC_CALIB_FACTOR, (trimmed_avg / can12V) * ADC_CALIB_FACTOR);
       writer->printf("ADC recalculation: avg_raw=%.2f  V_batt=%.3f  factor=%.3f\n",
                       avg_raw, can12V, adc_factor_new);
       }
 
     if (adc_factor_new < 160.0f || adc_factor_new > 230.0f)
       {
+      ESP_LOGW(TAG, "Reject ADC factor %.3f (out of bounds, keeping %.3f)", adc_factor_new, adc_factor_prev);
       if (writer) writer->printf("Reject ADC factor %.3f (out of bounds, keeping %.3f)\n", adc_factor_new, adc_factor_prev);
       return;
       }
@@ -299,6 +293,7 @@ void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {
       MyConfig.SetParamValueFloat("system.adc", "factor12v", adc_factor_new);
       MyConfig.SetParamValueBool("xsq", "calc.adcfactor", false);
     }
+    ESP_LOGI(TAG, "New ADC factor stored: %.3f (prev %.3f, V_batt %.2fV)", adc_factor_new, adc_factor_prev, can12V);
     if (writer) writer->printf("New ADC factor stored: %.3f (prev %.3f, history size %u)\n", adc_factor_new, adc_factor_prev, (unsigned)n);
     // Send data log XSQ-ADC-FactorLog
     // V1: <new factor>,<prev factor>
@@ -362,6 +357,22 @@ void OvmsVehicleSmartEQ::smart12VHistory()
   // Send data log XSQ-12V-undervoltagelog
   // V1: <12Vvoltage>,<USM12V>,<BMS12V>
   MyNotify.NotifyStringf("data", "xsq.12v.log.undervoltage", "XSQ-12V-undervoltagelog,1,%d,%.2f,%.2f,%.2f", 86400 * 30, volt, usm12v, bms12v);
+}
+
+void OvmsVehicleSmartEQ::smartDCDCHistory()
+{
+  float volt          = StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f);
+  float dcdc_volt     = mt_evc_dcdc->GetElemValue(1);      // DCDC 12V voltage
+  float dcdc_volt_req = mt_evc_dcdc->GetElemValue(0);      // DCDC voltage request
+  float dcdc_load     = mt_evc_dcdc->GetElemValue(7);      // DCDC load (%)
+  float dcdc_power    = mt_evc_dcdc->GetElemValue(2);      // DCDC power (W)
+  float dcdc_current  = mt_evc_dcdc->GetElemValue(6);      // DCDC current (A)
+
+  // Send data log XSQ-DCDC-charging
+  // V1: <12Vsys>,<volt>,<vreq>,<load>,<power>,<cur>
+  MyNotify.NotifyStringf("data", "xsq.dcdc.log.charging",
+    "XSQ-DCDC-charging,1,%d,%.2f,%.2f,%.2f,%.2f,%.0f,%.2f",
+    86400 * 10, volt, dcdc_volt, dcdc_volt_req, dcdc_load, dcdc_power, dcdc_current);
 }
 
 void OvmsVehicleSmartEQ::smartOn()

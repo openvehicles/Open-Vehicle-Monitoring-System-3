@@ -52,6 +52,10 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
     return Fail;
     }
 
+  if (wakeup && !IsAwakeEQ())
+    CommandWakeup();         // enable CAN write access and wakeup vehicle
+  if (IsAwakeEQ() && !m_can_last_acc_state) 
+    smartCANbusAccess(true); // enable CAN write access
   m_ddt4all_exec = 10; // 10 seconds delay for next DDT4ALL command execution
 
   ESP_LOGI(TAG, "CommandCanVector");
@@ -76,27 +80,13 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
       return Fail;
       }
     }
-
-  mt_canbyte->SetValue(hexbytes[0].c_str());
-
-  OvmsVehicle::vehicle_command_t res = Fail;
-  res = wakeup ? CommandWakeup() : Success;
   
-  if (!m_can_last_acc_state) 
+  mt_canbyte->SetValue(hexbytes[0].c_str());
+  OvmsVehicle::vehicle_command_t res = Fail;
+  
+  // Check if CAN bus access state is active
+  if (m_can_last_acc_state)
     {
-    smartCANbusAccess(true); // enable CAN write access to send wakeup command
-    }  
-
-  vTaskDelay(500 / portTICK_PERIOD_MS);
-  if (res == Success)
-    {
-    if (wakeup && !can_awake) 
-      {
-      ESP_LOGE(TAG, "vehicle not awake");
-      m_ddt4all_exec = 5; // reduce cooldown on error
-      return Fail;
-      }
-
     uint8_t protocol = ISOTP_STD;
     int timeout_ms = 200;
     int err = 0;
@@ -143,8 +133,9 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
     } 
   else
     {
+    ESP_LOGE(TAG, "CAN bus access state not active, cannot send command");
     m_ddt4all_exec = 5; // reduce cooldown on error
-    MyNotify.NotifyString("error", "CommandCanVector.fail","Command failed during wakeup");
+    MyNotify.NotifyString("error", "CommandCanVector.fail","Command failed during CAN bus access state not active");
     return res;
     }
 }
@@ -209,6 +200,9 @@ void OvmsVehicleSmartEQ::xsq_canwrite(int verbosity, OvmsWriter* writer, OvmsCom
     writer->puts("Multiple data: xsq canwrite 0x745,0x765,30082002/30082002,false,true");
     return;
   }
+  
+  if (!smarteq->m_can_last_acc_state) 
+    smarteq->smartCANbusAccess(true); // enable CAN write access
   
   smarteq->CommandCanWrite(argv[0], writer);
 }
@@ -589,6 +583,10 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
       { m["wifi.ap2client.enable"] = "yes"; changed = true; }
     if (m.find("wifi.bad.reconnect") == m.end())
       { m["wifi.bad.reconnect"] = "yes"; changed = true; }
+    if (m.find("wifi.sq.good") == m.end())
+      { m["wifi.sq.good"] = "-80"; changed = true; }
+    if (m.find("wifi.sq.bad") == m.end())
+      { m["wifi.sq.bad"] = "-85"; changed = true; }
     if (m.erase("type") > 0)
       changed = true;
     if (changed)
@@ -738,8 +736,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandSetDefault(int verbosi
   auto map_net = MyConfig.GetParamMap("network");
   map_net["wifi.ap2client.enable"] = "yes";
   map_net["wifi.bad.reconnect"] = "yes";
-  map_net["wifi.sq.good"] = "-86";
-  map_net["wifi.sq.bad"] = "-88";
+  map_net["wifi.sq.good"] = "-80";
+  map_net["wifi.sq.bad"] = "-85";
   map_net.erase("modem.sq.good");
   map_net.erase("modem.sq.bad");
   MyConfig.SetParamMap("network", map_net);
