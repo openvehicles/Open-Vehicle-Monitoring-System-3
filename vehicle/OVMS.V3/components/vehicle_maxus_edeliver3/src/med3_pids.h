@@ -41,7 +41,7 @@ constexpr uint32_t evcctx = 0x726u;
 constexpr uint32_t evccrx = 0x7a6u;
 
 
-// BMS PIDs
+// BMS PIDs (MJ2020/21, UABC NCM battery)
 constexpr uint16_t bmsStatusPid = 0xe037u;
 constexpr uint16_t bmssoh = 0xe053u;
 constexpr uint16_t bmssoc = 0xe095u;
@@ -51,6 +51,14 @@ constexpr uint16_t celltemps = 0xe114u;
 constexpr uint16_t packamps = 0xe131u;
 constexpr uint16_t bmsccsamps = 0xe088u;
 constexpr uint16_t bmsacamps = 0xe089u;
+
+// BMS DIDs (MJ2022+, CATL LFP battery), decoding verified against logs taken while
+// AC charging (see https://github.com/M4GNV5/esphome-maxus-edeliver3)
+constexpr uint16_t bmspackamps = 0xb105u;   // (raw - 0x8000) * 0.1 A, negative = charging
+constexpr uint16_t bmscellvolts = 0xb142u;  // 110 x UINT16 mV, unused slots 0 / 0xFFFF (104 used)
+constexpr uint16_t bmspackvolts = 0xb143u;  // UINT16, 0.1 V
+constexpr uint16_t bmssocprecise = 0xd117u; // UINT16, 0.1 %
+constexpr uint16_t bmsodometer = 0xe101u;   // UINT24, 0.1 km
 //constexpr uint16_t bmsccschargeon = 0xe090u;
 //constexpr uint16_t bmsacchargeon = 0xe091u;
 
