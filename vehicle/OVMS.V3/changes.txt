@@ -1,6 +1,9 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Maxus eDeliver 3: added support for MJ2022+ (CATL LFP) vans
+  New metrics:
+    xmg.v.bat.lfp                                     -- bool: yes = MJ2022+ CATL LFP battery detected
 - Server V3 (MQTT): added topic API for asynchronous JavaScript execution/evaluation.
     Topic scheme:
       <prefix>/client/<clientid>/jscommand/<cmdid>    -- payload: JavaScript code/scriptlet
