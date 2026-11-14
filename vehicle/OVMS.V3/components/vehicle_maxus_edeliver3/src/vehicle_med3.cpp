@@ -38,6 +38,8 @@ static const char *TAG = "v-maxed3";
 #include "ovms_webserver.h"
 #endif
 #include <algorithm>
+#include <cmath>
+#include <cstring>
 #include "metrics_standard.h"
 #include "ovms_notify.h"
 
@@ -49,7 +51,7 @@ static const char *TAG = "v-maxed3";
 const char* poll_state_name[] = { "OFF", "ON", "RUNNING", "CHARGING" };
 
 // RX buffer access macros: b=byte#
-#define RXB_BYTE(b)           m_rxbuf[b]
+#define RXB_BYTE(b)           ((uint8_t)m_rxbuf[b])
 #define RXB_UINT16(b)         (((uint16_t)RXB_BYTE(b) << 8) | RXB_BYTE(b+1))
 #define RXB_UINT24(b)         (((uint32_t)RXB_BYTE(b) << 16) | ((uint32_t)RXB_BYTE(b+1) << 8) \
                                | RXB_BYTE(b+2))
@@ -65,7 +67,8 @@ namespace
 // The parameter namespace for this vehicle
 const char PARAM_NAME[] = "xmg";
 
-static const OvmsPoller::poll_pid_t obdii_polls[] =
+// MJ2020/21: UABC NCM battery (35 / 52.5 kWh, 96 cells)
+static const OvmsPoller::poll_pid_t obdii_polls_2021[] =
     {
         // VCU Polls
 //        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcusoc, {  0, 0, 30, 30  }, 0, ISOTP_STD }, //SOC Scaled below
@@ -90,6 +93,23 @@ static const OvmsPoller::poll_pid_t obdii_polls[] =
 //        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsacchargeon, {  0, 0, 15, 15  }, 0, ISOTP_STD }, // looks CCS state
         { 0, 0, 0x00, 0x00, { 0, 0, 0, 0 }, 0, 0 }
     };
+
+// MJ2022+: CATL LFP battery (50.2 kWh, 104 cells)
+// The poll state is derived from broadcast frames (see PollerStateTicker), so these
+// are only polled with the ignition on (RUNNING) or while charging (CHARGING).
+static const OvmsPoller::poll_pid_t obdii_polls_2022[] =
+    {
+        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmspackamps, {  0, 0, 1, 5  }, 0, ISOTP_STD }, //HV pack current
+        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmspackvolts, {  0, 0, 2, 10  }, 0, ISOTP_STD }, //HV pack voltage
+        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmssocprecise, {  0, 0, 30, 10  }, 0, ISOTP_STD }, //SOC (0.1 %)
+        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsodometer, {  0, 0, 30, 0  }, 0, ISOTP_STD }, //odometer (0.1 km)
+        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmscellvolts, {  0, 0, 15, 15  }, 0, ISOTP_STD }, //cell volts
+        { 0, 0, 0x00, 0x00, { 0, 0, 0, 0 }, 0, 0 }
+    };
+
+// Broadcast frames older than this are considered gone
+#define FRAME_TIMEOUT_MS      3000
+
 charging_profile granny_steps[]  = {
     {0,98,6375}, // Max charge rate (7200) less charge loss
     {98,100,2700}, // Observed charge rate
@@ -133,6 +153,7 @@ OvmsVehicleMaxed3::OvmsVehicleMaxed3()
         RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
 
         // Init BMS:
+        // 96 cells (MJ2020/21), the MJ2022+ cell count is set from the B142 response
         BmsSetCellArrangementVoltage(96, 16);
         BmsSetCellArrangementTemperature(16, 1);
         BmsSetCellLimitsVoltage(2.0, 5.0);
@@ -144,8 +165,12 @@ OvmsVehicleMaxed3::OvmsVehicleMaxed3()
         PollSetThrottling(0);
         PollSetResponseSeparationTime(1);
         PollSetState(STATE_OFF);
-        PollSetPidList(m_can1, obdii_polls);
-        
+        // Start with the MJ2020/21 list, switched once a MJ2022+ VIN is seen on 0x5B0:
+        m_lfp_model = false;
+        m_lfp_detected = false;
+        m_last_ignition_ms = m_last_ac_ms = m_last_dc_ms = 0;
+        PollSetPidList(m_can1, obdii_polls_2021);
+
         // Init VIN:
         memset(m_vin, 0, sizeof(m_vin));
         
@@ -156,6 +181,7 @@ OvmsVehicleMaxed3::OvmsVehicleMaxed3()
         m_consumprange_raw = MyMetrics.InitFloat("xmg.v.consumprange.raw", 0, SM_STALE_HIGH); // temp to monitor bms range
         m_watt_hour_raw = MyMetrics.InitFloat("xmg.v.watt.hour.raw", 0, SM_STALE_HIGH); // temp to monitor bms range
         m_poll_bmsstate = MyMetrics.InitInt("xmg.bmsstate.poll", SM_STALE_HIGH); //temp to monitor bms state
+        m_lfp_metric = MyMetrics.InitBool("xmg.v.bat.lfp", SM_STALE_NONE, false); // MJ2022+ CATL LFP battery detected
     
         // Register config params
         MyConfig.RegisterParam("xmg", "Maxus EV configuration", true, true);
@@ -213,11 +239,61 @@ void OvmsVehicleMaxed3::IncomingPollReply(const OvmsPoller::poll_job_t &job, uin
       case bmssoh: //soh
           StdMetrics.ms_v_bat_soh->SetValue(value1);
           break;
+      // --- MJ2020/21 (UABC NCM) ---
       case bmssoc: //soc from bms
           StdMetrics.ms_v_bat_soc->SetValue(value2 / 100.0f);
           if(StdMetrics.ms_v_bat_soc->AsFloat() >=99.35)StdMetrics.ms_v_bat_soc->SetValue(100.0f);
           break;
-          
+
+      case vcupackvolts:  // Pack Voltage
+          StdMetrics.ms_v_bat_voltage->SetValue(value2 / 10.0f);
+          break;
+
+      case bmsccsamps:
+          if (StdMetrics.ms_v_charge_type->AsString() == "ccs")
+        {
+            StdMetrics.ms_v_bat_current->SetValue((value2 / 10.0f) - ((value2 / 10.0f) * 2)); // converted to negative
+            StdMetrics.ms_v_bat_power->SetValue((((value2 / 10.0f) - ((value2 / 10.0f) * 2)) * StdMetrics.ms_v_bat_voltage->AsFloat()) / 1000.0f);// converted to negtive
+        }
+          break;
+
+      case cellvolts:
+        {
+            // Read battery cell voltages 1-96:
+            BmsRestartCellVoltages();
+            for (int i = 0; i < 96; i++)
+                {
+                    BmsSetCellVoltage(i, RXB_UINT16(i*2) * 0.001f);
+                }
+            break;
+        }
+
+      // --- MJ2022+ (CATL LFP) ---
+      case bmssocprecise: // SOC from BMS, 0.1 %
+          if (m_rxbuf.size() < 2) break;
+          StdMetrics.ms_v_bat_soc->SetValue(RXB_UINT16(0) * 0.1f);
+          break;
+
+      case bmspackamps: // HV pack current: (raw - 0x8000) * 0.1 A, negative = charging
+      {
+          if (m_rxbuf.size() < 2) break;
+          float amps = ((int32_t)RXB_UINT16(0) - 0x8000) * 0.1f;
+          StdMetrics.ms_v_bat_current->SetValue(amps);
+          if (StdMetrics.ms_v_bat_voltage->IsDefined())
+              StdMetrics.ms_v_bat_power->SetValue(amps * StdMetrics.ms_v_bat_voltage->AsFloat() / 1000.0f);
+          break;
+      }
+
+      case bmspackvolts: // HV pack voltage, 0.1 V
+          if (m_rxbuf.size() < 2) break;
+          StdMetrics.ms_v_bat_voltage->SetValue(RXB_UINT16(0) * 0.1f);
+          break;
+
+      case bmsodometer: // odometer, 0.1 km
+          if (m_rxbuf.size() < 3) break;
+          StdMetrics.ms_v_pos_odometer->SetValue(RXB_UINT24(0) * 0.1f);
+          break;
+
       case bmssocraw: //soc from bms
           m_soc_raw->SetValue(value2 / 100.0f);
           break;
@@ -236,19 +312,6 @@ void OvmsVehicleMaxed3::IncomingPollReply(const OvmsPoller::poll_job_t &job, uin
               StdMetrics.ms_v_pos_speed->SetValue(0);
       }
           break;
-      case vcupackvolts:  // Pack Voltage
-          StdMetrics.ms_v_bat_voltage->SetValue(value2 / 10.0f);
-          break;
-
-
-      case bmsccsamps:
-          if (StdMetrics.ms_v_charge_type->AsString() == "ccs")
-        {
-            StdMetrics.ms_v_bat_current->SetValue((value2 / 10.0f) - ((value2 / 10.0f) * 2)); // converted to negative
-            StdMetrics.ms_v_bat_power->SetValue((((value2 / 10.0f) - ((value2 / 10.0f) * 2)) * StdMetrics.ms_v_bat_voltage->AsFloat()) / 1000.0f);// converted to negtive
-        }
-          break;
-
       case bmsacamps:
           if (StdMetrics.ms_v_charge_type->AsString() == "type2")
         {
@@ -270,13 +333,25 @@ void OvmsVehicleMaxed3::IncomingPollReply(const OvmsPoller::poll_job_t &job, uin
           }
           break;
 
-      case cellvolts:
+      case bmscellvolts:
         {
-            // Read battery cell voltages 1-96:
-            BmsRestartCellVoltages();
-            for (int i = 0; i < 96; i++)
+            // 110 x UINT16 [mV], unused slots are 0 or 0xFFFF (104 cells in use)
+            std::vector<float> cells;
+            cells.reserve(m_rxbuf.size() / 2);
+            for (size_t i = 0; i + 1 < m_rxbuf.size(); i += 2)
                 {
-                    BmsSetCellVoltage(i, RXB_UINT16(i*2) * 0.001f);
+                    uint16_t mv = RXB_UINT16(i);
+                    if (mv == 0 || mv == 0xffff)
+                        continue;
+                    cells.push_back(mv * 0.001f);
+                }
+            if (cells.empty())
+                break;
+            BmsCheckChangeCellArrangementVoltage((int)cells.size());
+            BmsRestartCellVoltages();
+            for (size_t i = 0; i < cells.size(); i++)
+                {
+                    BmsSetCellVoltage(i, cells[i]);
                 }
             break;
         }
@@ -385,16 +460,36 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
               StdMetrics.ms_v_bat_range_full->SetValue(241);
               StdMetrics.ms_v_bat_range_ideal->SetValue(241 * soc / 100);
                 //StdMetrics.ms_v_bat_range_est->SetValue(241 * soc / 108);
-              StdMetrics.ms_v_bat_range_est->SetValue(52.5*((kmPerKwh * (1-((20-batTemp)*1.3)/100)*(soc/100))*(effSoh/100)));
-        
+              // MJ2022+ with ignition on: the van's own range estimation is taken from 0x6F0
+              if (!(m_lfp_model && FrameRecent(m_last_ignition_ms)))
+                  StdMetrics.ms_v_bat_range_est->SetValue(52.5*((kmPerKwh * (1-((20-batTemp)*1.3)/100)*(soc/100))*(effSoh/100)));
+
               break;
         }
         default:
           break;
-                
-            case 0x540:  // odometer in KM
+
+            case 0x6f0:  // MJ2022+: range in km as shown on the dashboard, only valid with ignition on
                 {
-                    StdMetrics.ms_v_pos_odometer->SetValue(d[0] << 16 | d[1] << 8 | d[2]);// odometer
+                    if (p_frame->FIR.B.DLC < 2 || !m_lfp_model || !FrameRecent(m_last_ignition_ms))
+                        break;
+                    // 12 bit: byte 0 + high nibble of byte 1
+                    StdMetrics.ms_v_bat_range_est->SetValue((float)((d[0] << 4) | (d[1] >> 4)), Kilometers);
+                    break;
+                }
+
+            case 0x540:  // odometer in km, distance to next service in km
+                {
+                    if (p_frame->FIR.B.DLC < 3)
+                        break;
+                    // bytes 0-2: odometer [km]. Don't overwrite the 0.1 km resolution from
+                    // the BMS (DID E101) as long as both agree:
+                    float odometer = (d[0] << 16) | (d[1] << 8) | d[2];
+                    if (fabsf(StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers) - odometer) >= 1.0f)
+                        StdMetrics.ms_v_pos_odometer->SetValue(odometer, Kilometers);
+                    // MJ2022+ bytes 6-7: distance to next service [km] (unknown on MJ2020/21)
+                    if (m_lfp_model && p_frame->FIR.B.DLC >= 8)
+                        StdMetrics.ms_v_env_service_range->SetValue((d[6] << 8) | d[7], Kilometers);
                     break;
                 }
       
@@ -405,8 +500,32 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
                 break;
                 }
                 
+            case 0x5b0:  // last 8 VIN characters (ASCII), the first one is the model year
+                {
+                    if (p_frame->FIR.B.DLC < 8)
+                        break;
+                    for (int i = 0; i < 8; i++)
+                        if (d[i] < 0x20 || d[i] > 0x7e)
+                            return;
+                    // L = 2020, M = 2021 (UABC NCM), N = 2022, P = 2023, R = 2024, ... (CATL LFP)
+                    // Anything else (or no 0x5B0 at all) keeps the MJ2020/21 handling.
+                    if (strchr("NPRSTVWXY", d[0]) != NULL)
+                        m_lfp_detected = true;
+                    break;
+                }
+
+            case 0x510:  // only sent with the ignition on (seen on MJ2022+)
+                m_last_ignition_ms = NowMs();
+                break;
+
+            case 0x606:  // only sent while DC charging (seen on MJ2022+)
+                m_last_dc_ms = NowMs();
+                break;
+
             case 0x604:  // actual power to HV Battery ( does not work on ccs and maybe ac?\)
                 {
+                // only sent while AC charging (seen on MJ2022+)
+                m_last_ac_ms = NowMs();
               //  hvpower = d[5];
               //      float hvbatpower = (hvpower * 42 / 1000);
               //  StdMetrics.ms_v_bat_power->SetValue(-hvbatpower);
@@ -432,9 +551,33 @@ void OvmsVehicleMaxed3::PollerStateTicker(canbus *bus)
 
     //StdMetrics.ms_v_charge_inprogress->SetValue(-StdMetrics.ms_v_bat_power->AsFloat() >=  1.000f);
 
+    // MJ2022+ (CATL LFP) detected from the VIN: switch the poll list once
+    if (m_lfp_detected && !m_lfp_model) {
+        ESP_LOGI(TAG, "PollerStateTicker: MJ2022+ VIN seen, switching to the CATL LFP poll list");
+        m_lfp_model = true;
+        m_lfp_metric->SetValue(true);
+        PollSetPidList(m_can1, obdii_polls_2022);
+    }
+
     // Determine new polling state:
     uint8_t new_pollstate;
-    if (StdMetrics.ms_v_charge_inprogress->AsBool() == true) {
+    if (m_lfp_model) {
+        // The BMS status DID E037 is unknown on MJ2022+, use the broadcast frames
+        // that are only sent while charging (0x604 AC, 0x606 DC) or with the ignition on (0x510).
+        if (FrameRecent(m_last_ac_ms) || FrameRecent(m_last_dc_ms)) {
+            new_pollstate = STATE_CHARGING;
+        }
+        else if (FrameRecent(m_last_ignition_ms)) {
+            new_pollstate = STATE_RUNNING;
+        }
+        else if (charging12v) {
+            new_pollstate = STATE_ON;
+        }
+        else {
+            new_pollstate = STATE_OFF;
+        }
+    }
+    else if (StdMetrics.ms_v_charge_inprogress->AsBool() == true) {
         new_pollstate = STATE_CHARGING;
     }
     else if (StdMetrics.ms_v_env_on->AsBool() == true) {
@@ -459,6 +602,17 @@ void OvmsVehicleMaxed3::PollerStateTicker(canbus *bus)
 
     // Vehicle awake state follows 12V system state (for processEnergy()):
     StdMetrics.ms_v_env_awake->SetValue(charging12v);
+}
+
+uint32_t OvmsVehicleMaxed3::NowMs()
+{
+    return xTaskGetTickCount() * portTICK_PERIOD_MS;
+}
+
+// true if the broadcast frame with timestamp t was received recently
+bool OvmsVehicleMaxed3::FrameRecent(uint32_t t)
+{
+    return t != 0 && NowMs() - t < FRAME_TIMEOUT_MS;
 }
 
 // Vehicle framework registration
