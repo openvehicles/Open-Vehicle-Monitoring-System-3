@@ -1,6 +1,13 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- smart EQ: added scheduled park-time 12V trickle charging
+  New configs:
+    [xsq] 12v.trickle.park.days       -- Trickle after park days (0 = disabled, 1–60 days, default: 0)
+    [xsq] 12v.trickle.park.time       -- Scheduled time (local time ``HH:MM``, default: ``12:00``)
+    [xsq] 12v.trickle.park.duration   -- Park trickle duration (5 / 10 / 15 / 20 / 25 / 30 min, default: 10 min)
+  New commands:
+    xsq settrickle [args]             -- Show/configure park-time 12V trickle charging (<days>/<HH:MM>[/<duration>] | 0)
 - Maxus eDeliver 3: added support for MJ2022+ (CATL LFP) vans
   New metrics:
     xmg.v.bat.lfp                                     -- bool: yes = MJ2022+ CATL LFP battery detected
