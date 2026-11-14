@@ -547,9 +547,12 @@ void OvmsVehicleSmartEQ::WebCfgTrickle(PageEntry_t& p, PageContext_t& c) {
     // Process form submission
     map["12v.charge"]          = (c.getvar("charge12v") == "yes") ? "yes" : "no";
     map["dcdc.log"]            = (c.getvar("dcdclog") == "yes") ? "yes" : "no";
-    map["charge12v.threshold"] = c.getvar("charge12v_threshold");
-    map_veh["12v.ref"]         = c.getvar("ref12V");
-    map["12v.trickle.time"]    = c.getvar("trickle_time");
+    map["charge12v.threshold"]        = c.getvar("charge12v_threshold");
+    map_veh["12v.ref"]                = c.getvar("ref12V");
+    map["12v.trickle.time"]           = c.getvar("trickle_time");
+    map["12v.trickle.park.days"]      = c.getvar("trickle_park_days");
+    map["12v.trickle.park.time"]      = c.getvar("trickle_park_time");
+    map["12v.trickle.park.duration"]  = c.getvar("trickle_park_duration");
 
     auto validFloat = [&](const std::string& s, double minv, double maxv, const char* fname)->bool {
       if (s.empty()) return false;
@@ -562,22 +565,80 @@ void OvmsVehicleSmartEQ::WebCfgTrickle(PageEntry_t& p, PageContext_t& c) {
       return true;
     };
 
+    auto validInt = [&](const std::string& s, int minv, int maxv, const char* fname)->bool {
+      if (s.empty()) return false;
+      char* end = nullptr;
+      long v = strtol(s.c_str(), &end, 10);
+      if (end == s.c_str() || *end != '\0' || v < minv || v > maxv) {
+        error += std::string("<li>Invalid ") + fname + "</li>";
+        return false;
+      }
+      return true;
+    };
+
     if (!validFloat(map["charge12v.threshold"], 11.25, 12.25, "12V trickle charge threshold")) map["charge12v.threshold"] = "11.75";
     if (!validFloat(map_veh["12v.ref"], 12.00, 13.50, "12V reference voltage")) map_veh["12v.ref"] = "12.50";
     if (!validFloat(map["12v.trickle.time"], 5, 30, "Trickle charge duration")) map["12v.trickle.time"] = "10";
+    if (!validInt(map["12v.trickle.park.days"], 0, 60, "Park time trickle days")) map["12v.trickle.park.days"] = "0";
+    if (!validInt(map["12v.trickle.park.duration"], 5, 30, "Park time trickle duration")) map["12v.trickle.park.duration"] = "10";
+
+    int park_hour = 12, park_min = 0;
+    {
+      const std::string& pt = map["12v.trickle.park.time"];
+      size_t colon = pt.find(':');
+      bool time_ok = false;
+      if (colon != std::string::npos && colon > 0 && colon + 1 < pt.size()) {
+        std::string sh = pt.substr(0, colon);
+        std::string sm = pt.substr(colon + 1);
+        char* eh = nullptr;
+        char* em = nullptr;
+        long h = strtol(sh.c_str(), &eh, 10);
+        long m = strtol(sm.c_str(), &em, 10);
+        if (*eh == '\0' && *em == '\0' && h >= 0 && h <= 23 && m >= 0 && m <= 59) {
+          park_hour = (int)h;
+          park_min = (int)m;
+          time_ok = true;
+        }
+      }
+      if (!time_ok) {
+        if (atoi(map["12v.trickle.park.days"].c_str()) == 0 && pt.empty()) {
+          map["12v.trickle.park.time"] = "12:00";
+        } else {
+          error += "<li>Invalid park trickle scheduled time (use HH:MM)</li>";
+          map["12v.trickle.park.time"] = "12:00";
+        }
+      }
+    }
 
     int trickle_time = atoi(map["12v.trickle.time"].c_str());
     trickle_time = ((trickle_time + 2) / 5) * 5;  // round to nearest 5/10/.. minutes
     if (trickle_time < 5) trickle_time = 5;
     if (trickle_time > 30) trickle_time = 30;
 
+    int park_days = atoi(map["12v.trickle.park.days"].c_str());
+    int park_duration = atoi(map["12v.trickle.park.duration"].c_str());
+    park_duration = ((park_duration + 2) / 5) * 5;
+    if (park_duration < 5) park_duration = 5;
+    if (park_duration > 30) park_duration = 30;
+
     if (error.empty()) {
       char tbuf[16];
       snprintf(tbuf, sizeof(tbuf), "%d", trickle_time);
       map["12v.trickle.time"] = tbuf;
+      snprintf(tbuf, sizeof(tbuf), "%d", park_days);
+      map["12v.trickle.park.days"] = tbuf;
+      snprintf(tbuf, sizeof(tbuf), "%02d:%02d", park_hour, park_min);
+      map["12v.trickle.park.time"] = tbuf;
+      snprintf(tbuf, sizeof(tbuf), "%d", park_duration);
+      map["12v.trickle.park.duration"] = tbuf;
+
       sq->m_12v_charge = strtobool(map["12v.charge"]);
       sq->m_dcdc_log_enable = strtobool(map["dcdc.log"]);
       sq->m_12v_trickle_time = trickle_time;
+      sq->m_12v_trickle_park_days = park_days;
+      sq->m_12v_trickle_park_hour = park_hour;
+      sq->m_12v_trickle_park_min = park_min;
+      sq->m_12v_trickle_park_time = park_duration;
 
       float new_ref = atof(map_veh["12v.ref"].c_str());
       float new_thresh = atof(map["charge12v.threshold"].c_str());
@@ -614,6 +675,12 @@ void OvmsVehicleSmartEQ::WebCfgTrickle(PageEntry_t& p, PageContext_t& c) {
     map["12v.charge"] = "yes";
   if (map["12v.trickle.time"].empty())
     map["12v.trickle.time"] = "10";
+  if (map["12v.trickle.park.days"].empty())
+    map["12v.trickle.park.days"] = "0";
+  if (map["12v.trickle.park.time"].empty())
+    map["12v.trickle.park.time"] = "12:00";
+  if (map["12v.trickle.park.duration"].empty())
+    map["12v.trickle.park.duration"] = "10";
   if (map_veh["12v.ref"].empty())
     map_veh["12v.ref"] = "12.50";
   if (map_veh["12v.alert"].empty())
@@ -702,6 +769,32 @@ void OvmsVehicleSmartEQ::WebCfgTrickle(PageEntry_t& p, PageContext_t& c) {
     sq->IsCANwrite() ? "<span class=\"label label-success\">Enabled</span>" : "<span class=\"label label-warning\">Disabled (CAN write required)</span>");
   c.input_info("CAN Write Mode", status_buf);
 
+  uint32_t park_secs = (uint32_t)StdMetrics.ms_v_env_parktime->AsInt(0);
+  snprintf(status_buf, sizeof(status_buf), "%ud %02u:%02u:%02u",
+    (unsigned)(park_secs / 86400u),
+    (unsigned)((park_secs % 86400u) / 3600u),
+    (unsigned)((park_secs % 3600u) / 60u),
+    (unsigned)(park_secs % 60u));
+  c.input_info("Current Park Time", status_buf);
+
+  if (sq->m_12v_trickle_park_days > 0) {
+    snprintf(status_buf, sizeof(status_buf), "Every %d day(s) at %02d:%02d for %d min",
+      sq->m_12v_trickle_park_days, sq->m_12v_trickle_park_hour, sq->m_12v_trickle_park_min, sq->m_12v_trickle_park_time);
+    c.input_info("Park Trickle Schedule", status_buf);
+
+    if (sq->m_12v_trickle_park_marker > 0) {
+      uint32_t m_secs = sq->m_12v_trickle_park_marker;
+      snprintf(status_buf, sizeof(status_buf), "%ud %02u:%02u:%02u",
+        (unsigned)(m_secs / 86400u),
+        (unsigned)((m_secs % 86400u) / 3600u),
+        (unsigned)((m_secs % 3600u) / 60u),
+        (unsigned)(m_secs % 60u));
+    } else {
+      snprintf(status_buf, sizeof(status_buf), "Not triggered yet");
+    }
+    c.input_info("Park Trickle Marker", status_buf);
+  }
+
   c.fieldset_end();
 
   // Configuration
@@ -713,9 +806,19 @@ void OvmsVehicleSmartEQ::WebCfgTrickle(PageEntry_t& p, PageContext_t& c) {
   c.input_radiobtn_end(
     "<p>When 12V undervoltage is detected for more than 10 minutes while parked, preconditioning is activated for the configured duration to charge the 12V battery from the HV battery.</p>"
     "<p>Safety limit: If triggered 3 times within 24 hours, trickle charging is paused to prevent deep discharge / battery damage.</p>");
-
-  c.input_slider("Trickle charge duration", "trickle_time", 3, "min", -1, atof(map["12v.trickle.time"].c_str()), 10, 5, 30, 5,
-    "<p>Duration of preconditioning during 12V trickle charging (default: 10 min, range: 5…30 min in 5 min steps).</p>"
+  
+  int trickle_dur = atoi(map["12v.trickle.time"].c_str());
+  trickle_dur = ((trickle_dur + 2) / 5) * 5;
+  if (trickle_dur < 5) trickle_dur = 5;
+  if (trickle_dur > 30) trickle_dur = 30;
+  c.input_radiobtn_start("Trickle charge duration", "trickle_time");
+    c.input_radiobtn_option("trickle_time", "5 min", "5", trickle_dur == 5);
+    c.input_radiobtn_option("trickle_time", "10 min", "10", trickle_dur == 10);
+    c.input_radiobtn_option("trickle_time", "15 min", "15", trickle_dur == 15);
+    c.input_radiobtn_option("trickle_time", "20 min", "20", trickle_dur == 20);
+    c.input_radiobtn_option("trickle_time", "25 min", "25", trickle_dur == 25);
+    c.input_radiobtn_option("trickle_time", "30 min", "30", trickle_dur == 30);
+  c.input_radiobtn_end("<p>Duration of preconditioning during 12V trickle charging (default: 10 min, range: 5…30 min in 5 min steps).</p>"
     "<p>Note: Preconditioning has a fixed runtime of 5 minutes, and it restarts depending on the set time!</p>" 
     "<p>This means the power contactors are switched every time it restarts!</p>");
 
@@ -728,6 +831,32 @@ void OvmsVehicleSmartEQ::WebCfgTrickle(PageEntry_t& p, PageContext_t& c) {
 
   c.input_checkbox("Enable DCDC charging log", "dcdclog", strtobool(map["dcdc.log"]),
     "<p>Opt in to send a DCDC history log record (<code>XSQ-DCDC-charging</code>) every minute while 12V charging is active.</p>");
+
+  c.fieldset_end();
+
+  // Park Time Trickle Charge
+  c.fieldset_start("Park Time Trickle Charge");
+
+  c.input_slider("Trickle after park days", "trickle_park_days", 3, "days", -1, atoi(map["12v.trickle.park.days"].c_str()), 0, 0, 60, 1,
+    "<p>Automatically activate 12V trickle charging after the configured number of parked days (0 = disabled, 1…60 days).</p>"
+    "<p>When triggered, the current park time is remembered so the next cycle activates after another configured number of days. Turning the vehicle on resets this marker.</p>");
+
+  c.input("time", "Scheduled time", "trickle_park_time", map["12v.trickle.park.time"].c_str(), "HH:MM",
+    "<p>Local time of day (HH:MM) at which the park-time 12V trickle charge is activated once the configured park days have elapsed.</p>");
+
+  int park_dur = atoi(map["12v.trickle.park.duration"].c_str());
+  park_dur = ((park_dur + 2) / 5) * 5;
+  if (park_dur < 5) park_dur = 5;
+  if (park_dur > 30) park_dur = 30;
+  c.input_radiobtn_start("Park trickle duration", "trickle_park_duration");
+    c.input_radiobtn_option("trickle_park_duration", "5 min", "5", park_dur == 5);
+    c.input_radiobtn_option("trickle_park_duration", "10 min", "10", park_dur == 10);
+    c.input_radiobtn_option("trickle_park_duration", "15 min", "15", park_dur == 15);
+    c.input_radiobtn_option("trickle_park_duration", "20 min", "20", park_dur == 20);
+    c.input_radiobtn_option("trickle_park_duration", "25 min", "25", park_dur == 25);
+    c.input_radiobtn_option("trickle_park_duration", "30 min", "30", park_dur == 30);
+  c.input_radiobtn_end(
+    "<p>Duration of preconditioning for park-time 12V trickle charging (5…30 min).</p>");
 
   c.fieldset_end();
 
