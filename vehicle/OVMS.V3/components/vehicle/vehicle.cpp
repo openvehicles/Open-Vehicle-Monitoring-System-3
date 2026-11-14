@@ -436,7 +436,7 @@ void OvmsVehicle::CheckPreconditionSchedule()
         vehicle_command_t result = CommandClimateControl(true);
 
         if (result == Success)
-        {
+          {
           m_climate_restart = true;
           m_climate_restart_ticker = duration - 1; // Subtract 1 minute for ticker countdown
           m_precondition_last_triggered_day = current_day;
@@ -445,13 +445,15 @@ void OvmsVehicle::CheckPreconditionSchedule()
           ESP_LOGI(TAG, "Precondition activated successfully");
           MyNotify.NotifyString("info", "climatecontrol.schedule",
                                 "Scheduled precondition started");
-        }
+          }
         else
-        {
+          {
+          m_climate_restart = false;
+          m_climate_restart_ticker = 0;
           ESP_LOGE(TAG, "Failed to activate precondition (result=%d)", result);
           MyNotify.NotifyString("error", "climatecontrol.schedule",
                                 "Scheduled precondition failed to start");
-        }
+          }
         
         return; // Only trigger once per minute
       }
