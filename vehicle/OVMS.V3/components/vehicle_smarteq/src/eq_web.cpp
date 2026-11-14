@@ -806,9 +806,19 @@ void OvmsVehicleSmartEQ::WebCfgTrickle(PageEntry_t& p, PageContext_t& c) {
   c.input_radiobtn_end(
     "<p>When 12V undervoltage is detected for more than 10 minutes while parked, preconditioning is activated for the configured duration to charge the 12V battery from the HV battery.</p>"
     "<p>Safety limit: If triggered 3 times within 24 hours, trickle charging is paused to prevent deep discharge / battery damage.</p>");
-
-  c.input_slider("Trickle charge duration", "trickle_time", 3, "min", -1, atof(map["12v.trickle.time"].c_str()), 10, 5, 30, 5,
-    "<p>Duration of preconditioning during 12V trickle charging (default: 10 min, range: 5…30 min in 5 min steps).</p>"
+  
+  int trickle_dur = atoi(map["12v.trickle.time"].c_str());
+  trickle_dur = ((trickle_dur + 2) / 5) * 5;
+  if (trickle_dur < 5) trickle_dur = 5;
+  if (trickle_dur > 30) trickle_dur = 30;
+  c.input_radiobtn_start("Trickle charge duration", "trickle_time");
+    c.input_radiobtn_option("trickle_time", "5 min", "5", trickle_dur == 5);
+    c.input_radiobtn_option("trickle_time", "10 min", "10", trickle_dur == 10);
+    c.input_radiobtn_option("trickle_time", "15 min", "15", trickle_dur == 15);
+    c.input_radiobtn_option("trickle_time", "20 min", "20", trickle_dur == 20);
+    c.input_radiobtn_option("trickle_time", "25 min", "25", trickle_dur == 25);
+    c.input_radiobtn_option("trickle_time", "30 min", "30", trickle_dur == 30);
+  c.input_radiobtn_end("<p>Duration of preconditioning during 12V trickle charging (default: 10 min, range: 5…30 min in 5 min steps).</p>"
     "<p>Note: Preconditioning has a fixed runtime of 5 minutes, and it restarts depending on the set time!</p>" 
     "<p>This means the power contactors are switched every time it restarts!</p>");
 
