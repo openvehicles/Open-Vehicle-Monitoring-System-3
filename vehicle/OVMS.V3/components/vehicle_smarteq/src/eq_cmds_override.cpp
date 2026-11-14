@@ -57,6 +57,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControlEQ(bool 
     m_climate_restart_ticker = 0;
     m_climate_restart = false;
     m_climate_trickle = false;
+    m_trickle_counted = false;
     return Success;
     }  
 
@@ -69,6 +70,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControlEQ(bool 
     m_climate_restart_ticker = 0;
     m_climate_restart = false;
     m_climate_trickle = false;
+    m_trickle_counted = false;
     return Fail;
     }
 
@@ -104,13 +106,19 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControlEQ(bool 
       m_climate_restart = m_climate_restart_ticker > 6 ? true : false;
       if (trickle) 
         {
+        if (!restart && !m_climate_trickle)
+          {
+          m_trickle_counted = false;
+          m_trickle_voltage = StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f);
+          }
         // reset trickle flag if less than 5 minutes;
         m_climate_trickle = m_climate_restart_ticker > 6 ? true : false;
         ESP_LOGI(TAG, "activated 12V trickle charging successfully");
         // Check the 12V ADC factors based on the 12V readings, as long as trickle charging is active.
         m_check12vadc = true;
-        if(m_climate_restart_ticker > m_12v_trickle_time - 2)
+        if (!m_trickle_counted)
           {
+          m_trickle_counted = true;
           time_t now = time(NULL);
           while (!m_12v_trickle_charge_times.empty() && (now - m_12v_trickle_charge_times.front()) > 24 * 3600)
             m_12v_trickle_charge_times.pop_front();
@@ -144,6 +152,10 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControlEQ(bool 
       }
     else
       {
+      m_climate_restart_ticker = 0;
+      m_climate_restart = false;
+      m_climate_trickle = false;
+      m_trickle_counted = false;
       if (trickle) 
         {
         snprintf(msg, sizeof(msg), "Failed to activate 12V trickle charging! 12V is %.2f, HV SOC is %d%%", m_trickle_voltage, StdMetrics.ms_v_bat_soc->AsInt(can_soc));
@@ -546,6 +558,8 @@ void OvmsVehicleSmartEQ::NotifyVehicleIdling()
 void OvmsVehicleSmartEQ::NotifiedVehicleOn()
 {
   ESP_LOGI(TAG,"car is on");
+  m_12v_trickle_park_marker = 0;
+  m_12v_trickle_park_last_min = -1;
 }
 
 void OvmsVehicleSmartEQ::NotifiedVehicleOff()

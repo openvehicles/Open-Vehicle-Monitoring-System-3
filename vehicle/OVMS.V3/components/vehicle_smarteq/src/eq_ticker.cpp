@@ -170,6 +170,14 @@ void OvmsVehicleSmartEQ::Ticker10(uint32_t ticker)
     }
   if (m_gps_log_enable && IsOnEQ() && !StdMetrics.ms_v_pos_latitude->IsStale() && StdMetrics.ms_v_pos_gpslock->AsBool(false))
     SendGPSLog();
+
+  if (!m_climate_restart && m_climate_restart_ticker == 0 && !IsOnHVACEQ())
+    {
+    m_climate_trickle = false;
+    m_trickle_counted = false;
+    }
+
+  CheckParkTimeTrickle(ticker);
   } // Ticker 10
 
 void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker) 
