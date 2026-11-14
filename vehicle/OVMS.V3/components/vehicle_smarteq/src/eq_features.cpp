@@ -32,6 +32,7 @@
 
 static const char *TAG = "v-smarteq";
 
+#include <algorithm>
 #include "vehicle_smarteq.h"
 #include "buffered_shell.h"
 #include "pcp.h"
@@ -208,6 +209,7 @@ void OvmsVehicleSmartEQ::Check12vState() {
         m_climate_restart_ticker = m_12v_trickle_time;
         m_climate_restart = true;
         m_climate_trickle = true;
+        m_trickle_counted = false;
         m_trickle_voltage = volt;   // Store the voltage at the time of trickle charging activation for notification purposes
       }
     } 
@@ -218,8 +220,84 @@ void OvmsVehicleSmartEQ::Check12vState() {
     }
 }
 
+void OvmsVehicleSmartEQ::CheckParkTimeTrickle(uint32_t ticker) {
+  if (IsOnEQ() || StdMetrics.ms_v_env_on->AsBool(false))
+    {
+    m_12v_trickle_park_marker = 0;
+    m_12v_trickle_park_last_min = -1;
+    return;
+    }
+
+  if (m_12v_trickle_park_days <= 0)
+    return;
+
+  uint32_t parktime = (uint32_t)StdMetrics.ms_v_env_parktime->AsInt(0);
+  if (parktime < m_12v_trickle_park_marker)
+    m_12v_trickle_park_marker = 0;  // parktime was reset (e.g. door opened while unlocked or reboot)
+
+  uint32_t required_secs = (uint32_t)m_12v_trickle_park_days * 86400u;
+  if (required_secs > 60u)
+    required_secs -= 60u;  // 60s tolerance for minor clock/ticker drift across multi-day intervals
+
+  if (parktime - m_12v_trickle_park_marker < required_secs)
+    return;
+
+  time_t now = time(NULL);
+  if (now < 1577836800)  // system time not yet synced (before 2020-01-01)
+    return;
+
+  struct tm tm_now;
+  if (!localtime_r(&now, &tm_now))
+    return;
+
+  if (tm_now.tm_hour != m_12v_trickle_park_hour || tm_now.tm_min != m_12v_trickle_park_min)
+    return;
+
+  int cur_min_id = tm_now.tm_yday * 1440 + tm_now.tm_hour * 60 + tm_now.tm_min;
+  if (m_12v_trickle_park_last_min == cur_min_id)
+    return;
+  m_12v_trickle_park_last_min = cur_min_id;
+
+  if (IsChargingEQ() || Is12VchargeEQ() || IsOnHVACEQ() || m_climate_trickle)
+    {
+    ESP_LOGI(TAG, "Park-time 12V trickle skipped: charging or HVAC already active");
+    return;
+    }
+
+  if (!IsCANwrite())
+    {
+    ESP_LOGW(TAG, "Park-time 12V trickle skipped: CAN write disabled");
+    return;
+    }
+
+  if (StdMetrics.ms_v_bat_soc->AsInt(can_soc) < 31)
+    {
+    ESP_LOGW(TAG, "Park-time 12V trickle skipped: HV SOC too low (%d%%)", StdMetrics.ms_v_bat_soc->AsInt(can_soc));
+    return;
+    }
+
+  if (mt_12v_trickle_charge_count && mt_12v_trickle_charge_count->AsInt(0) >= 3)
+    {
+    ESP_LOGW(TAG, "Park-time 12V trickle skipped: 24h activation limit reached");
+    return;
+    }
+
+  m_12v_trickle_park_marker = parktime;
+  // Add +1 when on a 60s boundary because VehicleTicker1 decrements m_climate_restart_ticker right after Ticker10
+  m_climate_restart_ticker = m_12v_trickle_park_time + ((ticker % 60 == 0) ? 1 : 0);
+  m_climate_restart = true;
+  m_climate_trickle = true;
+  m_trickle_counted = false;
+  m_trickle_voltage = StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f);
+  ESP_LOGI(TAG, "Park-time 12V trickle charge triggered at %02d:%02d after %u s parked (duration: %d min, marker: %u s)",
+           m_12v_trickle_park_hour, m_12v_trickle_park_min, (unsigned)parktime, m_12v_trickle_park_time, (unsigned)m_12v_trickle_park_marker);
+}
+
 void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {
   #ifdef CONFIG_OVMS_COMP_ADC
+    static constexpr float ADC_CALIB_FACTOR = 0.993f;  // empirical calibration factor
+    static_assert(ADC_SAMPLES >= 3, "ADC_SAMPLES must be at least 3 for trimmed average");
+
     if (can12V < 11.0f || can12V > 16.0f)
       {
       ESP_LOGW(TAG, "Skip ADC factor recalculation (invalid 12V input %.2f)", can12V);
@@ -230,56 +308,51 @@ void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {
     // Configure ADC
     adc1_config_width(ADC_WIDTH_BIT_12);
     adc1_config_channel_atten(ADC1_CHANNEL_0, ADC_ATTEN_DB_11);
-    uint16_t samples_adc[m_adc_samples];
+    uint16_t samples_adc[ADC_SAMPLES];
 
     // Collect samples and accumulate sum in one pass (sort doesn't affect sum)
     uint32_t summid = 0;
-    for (int i = 0; i < m_adc_samples; i++)
+    for (int i = 0; i < ADC_SAMPLES; i++)
       {
-      vTaskDelay(5 / portTICK_PERIOD_MS);
+      if (writer)
+        vTaskDelay(5 / portTICK_PERIOD_MS);  // only delay in interactive command task, never in Ticker context
       samples_adc[i] = adc1_get_raw(ADC1_CHANNEL_0);
       summid += samples_adc[i];
       }
 
-    // Bubble sort (needed for median)
-    for (int i = 0; i < m_adc_samples - 1; i++)
-      {
-      for (int j = 0; j < m_adc_samples - i - 1; j++)
-        {
-        if (samples_adc[j] > samples_adc[j + 1])
-          {
-          uint16_t tmp   = samples_adc[j];
-          samples_adc[j] = samples_adc[j + 1];
-          samples_adc[j + 1] = tmp;
-          }
-        }
-      }
+    std::sort(samples_adc, samples_adc + ADC_SAMPLES);
+    uint16_t min_val  = samples_adc[0];
+    uint16_t max_val  = samples_adc[ADC_SAMPLES - 1];
 
-    // Median (used as the new factor; can12V >= 11.0f is guaranteed above)
-    float median_raw = (m_adc_samples % 2 == 0)
-      ? (samples_adc[(m_adc_samples / 2) - 1] + samples_adc[m_adc_samples / 2]) / 2.0f
-      : samples_adc[m_adc_samples / 2];
+    float median_raw = (ADC_SAMPLES % 2 == 0)
+      ? (samples_adc[(ADC_SAMPLES / 2) - 1] + samples_adc[ADC_SAMPLES / 2]) / 2.0f
+      : (float)samples_adc[ADC_SAMPLES / 2];
+      float avg_raw     = summid / (float)ADC_SAMPLES;
+      float trimmed_avg = (summid - min_val - max_val) / (float)(ADC_SAMPLES - 2);
 
-    float adc_factor_new  = median_raw / can12V;
+    
+    float adc_median = (median_raw / can12V) * ADC_CALIB_FACTOR;
+    float adc_avg  = (avg_raw / can12V) * ADC_CALIB_FACTOR;
+    float adc_trimmed = (trimmed_avg / can12V) * ADC_CALIB_FACTOR;
+    float adc[3] = {adc_median, adc_avg, adc_trimmed};
+
+    float adc_factor_new  = adc[MyConfig.GetParamValueInt("xsq", "calc.adcfactor.base", 2)];  // default to trimmed average if not set
     float adc_factor_prev = MyConfig.GetParamValueFloat("system.adc", "factor12v", 195.7f);
 
     // Diagnostic output (only computed when a writer is attached)
     if (writer)
       {
-      uint16_t min_val  = samples_adc[0];
-      uint16_t max_val  = samples_adc[m_adc_samples - 1];
-      float avg_raw     = summid / (float)m_adc_samples;
-      float trimmed_avg = (summid - min_val - max_val) / (float)(m_adc_samples - 2);
       writer->printf("ADC samples (sorted): min=%u max=%u median=%.2f avg=%.2f trimmed=%.2f\n",
                       min_val, max_val, median_raw, avg_raw, trimmed_avg);
       writer->printf("     factor_median=%.3f factor_avg=%.3f factor_trimmed=%.3f\n",
-                      adc_factor_new, avg_raw / can12V, trimmed_avg / can12V);
-      writer->printf("ADC recalculation: avg_raw=%.2f  V_batt=%.3f  factor=%.3f\n",
-                      avg_raw, can12V, adc_factor_new);
+                      adc_median, adc_avg, adc_trimmed);
+      writer->printf("ADC recalculation: V_batt=%.3f  factor=%.3f\n",
+                      can12V, adc_factor_new);
       }
 
     if (adc_factor_new < 160.0f || adc_factor_new > 230.0f)
       {
+      ESP_LOGW(TAG, "Reject ADC factor %.3f (out of bounds, keeping %.3f)", adc_factor_new, adc_factor_prev);
       if (writer) writer->printf("Reject ADC factor %.3f (out of bounds, keeping %.3f)\n", adc_factor_new, adc_factor_prev);
       return;
       }
@@ -299,6 +372,7 @@ void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {
       MyConfig.SetParamValueFloat("system.adc", "factor12v", adc_factor_new);
       MyConfig.SetParamValueBool("xsq", "calc.adcfactor", false);
     }
+    ESP_LOGI(TAG, "New ADC factor stored: %.3f (prev %.3f, V_batt %.2fV)", adc_factor_new, adc_factor_prev, can12V);
     if (writer) writer->printf("New ADC factor stored: %.3f (prev %.3f, history size %u)\n", adc_factor_new, adc_factor_prev, (unsigned)n);
     // Send data log XSQ-ADC-FactorLog
     // V1: <new factor>,<prev factor>
@@ -364,6 +438,22 @@ void OvmsVehicleSmartEQ::smart12VHistory()
   MyNotify.NotifyStringf("data", "xsq.12v.log.undervoltage", "XSQ-12V-undervoltagelog,1,%d,%.2f,%.2f,%.2f", 86400 * 30, volt, usm12v, bms12v);
 }
 
+void OvmsVehicleSmartEQ::smartDCDCHistory()
+{
+  float volt          = StdMetrics.ms_v_bat_12v_voltage->AsFloat(0.0f);
+  float dcdc_volt     = mt_evc_dcdc->GetElemValue(1);      // DCDC 12V voltage
+  float dcdc_volt_req = mt_evc_dcdc->GetElemValue(0);      // DCDC voltage request
+  float dcdc_load     = mt_evc_dcdc->GetElemValue(7);      // DCDC load (%)
+  float dcdc_power    = mt_evc_dcdc->GetElemValue(2);      // DCDC power (W)
+  float dcdc_current  = mt_evc_dcdc->GetElemValue(6);      // DCDC current (A)
+
+  // Send data log XSQ-DCDC-charging
+  // V1: <12Vsys>,<volt>,<vreq>,<load>,<power>,<cur>
+  MyNotify.NotifyStringf("data", "xsq.dcdc.log.charging",
+    "XSQ-DCDC-charging,1,%d,%.2f,%.2f,%.2f,%.2f,%.0f,%.2f",
+    86400 * 10, volt, dcdc_volt, dcdc_volt_req, dcdc_load, dcdc_power, dcdc_current);
+}
+
 void OvmsVehicleSmartEQ::smartOn()
 {
   // Reset trip values
@@ -379,6 +469,10 @@ void OvmsVehicleSmartEQ::smartOn()
   m_12v_ticker = 0;
   m_climate_restart = false;
   m_climate_restart_ticker = 0;
+  m_climate_trickle = false;
+  m_trickle_counted = false;
+  m_12v_trickle_park_marker = 0;
+  m_12v_trickle_park_last_min = -1;
   // reset idle ticker when vehicle turned on to prevent trigger every 60 sec.
   m_idle_ticker = 15 * 60;
   // canwrite enable write access, only when car is on

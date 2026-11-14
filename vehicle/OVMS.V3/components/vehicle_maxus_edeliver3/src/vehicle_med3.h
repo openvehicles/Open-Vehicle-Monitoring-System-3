@@ -38,6 +38,8 @@
 #endif
 #include "med3_pids.h"
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "freertos/timers.h"
 
 #include <vector>
@@ -65,6 +67,7 @@ class OvmsVehicleMaxed3 : public OvmsVehicle
     OvmsMetricFloat* m_consump_raw;
     OvmsMetricFloat* m_consumprange_raw;
     OvmsMetricInt* m_poll_bmsstate;
+    OvmsMetricBool* m_lfp_metric;
 
   protected:
       std::string         m_rxbuf;
@@ -84,6 +87,16 @@ class OvmsVehicleMaxed3 : public OvmsVehicle
       void IncomingFrameCan1(CAN_frame_t* p_frame);
       void IncomingPollFrame(CAN_frame_t* frame);
       void SetBmsStatus(uint8_t status);
+      static uint32_t NowMs();
+      static bool FrameRecent(uint32_t t);
+
+      // Model year: MJ2020/21 (UABC NCM, default) or MJ2022+ (CATL LFP)
+      bool m_lfp_model;                     // MJ2022+ poll list active
+      volatile bool m_lfp_detected;         // MJ2022+ VIN seen on 0x5B0
+      // Last reception [ms] of broadcast frames used for the MJ2022+ poll state:
+      volatile uint32_t m_last_ignition_ms; // 0x510, ignition on
+      volatile uint32_t m_last_ac_ms;       // 0x604, AC charging
+      volatile uint32_t m_last_dc_ms;       // 0x606, DC charging
       /// A temporary store for the VIN
      
       int calcMinutesRemaining(int toSoc, charging_profile charge_steps[]);

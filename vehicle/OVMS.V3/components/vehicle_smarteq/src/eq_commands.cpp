@@ -52,6 +52,10 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
     return Fail;
     }
 
+  if (wakeup && !IsAwakeEQ())
+    CommandWakeup();         // enable CAN write access and wakeup vehicle
+  if (IsAwakeEQ() && !m_can_last_acc_state) 
+    smartCANbusAccess(true); // enable CAN write access
   m_ddt4all_exec = 10; // 10 seconds delay for next DDT4ALL command execution
 
   ESP_LOGI(TAG, "CommandCanVector");
@@ -76,27 +80,13 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
       return Fail;
       }
     }
-
-  mt_canbyte->SetValue(hexbytes[0].c_str());
-
-  OvmsVehicle::vehicle_command_t res = Fail;
-  res = wakeup ? CommandWakeup() : Success;
   
-  if (!m_can_last_acc_state) 
+  mt_canbyte->SetValue(hexbytes[0].c_str());
+  OvmsVehicle::vehicle_command_t res = Fail;
+  
+  // Check if CAN bus access state is active
+  if (m_can_last_acc_state)
     {
-    smartCANbusAccess(true); // enable CAN write access to send wakeup command
-    }  
-
-  vTaskDelay(500 / portTICK_PERIOD_MS);
-  if (res == Success)
-    {
-    if (wakeup && !can_awake) 
-      {
-      ESP_LOGE(TAG, "vehicle not awake");
-      m_ddt4all_exec = 5; // reduce cooldown on error
-      return Fail;
-      }
-
     uint8_t protocol = ISOTP_STD;
     int timeout_ms = 200;
     int err = 0;
@@ -143,8 +133,9 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
     } 
   else
     {
+    ESP_LOGE(TAG, "CAN bus access state not active, cannot send command");
     m_ddt4all_exec = 5; // reduce cooldown on error
-    MyNotify.NotifyString("error", "CommandCanVector.fail","Command failed during wakeup");
+    MyNotify.NotifyString("error", "CommandCanVector.fail","Command failed during CAN bus access state not active");
     return res;
     }
 }
@@ -209,6 +200,9 @@ void OvmsVehicleSmartEQ::xsq_canwrite(int verbosity, OvmsWriter* writer, OvmsCom
     writer->puts("Multiple data: xsq canwrite 0x745,0x765,30082002/30082002,false,true");
     return;
   }
+  
+  if (!smarteq->m_can_last_acc_state) 
+    smarteq->smartCANbusAccess(true); // enable CAN write access
   
   smarteq->CommandCanWrite(argv[0], writer);
 }
@@ -498,6 +492,150 @@ void OvmsVehicleSmartEQ::xsq_trickle(int verbosity, OvmsWriter* writer, OvmsComm
   xsq_climate_common(verbosity, writer, cmd, argc, argv, true);
 }
 
+void OvmsVehicleSmartEQ::xsq_settrickle(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
+  OvmsVehicleSmartEQ* smarteq = GetInstance(writer);
+  if (!smarteq)
+    return;
+
+  if (argc == 0) {
+    uint32_t park_secs = (uint32_t)StdMetrics.ms_v_env_parktime->AsInt(0);
+    writer->puts("Park-time 12V trickle charge:");
+    writer->printf("  Status:        %s\n", smarteq->m_12v_trickle_park_days > 0 ? "Enabled" : "Disabled");
+    writer->printf("  Park days:     %d\n", smarteq->m_12v_trickle_park_days);
+    writer->printf("  Schedule time: %02d:%02d\n", smarteq->m_12v_trickle_park_hour, smarteq->m_12v_trickle_park_min);
+    writer->printf("  Duration:      %d min\n", smarteq->m_12v_trickle_park_time);
+    writer->printf("  Current park:  %ud %02u:%02u:%02u (%u s)\n",
+                   (unsigned)(park_secs / 86400u),
+                   (unsigned)((park_secs % 86400u) / 3600u),
+                   (unsigned)((park_secs % 3600u) / 60u),
+                   (unsigned)(park_secs % 60u),
+                   (unsigned)park_secs);
+    if (smarteq->m_12v_trickle_park_marker > 0) {
+      uint32_t m_secs = smarteq->m_12v_trickle_park_marker;
+      writer->printf("  Marker:        %ud %02u:%02u:%02u (%u s)\n",
+                     (unsigned)(m_secs / 86400u),
+                     (unsigned)((m_secs % 86400u) / 3600u),
+                     (unsigned)((m_secs % 3600u) / 60u),
+                     (unsigned)(m_secs % 60u),
+                     (unsigned)m_secs);
+    } else {
+      writer->puts("  Marker:        0 (not triggered yet)");
+    }
+    writer->puts("Usage: xsq settrickle <days>/<HH:MM>[/<duration>] | 0");
+    return;
+  }
+
+  std::string days_str;
+  std::string time_str;
+  std::string dur_str;
+
+  if (argc == 1) {
+    std::string arg = argv[0];
+    size_t s1 = arg.find('/');
+    if (s1 == std::string::npos) {
+      if (arg == "0") {
+        days_str = "0";
+      } else {
+        writer->puts("Error: expected <days>/<HH:MM>[/<duration>] or 0");
+        return;
+      }
+    } else {
+      days_str = arg.substr(0, s1);
+      size_t s2 = arg.find('/', s1 + 1);
+      if (s2 == std::string::npos) {
+        time_str = arg.substr(s1 + 1);
+      } else {
+        time_str = arg.substr(s1 + 1, s2 - (s1 + 1));
+        dur_str = arg.substr(s2 + 1);
+      }
+    }
+  } else {
+    days_str = argv[0];
+    time_str = argv[1];
+    if (argc >= 3)
+      dur_str = argv[2];
+  }
+
+  char* endp = nullptr;
+  long days_val = strtol(days_str.c_str(), &endp, 10);
+  if (days_str.empty() || *endp != '\0' || days_val < 0 || days_val > 60) {
+    writer->puts("Error: days must be an integer between 0 and 60 (0 = disabled)");
+    return;
+  }
+
+  int park_hour = smarteq->m_12v_trickle_park_hour;
+  int park_min = smarteq->m_12v_trickle_park_min;
+  if (!time_str.empty()) {
+    size_t colon = time_str.find(':');
+    bool time_ok = false;
+    if (colon != std::string::npos && colon > 0 && colon + 1 < time_str.size()) {
+      std::string sh = time_str.substr(0, colon);
+      std::string sm = time_str.substr(colon + 1);
+      char* eh = nullptr;
+      char* em = nullptr;
+      long h = strtol(sh.c_str(), &eh, 10);
+      long m = strtol(sm.c_str(), &em, 10);
+      if (*eh == '\0' && *em == '\0' && h >= 0 && h <= 23 && m >= 0 && m <= 59) {
+        park_hour = (int)h;
+        park_min = (int)m;
+        time_ok = true;
+      }
+    }
+    if (!time_ok) {
+      writer->puts("Error: invalid time format (use HH:MM, 00:00-23:59)");
+      return;
+    }
+  } else if (days_val > 0) {
+    writer->puts("Error: missing scheduled time <HH:MM>");
+    return;
+  }
+
+  int park_dur = smarteq->m_12v_trickle_park_time;
+  if (!dur_str.empty()) {
+    char* ed = nullptr;
+    long d = strtol(dur_str.c_str(), &ed, 10);
+    if (*ed != '\0' || d < 5 || d > 30) {
+      writer->puts("Error: duration must be between 5 and 30 minutes (5/10/15/20/25/30)");
+      return;
+    }
+    park_dur = ((int)d + 2) / 5 * 5;
+    if (park_dur < 5) park_dur = 5;
+    if (park_dur > 30) park_dur = 30;
+  }
+
+  {
+    auto lock = MyConfig.Lock();
+    ConfigParamMap map = MyConfig.GetParamMap("xsq");
+    char buf[16];
+    snprintf(buf, sizeof(buf), "%ld", days_val);
+    map["12v.trickle.park.days"] = buf;
+    if (!time_str.empty()) {
+      snprintf(buf, sizeof(buf), "%02d:%02d", park_hour, park_min);
+      map["12v.trickle.park.time"] = buf;
+    }
+    if (!dur_str.empty()) {
+      snprintf(buf, sizeof(buf), "%d", park_dur);
+      map["12v.trickle.park.duration"] = buf;
+    }
+    MyConfig.SetParamMap("xsq", map);
+  }
+
+  smarteq->m_12v_trickle_park_days = (int)days_val;
+  smarteq->m_12v_trickle_park_hour = park_hour;
+  smarteq->m_12v_trickle_park_min = park_min;
+  smarteq->m_12v_trickle_park_time = park_dur;
+
+  if (days_val == 0) {
+    writer->puts("Park-time 12V trickle charge disabled.");
+  } else {
+    writer->printf("Park-time 12V trickle charge configured: every %d day(s) at %02d:%02d for %d min.\n",
+                   smarteq->m_12v_trickle_park_days,
+                   smarteq->m_12v_trickle_park_hour,
+                   smarteq->m_12v_trickle_park_min,
+                   smarteq->m_12v_trickle_park_time);
+  }
+}
+
 void OvmsVehicleSmartEQ::xsq_climate(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
   xsq_climate_common(verbosity, writer, cmd, argc, argv, false);
 }
@@ -589,6 +727,10 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
       { m["wifi.ap2client.enable"] = "yes"; changed = true; }
     if (m.find("wifi.bad.reconnect") == m.end())
       { m["wifi.bad.reconnect"] = "yes"; changed = true; }
+    if (m.find("wifi.sq.good") == m.end())
+      { m["wifi.sq.good"] = "-80"; changed = true; }
+    if (m.find("wifi.sq.bad") == m.end())
+      { m["wifi.sq.bad"] = "-85"; changed = true; }
     if (m.erase("type") > 0)
       changed = true;
     if (changed)
@@ -738,8 +880,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandSetDefault(int verbosi
   auto map_net = MyConfig.GetParamMap("network");
   map_net["wifi.ap2client.enable"] = "yes";
   map_net["wifi.bad.reconnect"] = "yes";
-  map_net["wifi.sq.good"] = "-86";
-  map_net["wifi.sq.bad"] = "-88";
+  map_net["wifi.sq.good"] = "-80";
+  map_net["wifi.sq.bad"] = "-85";
   map_net.erase("modem.sq.good");
   map_net.erase("modem.sq.bad");
   MyConfig.SetParamMap("network", map_net);
