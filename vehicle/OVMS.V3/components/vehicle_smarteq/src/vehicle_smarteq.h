@@ -543,6 +543,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool m_check12vadc = true;
     std::deque<uint32_t> m_12v_trickle_charge_times;  // activation timestamps for 12V trickle charge alarm within 24h
     std::deque<uint32_t> m_cchange_times;             // contactor changes timestamps for tracking within 1h
+    time_t m_first_startup = 0;                       // last climate notification timestamp
 
     // --- ADC variables ---
     bool m_ADCfactor_recalc = false;      // request recalculation of ADC factor
