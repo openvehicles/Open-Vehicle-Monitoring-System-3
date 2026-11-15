@@ -167,6 +167,8 @@ bool OvmsHttpClient::Request(std::string url, const char* method, size_t range_s
           }
         else if (strncasecmp(header.c_str(), "Transfer-Encoding:", 18) == 0)
           {
+          // Note: chunked transfer encoding support is currently limited to GetBodyAsString();
+          // neither BodyReadLine() nor BodyHasLine() will work correctly on a chunked transfer.
           std::string encoding = header.substr(18);
           for (std::string::iterator it = encoding.begin(); it != encoding.end(); ++it)
             *it = tolower((unsigned char)*it);
@@ -228,6 +230,8 @@ ssize_t OvmsHttpClient::BodyRead(void *buf, size_t nbyte)
   return (ssize_t) n;
   }
 
+// Note: BodyHasLine() and BodyReadLine() operate on the raw socket buffer and
+// will not work correctly on a chunked transfer (only GetBodyAsString() decodes chunks).
 int OvmsHttpClient::BodyHasLine()
   {
   if (m_buf == NULL)
@@ -297,6 +301,8 @@ std::string OvmsHttpClient::GetBodyAsString()
 
   if (m_chunked)
     {
+    // Note: chunked transfer encoding is only decoded here in GetBodyAsString();
+    // neither BodyReadLine() nor BodyHasLine() will work correctly on a chunked transfer.
     char rbuf[512];
     std::string line;
     bool failed = false;

@@ -59,10 +59,9 @@ void time_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   char* tz = getenv("TZ");
 
   writer->printf("Time Zone:  %s\n", (tz!=NULL)?tz:"Not defined");
-  if (MyConfig.GetParamValueBool("modem", "enable.autotz", false))
+  if (!MyTime.m_auto_tz.empty())
     {
-    writer->printf("Auto TZ:    %s\n",
-      MyTime.m_auto_tz.empty() ? "Pending (waiting for cellular network)" : MyTime.m_auto_tz.c_str());
+    writer->printf("Auto TZ:    %s\n", MyTime.m_auto_tz.c_str());
     }
 
   struct tm* tmu = gmtime_r(&rawtime, &timeinfo);
@@ -188,27 +187,27 @@ void time_autoset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
 
   if (!has_gps)
     {
-    // GPS not available - fall back to cellular network (NITZ) timezone
+    // GPS not available - fall back to automatic timezone if available
     if (!MyTime.m_auto_tz.empty())
       {
       MyConfig.SetParamValue("vehicle", "timezone", MyTime.m_auto_tz);
-      writer->printf("GPS not available; Timezone set from cellular network (NITZ) to %s\n", MyTime.m_auto_tz.c_str());
+      writer->printf("GPS not available; Timezone set from automatic timezone to %s\n", MyTime.m_auto_tz.c_str());
       return;
       }
     else
       {
-      writer->puts("Error: Neither GPS location fix nor cellular network timezone (NITZ) available");
+      writer->puts("Error: Neither GPS location fix nor automatic timezone available");
       return;
       }
     }
 
   if (!MyNetManager.m_connected_any)
     {
-    // Network offline for HTTP API - fall back to NITZ if available
+    // Network offline for HTTP API - fall back to automatic timezone if available
     if (!MyTime.m_auto_tz.empty())
       {
       MyConfig.SetParamValue("vehicle", "timezone", MyTime.m_auto_tz);
-      writer->printf("Network offline for API; Timezone set from cellular network (NITZ) to %s\n", MyTime.m_auto_tz.c_str());
+      writer->printf("Network offline for API; Timezone set from automatic timezone to %s\n", MyTime.m_auto_tz.c_str());
       return;
       }
     writer->puts("Error: Network connection not available");
@@ -226,7 +225,7 @@ void time_autoset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     if (!MyTime.m_auto_tz.empty())
       {
       MyConfig.SetParamValue("vehicle", "timezone", MyTime.m_auto_tz);
-      writer->printf("HTTP API failed (code %d); Timezone set from cellular network (NITZ) to %s\n",
+      writer->printf("HTTP API failed (code %d); Timezone set from automatic timezone to %s\n",
         http.ResponseCode(), MyTime.m_auto_tz.c_str());
       return;
       }
@@ -241,7 +240,7 @@ void time_autoset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     if (!MyTime.m_auto_tz.empty())
       {
       MyConfig.SetParamValue("vehicle", "timezone", MyTime.m_auto_tz);
-      writer->printf("API response parse failed; Timezone set from cellular network (NITZ) to %s\n", MyTime.m_auto_tz.c_str());
+      writer->printf("API response parse failed; Timezone set from automatic timezone to %s\n", MyTime.m_auto_tz.c_str());
       return;
       }
     writer->puts("Error: Failed to parse API response JSON");
@@ -255,7 +254,7 @@ void time_autoset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     if (!MyTime.m_auto_tz.empty())
       {
       MyConfig.SetParamValue("vehicle", "timezone", MyTime.m_auto_tz);
-      writer->printf("API response invalid; Timezone set from cellular network (NITZ) to %s\n", MyTime.m_auto_tz.c_str());
+      writer->printf("API response invalid; Timezone set from automatic timezone to %s\n", MyTime.m_auto_tz.c_str());
       return;
       }
     writer->puts("Error: Missing utc_offset_seconds in API response");
@@ -269,7 +268,8 @@ void time_autoset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
 
   std::string tz_str = iana_to_posix_tz(tz_name, offset_sec);
 
-  MyTime.m_auto_tz = tz_str;
+  if (!MyTime.m_auto_tz.empty())
+    MyTime.m_auto_tz = tz_str;
   MyConfig.SetParamValue("vehicle", "timezone", tz_str);
   writer->printf("Timezone set to %s (%s, offset %+d sec)\n", tz_str.c_str(), tz_name.c_str(), offset_sec);
   }
@@ -336,13 +336,7 @@ OvmsTime::~OvmsTime()
 
 void OvmsTime::UpdateTimezone()
   {
-  std::string tz;
-  bool autotz = MyConfig.GetParamValueBool("modem", "enable.autotz", false);
-  if (autotz && !m_auto_tz.empty())
-    tz = m_auto_tz;
-  else
-    tz = MyConfig.GetParamValue("vehicle", "timezone");
-
+  std::string tz = !m_auto_tz.empty() ? m_auto_tz : MyConfig.GetParamValue("vehicle", "timezone");
   setenv("TZ", tz.c_str(), 1);
   tzset();
   }
@@ -351,12 +345,12 @@ void OvmsTime::SetAutoTimezone(const std::string& tz)
   {
   if (m_auto_tz != tz)
     {
-    ESP_LOGI(TAG, "Automatic timezone received: %s", tz.c_str());
+    if (!tz.empty())
+      ESP_LOGI(TAG, "Automatic timezone set: %s", tz.c_str());
+    else
+      ESP_LOGI(TAG, "Automatic timezone cleared");
     m_auto_tz = tz;
-    if (MyConfig.GetParamValueBool("modem", "enable.autotz", false))
-      {
-      UpdateTimezone();
-      }
+    UpdateTimezone();
     }
   }
 
@@ -364,7 +358,7 @@ void OvmsTime::EventConfigChanged(std::string event, void* data)
   {
   OvmsConfigParam* p = (OvmsConfigParam*)data;
 
-  if (p->GetName().compare("vehicle")==0 || p->GetName().compare("modem")==0)
+  if (p->GetName().compare("vehicle")==0)
     {
     UpdateTimezone();
     }
