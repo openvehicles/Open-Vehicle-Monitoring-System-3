@@ -47,6 +47,9 @@ class OvmsHttpClient : public OvmsNetTcpConnection
 
   public:
     bool Request(std::string url, const char* method = "GET", size_t range_start = 0);
+    // Note: Chunked transfer encoding (Transfer-Encoding: chunked) is currently only
+    // decoded by GetBodyAsString(). BodyRead(), BodyHasLine() and BodyReadLine() read
+    // the raw transfer stream and will not work correctly on a chunked transfer.
     ssize_t BodyRead(void *buf, size_t nbyte);
     int BodyHasLine();
     std::string BodyReadLine();
@@ -59,6 +62,8 @@ class OvmsHttpClient : public OvmsNetTcpConnection
     OvmsBuffer* m_buf;
     size_t m_bodysize;
     int m_responsecode;
+    bool m_chunked; // Note: chunked decoding is only supported by GetBodyAsString()
+    bool m_has_content_length;
     long m_timeout_ms = 10000;
   };
 
