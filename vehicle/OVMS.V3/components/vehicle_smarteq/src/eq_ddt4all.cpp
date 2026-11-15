@@ -60,10 +60,13 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     writer->printf("DDT4ALL session activated for 5 minutes");
     m_ddt4all = true;
     m_ddt4all_ticker = 0;
+    if (!m_can_last_acc_state)
+      {
+      smartCANbusAccess(true);    // enable CAN write access
+      vTaskDelay(200 / portTICK_PERIOD_MS);
+      }    
     if (!IsAwakeEQ())
-      CommandWakeup();         // enable CAN write access and wakeup vehicle
-    if (IsAwakeEQ() && !m_can_last_acc_state) 
-      smartCANbusAccess(true); // enable CAN write access
+      CommandWakeup();
     return Success;
   }
 
@@ -111,7 +114,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
           {
           MyPeripherals->m_esp32wifi->Restart();
           ESP_LOGI(TAG, "WiFi restart initiated");
-          
+          res = Success;
           }
         else 
           {
@@ -131,7 +134,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
           {
           MyPeripherals->m_cellular_modem->Restart();
           ESP_LOGI(TAG, "Cellular modem restart initiated");
-          
+          res = Success;
           }
         else
           {
@@ -490,6 +493,30 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
       res = CommandCanVector(0x743, 0x763, {"2E013903"}, true, false);
       break;
     }
+    case 71:
+    {
+      // ClimatAreaConfig Zone 1
+      res = CommandCanVector(0x744, 0x764, {"3B0501"}, false, false);
+      break;
+    }    
+    case 72:
+    {
+      // ClimatAreaConfig Zone 2
+      res = CommandCanVector(0x744, 0x764, {"3B0502"}, false, false);
+      break;
+    }
+    case 73:
+    {
+      // ClimatAreaConfig Zone 3
+      res = CommandCanVector(0x744, 0x764, {"3B0503"}, false, false);
+      break;
+    }
+    case 74:
+    {
+      // ClimatAreaConfig Zone 4
+      res = CommandCanVector(0x744, 0x764, {"3B0504"}, false, false);
+      break;
+    }
     case 100:
     {
       // ClearDiagnosticInformation.All
@@ -658,6 +685,12 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4List(int verbosity
   writer->puts("  Digital Speedometer in mph: 67");
   writer->puts("  Digital Speedometer in km/h: 68");
   writer->puts("  Digital Speedometer always km/h: 69");
+  writer->puts("  -------------------------------");
+  writer->puts("--Climate area config");
+  writer->puts("  Zone: 1");
+  writer->puts("  Zone: 2");
+  writer->puts("  Zone: 3");
+  writer->puts("  Zone: 4");
   writer->puts("  -------------------------------");
   return Success;
 }

@@ -208,6 +208,10 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker)
       {
       m_ddt4all = false;
       m_ddt4all_ticker = 0;
+      if (!canCANbusActive()) 
+        {
+        smartCANbusAccess(false);   // disable CAN write access
+        }
       ESP_LOGI(TAG, "DDT4ALL session timeout reached");
       MyNotify.NotifyString("info", "xsq.ddt4all", "DDT4ALL session timeout reached");
       }

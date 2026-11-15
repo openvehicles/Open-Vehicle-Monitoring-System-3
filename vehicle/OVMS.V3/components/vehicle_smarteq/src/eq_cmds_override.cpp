@@ -60,7 +60,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandClimateControlEQ(bool 
     m_trickle_counted = false;
     m_first_startup = 0;
     return Success;
-    }  
+    }
 
   if (StdMetrics.ms_v_bat_soc->AsInt(can_soc) < 31)
     {    
@@ -218,25 +218,22 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
   if (!m_can_last_acc_state) 
     {
     smartCANbusAccess(true); // enable CAN write access to send wakeup command
+    vTaskDelay(50 / portTICK_PERIOD_MS);
     }  
 
   ESP_LOGI(TAG, "Send Wakeup Command");
-
-  OvmsVehicle::vehicle_command_t res = Fail;
 
   if(!IsAwakeEQ()) 
     {
     uint8_t data[8] = {0xc3, 0x00, 0x00, 0x00, 0x14, 0x70, 0x96, 0x85};
     uint8_t data2[4] = {0x40, 0x00, 0x00, 0x00};
-    canbus *obd;
-    obd = m_can1;
+    canbus *obd = m_can1;
     smartCoolDownPolling(30); // 30 seconds cooldown to allow the vehicle to wake up
 
-    for (int i = 0; i < 7; i++) 
+    for (int i = 0; i < 10; i++) 
       {
       if (IsAwakeEQ()) 
         {
-        res = Success;
         break;
         }      
       obd->WriteStandard(0x350, 8, data);
@@ -244,16 +241,22 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
       obd->WriteStandard(0x634, 4, data2);
       vTaskDelay(200 / portTICK_PERIOD_MS);
       }
-    res = Success;
-    m_cmd_wakeup = true;
-    ESP_LOGI(TAG, "Vehicle is now awake");
+
+    if (IsAwakeEQ())
+      {
+      m_cmd_wakeup = true;
+      vTaskDelay(500 / portTICK_PERIOD_MS); // allow ECUs to stabilize before diagnostic requests
+      ESP_LOGI(TAG, "Vehicle is now awake");
+      return Success;
+      }
+    ESP_LOGE(TAG, "Vehicle wakeup failed (timeout)");
+    return Fail;
     } 
   else 
     {
-    res = Success;
     ESP_LOGI(TAG, "Vehicle is awake");
+    return Success;
     }
-  return res;
 }
 
 // lock: can can1 tx st 745 04 30 01 00 00

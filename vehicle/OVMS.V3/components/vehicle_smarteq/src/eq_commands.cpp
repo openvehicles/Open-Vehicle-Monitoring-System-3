@@ -43,7 +43,7 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
     return Fail;
     }
 
-  if(m_ddt4all_exec > 1) 
+  if(m_ddt4all_exec > 0) 
     {
     char msg[100];
     snprintf(msg, sizeof(msg), "DDT4all command rejected - previous command still processing (%d seconds remaining)",m_ddt4all_exec);
@@ -52,34 +52,42 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
     return Fail;
     }
 
+  int vecsize = hexbytes.size();
+  if (vecsize == 0) 
+    {
+    ESP_LOGE(TAG, "Empty hexbytes vector");
+    return Fail;
+    }
+  // Validate all hex strings before starting (non-empty, even length, valid hex digits)
+  for (int i = 0; i < vecsize; i++) 
+    {
+    if (hexbytes[i].empty() || (hexbytes[i].size() % 2 != 0)) 
+      {
+      ESP_LOGE(TAG, "Invalid hex length at index %d", i);
+      return Fail;
+      }
+    for (char c : hexbytes[i])
+      {
+      if (!isxdigit((unsigned char)c))
+        {
+        ESP_LOGE(TAG, "Invalid hex character at index %d", i);
+        return Fail;
+        }
+      }
+    }
+
   if (wakeup && !IsAwakeEQ())
-    CommandWakeup();         // enable CAN write access and wakeup vehicle
-  if (IsAwakeEQ() && !m_can_last_acc_state) 
-    smartCANbusAccess(true); // enable CAN write access
-  m_ddt4all_exec = 10; // 10 seconds delay for next DDT4ALL command execution
+    {
+    CommandWakeup();
+    vTaskDelay(200 / portTICK_PERIOD_MS);
+    }
+
+  m_ddt4all_exec = 10;        // 10 seconds delay for next DDT4ALL command execution
 
   ESP_LOGI(TAG, "CommandCanVector");
 
   std::string request;
   std::string response;
-
-  int vecsize = hexbytes.size();
-  if (vecsize == 0) 
-    {
-    ESP_LOGE(TAG, "Empty hexbytes vector");
-    m_ddt4all_exec = 5; // reduce cooldown on error
-    return Fail;
-    }
-  // Validate all hex strings before starting
-  for (int i = 0; i < vecsize; i++) 
-    {
-    if (hexbytes[i].size() % 2 != 0) 
-      {
-      ESP_LOGE(TAG, "Invalid hex length at index %d", i);
-      m_ddt4all_exec = 5; // reduce cooldown on error
-      return Fail;
-      }
-    }
   
   mt_canbyte->SetValue(hexbytes[0].c_str());
   OvmsVehicle::vehicle_command_t res = Fail;
@@ -91,50 +99,47 @@ OvmsVehicle::vehicle_command_t  OvmsVehicleSmartEQ::CommandCanVector(uint32_t tx
     int timeout_ms = 200;
     int err = 0;
 
-    request = hexdecode("10C0"); // StartDiagnosticSession
-    PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
+    request = hexdecode("10C0");        // StartDiagnosticSession
+    err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
     
-    vTaskDelay(200 / portTICK_PERIOD_MS);
-    for (int i = 0; i < vecsize; i++) 
+    if (err == 0)
       {
-      request = hexdecode(hexbytes[i]);
-      err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);    
       vTaskDelay(200 / portTICK_PERIOD_MS);
-      }
+      for (int i = 0; i < vecsize; i++) 
+        {
+        request = hexdecode(hexbytes[i]);
+        err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);    
+        vTaskDelay(200 / portTICK_PERIOD_MS);
+        if (err != 0)
+          break;
+        }
 
-    vTaskDelay(200 / portTICK_PERIOD_MS);
-    request = hexdecode("1081");  // StartDefaultSession
-    PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
+      vTaskDelay(200 / portTICK_PERIOD_MS);
+      request = hexdecode("1081");     // StartDefaultSession
+      err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
 
-    if (reset) 
-      {
-      vTaskDelay(500 / portTICK_PERIOD_MS);
-      m_ddt4all_exec = 30; // 30 seconds delay for next DDT4ALL command execution
-      request = hexdecode("1103");  // key on/off
-      PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
+      if (err == 0 && reset) 
+        {
+        vTaskDelay(500 / portTICK_PERIOD_MS);
+        request = hexdecode("1103");  // key on/off
+        err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
+        m_ddt4all_exec = 30;        // 30 seconds delay for next DDT4ALL command execution
+        }
       }
 
     if (err == POLLSINGLE_TXFAILURE)
       {
       ESP_LOGD(TAG, "ERROR: transmission failure (CAN bus error)");
+      m_ddt4all_exec = 5;        // reduce cooldown on error
       return Fail;
       }
-    else if (err < 0)
-      {
-      ESP_LOGD(TAG, "ERROR: timeout waiting for poller/response");
-      return Fail;
-      }
-    else if (err)
-      {
-      ESP_LOGD(TAG, "ERROR: request failed with response error code %02X\n", err);
-      return Fail;
-      }
+    m_ddt4all_exec = 5;
     return Success;
     } 
   else
     {
     ESP_LOGE(TAG, "CAN bus access state not active, cannot send command");
-    m_ddt4all_exec = 5; // reduce cooldown on error
+    m_ddt4all_exec = 5;         // reduce cooldown on error
     MyNotify.NotifyString("error", "CommandCanVector.fail","Command failed during CAN bus access state not active");
     return res;
     }
@@ -200,9 +205,6 @@ void OvmsVehicleSmartEQ::xsq_canwrite(int verbosity, OvmsWriter* writer, OvmsCom
     writer->puts("Multiple data: xsq canwrite 0x745,0x765,30082002/30082002,false,true");
     return;
   }
-  
-  if (!smarteq->m_can_last_acc_state) 
-    smarteq->smartCANbusAccess(true); // enable CAN write access
   
   smarteq->CommandCanWrite(argv[0], writer);
 }
