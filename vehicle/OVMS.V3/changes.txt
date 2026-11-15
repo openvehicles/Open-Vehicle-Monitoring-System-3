@@ -1,6 +1,25 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Network Manager / WiFi / Cellular / Power Management:
+    - Added centralized V2/V3 server connection check in `OvmsNetManager` (`[network] wifi.conncheck.v2v3`,
+      configurable in both WiFi and Cellular web UIs, enabled by default when V2 or V3 server is active).
+      When the active network interface has IP connectivity but fails the V2/V3 online check for 120s,
+      `OvmsNetManager` triggers an automatic reconnect (WiFi scan/reconnect or cellular `NetLoss` PDP/PPP
+      reset on first failure; 300s WiFi client disconnect fallback or cellular modem restart on subsequent
+      failures) and reports the online/check status in `network status`, `wifi status`, and `cellular status`.
+    - Added option to prioritize cellular modem over WiFi while the vehicle is switched on
+      (`[network] modem.prefer.on`).
+    - Improved `[network] wifi.bad.reconnect` handling: skip access points with RSSI at or below the
+      configured `wifi.sq.bad` threshold during WiFi scans and ensure immediate disconnect/reconnect
+      even if signal quality never reached the `wifi.sq.good` threshold after association.
+    - Power Management: use V2/V3-aware WiFi online state for `modemoff_wifi_delay`, `wifioff_if_disconnected`,
+      and `modem_wifi_fallback` (with a 5-minute fallback delay on server link loss and immediate event-based
+      fallback on `network.wifi.sta.bad` / `network.wifi.down`), and defer restoring `notcharging_timer`
+      from `parktime` by 10 minutes after boot.
+  New configs:
+    [network] wifi.conncheck.v2v3 (bool, default auto) -- require active V2/V3 server connection for online state
+    [network] modem.prefer.on (bool, default false)    -- prefer cellular modem over WiFi when vehicle is on
 - smart EQ: added scheduled park-time 12V trickle charging
   New configs:
     [xsq] 12v.trickle.park.days       -- Trickle after park days (0 = disabled, 1–60 days, default: 0)
@@ -40,16 +59,11 @@ Open Vehicle Monitor System v3 - Change log
     ota.flash.starting                                -- signaled before OTA flash begins
     ota.flash.done                                    -- signaled after OTA flash succeeded
     ota.flash.abort                                   -- signaled when OTA flash was aborted/failed
-- WiFi: add support for open WiFi networks (using '-' or 'OPEN' as password placeholder),
-    per-SSID client MAC address spoofing in the web UI and configuration (reverting to the
-    default hardware MAC address for all other networks), and a configurable 'V2/V3 connection
-    check' option (`esp32wifi::IsWifiOnline()`) to require an active Server V2/V3 connection
-    before considering the WiFi client connection online (default true when V2/V3 is enabled),
-    with automatic WiFi reconnect / 300s fallback disconnect if the check fails for 120s.
-  New configs:
+- WiFi: add support for open WiFi networks (using '-' or 'OPEN' as password placeholder) and
+    per-SSID client MAC address spoofing in the web UI and configuration, reverting to the
+    default hardware MAC address for all other networks.
+  New config:
     [wifi.ssid] <ssid>.ovms.mac                       -- custom client MAC address (spoofed) for <ssid>
-    [network] modem.prefer.on                         -- prioritize cellular modem over WiFi when vehicle is on (default false)
-    [network] wifi.conncheck.v2v3                     -- require active V2/V3 server connection for WiFi online status (default true if V2/V3 enabled)
 - Power Management: add option to power off cellular modem after configurable minutes of active
     WiFi connection while not charging the 12V battery, an optional fallback to power the
     modem back on if the WiFi connection is lost, and a live power status / estimated OVMS
