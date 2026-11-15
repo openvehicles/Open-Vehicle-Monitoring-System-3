@@ -1,6 +1,16 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- smart EQ: added scheduled park-time 12V trickle charging
+  New configs:
+    [xsq] 12v.trickle.park.days       -- Trickle after park days (0 = disabled, 1–60 days, default: 0)
+    [xsq] 12v.trickle.park.time       -- Scheduled time (local time ``HH:MM``, default: ``12:00``)
+    [xsq] 12v.trickle.park.duration   -- Park trickle duration (5 / 10 / 15 / 20 / 25 / 30 min, default: 10 min)
+  New commands:
+    xsq settrickle [args]             -- Show/configure park-time 12V trickle charging (<days>/<HH:MM>[/<duration>] | 0)
+- Maxus eDeliver 3: added support for MJ2022+ (CATL LFP) vans
+  New metrics:
+    xmg.v.bat.lfp                                     -- bool: yes = MJ2022+ CATL LFP battery detected
 - Server V3 (MQTT): added topic API for asynchronous JavaScript execution/evaluation.
     Topic scheme:
       <prefix>/client/<clientid>/jscommand/<cmdid>    -- payload: JavaScript code/scriptlet
@@ -21,7 +31,11 @@ Open Vehicle Monitor System v3 - Change log
     512-byte flash slices with HTTP Range resume support, lowering the cellular UART RX FIFO
     full threshold, and introducing OTA flash lifecycle events to pause background traffic
     (cellular status polling, GPS NMEA stream, Server V2 & V3 metric/notification transmissions)
-    while an OTA flash operation is in progress.
+    while an OTA flash operation is in progress. Added command and web UI button to
+    cooperatively abort an active OTA flash operation and invalidate the incomplete target
+    partition header.
+  New command:
+    ota flash abort                                   -- abort active OTA flash operation
   New events:
     ota.flash.starting                                -- signaled before OTA flash begins
     ota.flash.done                                    -- signaled after OTA flash succeeded
