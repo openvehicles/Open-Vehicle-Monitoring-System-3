@@ -162,12 +162,18 @@ The dedicated web page provides monitoring, settings, and manual controls:
   - *Trickle charge duration* (``[xsq] 12v.trickle.time``, 5–30 min in 5 min steps, default: 10 min).
   - *12V Reference Voltage* (``[vehicle] 12v.ref``, 12.00–13.00 V, default: 12.50 V).
   - *Start 12V trickle charge at* (calculated as ``[vehicle] 12v.ref`` − ``[vehicle] 12v.alert``, default: 11.75 V).
+  - *Park Time Trickle Charge:*
+    - *Trickle after park days* (``[xsq] 12v.trickle.park.days``, 0 = disabled, 1–60 days, default: 0).
+    - *Scheduled time* (``[xsq] 12v.trickle.park.time``, local time ``HH:MM``, default: ``12:00``).
+    - *Park trickle duration* (``[xsq] 12v.trickle.park.duration``, 5 / 10 / 15 / 20 / 25 / 30 min, default: 10 min).
+    - When triggered, the current park time is stored as a marker so the next cycle triggers again after the configured number of days. Turning the vehicle on resets the marker.
 - **Manual Actions:**
   - **Reset 24h Counter:** Clears the 24-hour activation count and unlocks trickle charging if deactivated by the safety limit.
   - **Start Trickle Charge Now:** Immediately initiates a preconditioning cycle to recharge the 12V battery.
 
  Shell command:
   - **xsq trickle [minutes]** = 5, 10 up to 30 Minutes, auto restart preconditioning after every 5 Minutes
+  - **xsq settrickle [<days>/<HH:MM>[/<duration>] | 0]** = Show or configure park-time 12V trickle charging (e.g. ``xsq settrickle 7/12:00`` or ``xsq settrickle 7/12:00/15``)
 
 -------------------------
 Vehicle shell commands:
@@ -191,6 +197,7 @@ xsq show reset              Show OBD trip total data
 xsq show counter            Show vehicle trip counter
 xsq show total              Show vehicle trip total data
 xsq trickle [minutes]       Start 12V trickle charging (optional minutes: 5-30)
+xsq settrickle [args]       Show/configure park-time 12V trickle charging (<days>/<HH:MM>[/<duration>] | 0)
 xsq climate [minutes]       Start pre-conditioning / climate control (optional minutes: 5-30)
 =========================== ==============
 

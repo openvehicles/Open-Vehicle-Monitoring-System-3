@@ -127,9 +127,11 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     void ResetTripCounters();
     void ResetTotalCounters();
     void Check12vState();
+    void CheckParkTimeTrickle(uint32_t ticker);
     void setTPMSValue();
     void ReCalcADCfactor(float can12V, OvmsWriter* writer=nullptr);
     void smart12VHistory();
+    void smartDCDCHistory();
 
     // --- Notification methods ---
     void NotifyTripReset();
@@ -225,6 +227,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     static void xsq_canwrite(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_calc_adc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_trickle(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xsq_settrickle(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_climate(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xsq_climate_common(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool trickle);
     static void xsq_ed4scan(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
@@ -462,6 +465,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool m_extendedStats = false;           // extended stats for trip and maintenance data
     bool m_enable_calcADCfactor = false;    // enable calculation of ADC factor
     bool m_gps_log_enable = false;          // enable GPS history log (V2 L message), opt-in only
+    bool m_dcdc_log_enable = false;         // enable DCDC history log (XSQ-DCDC-charging), opt-in only
     bool m_cmd_wakeup = false;              // wakeup command issued
     int m_reboot_ticker = 0;                // ticker for network restart
     int m_reboot_time = 30;                 // Restart Network time (minutes), when Server connection is lost
@@ -475,6 +479,10 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     int m_suffsoc = 0;                      // minimum SoC for charging
     int m_suffrange = 0;                    // minimum range for charging
     int m_12v_trickle_time = 10;            // 12V trickle charge time in minutes, Pre-conditioning (5 mins per run) is used to trickle 12V (default 10 minutes, max 30 minutes) set m_climate_restart_ticker
+    int m_12v_trickle_park_days = 0;        // park days interval before 12V trickle charge (0 = disabled)
+    int m_12v_trickle_park_hour = 12;       // scheduled hour (0..23) for park-time 12V trickle charge
+    int m_12v_trickle_park_min = 0;         // scheduled minute (0..59) for park-time 12V trickle charge
+    int m_12v_trickle_park_time = 10;       // park-time 12V trickle charge duration in minutes (5..30)
     float m_front_pressure = 225.0f;        // Front Tire Pressure
     float m_rear_pressure = 255.0f;         // Rear Tire Pressure
     float m_pressure_warning = 40.0f;       // Pressure Warning
@@ -498,8 +506,11 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool m_cmd_locked = false;
     bool m_can_last_acc_state = false;      // last active/listen state from CAN bus
     bool m_climate_trickle = false;         // flag to indicate if trickle charge is active
+    bool m_trickle_counted = false;         // flag to prevent counting restarts in the same trickle session
     float m_trickle_voltage = 0.0f;         // 12V voltage before trickle charge is activated
-    int m_adc_samples = 5;                  // number of samples for ADC factor calculation
+    uint32_t m_12v_trickle_park_marker = 0; // remembered parktime (s) at last park-time trickle activation (0 = reset)
+    int m_12v_trickle_park_last_min = -1;   // last minute ID checked at scheduled park-time trickle HH:MM
+    static constexpr int ADC_SAMPLES = 5;   // number of samples for ADC factor calculation
     int m_ddt4all_ticker = 0;               // DDT4ALL active ticker
     int m_ddt4all_exec = 0;                 // DDT4ALL ticker for next execution
     int m_led_state = 4;                    // Online LED State: 0=off, 1=red, 2=green, 3=blue, 4=default (configurable)
@@ -532,6 +543,7 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     bool m_check12vadc = true;
     std::deque<uint32_t> m_12v_trickle_charge_times;  // activation timestamps for 12V trickle charge alarm within 24h
     std::deque<uint32_t> m_cchange_times;             // contactor changes timestamps for tracking within 1h
+    time_t m_first_startup = 0;                       // last climate notification timestamp
 
     // --- ADC variables ---
     bool m_ADCfactor_recalc = false;      // request recalculation of ADC factor

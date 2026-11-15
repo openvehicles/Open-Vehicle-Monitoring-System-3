@@ -203,6 +203,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   cmd_xsq = MyCommandApp.RegisterCommand("xsq","smartEQ 453 Gen.4");  
   cmd_xsq->RegisterCommand("climate", "Start pre-conditioning / climate control", xsq_climate, "[minutes]", 0, 1);
   cmd_xsq->RegisterCommand("trickle", "Start 12V trickle charging (pre-conditioning)", xsq_trickle, "[minutes]", 0, 1);
+  cmd_xsq->RegisterCommand("settrickle", "Configure park-time 12V trickle charging", xsq_settrickle, "[<days>/<HH:MM>[/<duration>] | 0]", 0, 3);
   cmd_xsq->RegisterCommand("ddt4all", "DDT4all Command", xsq_ddt4all,"<number>",1,1);
   cmd_xsq->RegisterCommand("ddt4list", "DDT4all Command List", xsq_ddt4list);
   cmd_xsq->RegisterCommand("canwrite", "Send CAN command", xsq_canwrite,"<txid,rxid,hexbytes[,reset,wakeup]>",1,1);
@@ -304,6 +305,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     m_12v_charge           = map->GetValueBool("12v.charge", true);
     m_enable_calcADCfactor = map->GetValueBool("calc.adcfactor", false);
     m_gps_log_enable       = map->GetValueBool("gps.log", false);
+    m_dcdc_log_enable      = map->GetValueBool("dcdc.log", false);
     m_indicator            = map->GetValueBool("indicator", false);
     m_extendedStats        = map->GetValueBool("extended.stats", false);
     obdii_79b              = map->GetValueBool("obdii.79b", true);
@@ -323,6 +325,21 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     m_above_cycles         = map->GetValueInt("bms.alert.above.cycles", 50000);
     m_contactor_1h_limit   = map->GetValueInt("bms.contactor.1h.limit", 8);    
     m_12v_trickle_time     = map->GetValueInt("12v.trickle.time", 10);
+    m_12v_trickle_park_days = map->GetValueInt("12v.trickle.park.days", 0);
+    m_12v_trickle_park_time = map->GetValueInt("12v.trickle.park.duration", 10);
+    std::string park_hhmm  = map->GetValue("12v.trickle.park.time", "12:00");
+    int park_h = 12, park_m = 0;
+    if (!park_hhmm.empty() && sscanf(park_hhmm.c_str(), "%d:%d", &park_h, &park_m) == 2 &&
+        park_h >= 0 && park_h <= 23 && park_m >= 0 && park_m <= 59)
+      {
+      m_12v_trickle_park_hour = park_h;
+      m_12v_trickle_park_min = park_m;
+      }
+    else
+      {
+      m_12v_trickle_park_hour = 12;
+      m_12v_trickle_park_min = 0;
+      }
     
     m_front_pressure       = map->GetValueFloat("tpms.front.pressure", 225.0f);
     m_rear_pressure        = map->GetValueFloat("tpms.rear.pressure", 255.0f);
@@ -373,6 +390,13 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
   m_12v_trickle_time = ((m_12v_trickle_time + 2) / 5) * 5; // round to nearest 5/10/.. minutes
   if (m_12v_trickle_time < 5) m_12v_trickle_time = 5;
   if (m_12v_trickle_time > 30) m_12v_trickle_time = 30;
+
+  if (m_12v_trickle_park_days < 0) m_12v_trickle_park_days = 0;
+  if (m_12v_trickle_park_days > 60) m_12v_trickle_park_days = 60;
+
+  m_12v_trickle_park_time = ((m_12v_trickle_park_time + 2) / 5) * 5;
+  if (m_12v_trickle_park_time < 5) m_12v_trickle_park_time = 5;
+  if (m_12v_trickle_park_time > 30) m_12v_trickle_park_time = 30;
 
   if (do_modify_poll) 
     {
