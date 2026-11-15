@@ -62,7 +62,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandDDT4all(int number, Ov
     m_ddt4all_ticker = 0;
     if (!m_can_last_acc_state)
       {
-      RegisterCanBus(1, CAN_MODE_LISTEN, CAN_SPEED_500KBPS); // enable CAN write access
+      smartCANbusAccess(true);    // enable CAN write access
       vTaskDelay(200 / portTICK_PERIOD_MS);
       }    
     if (!IsAwakeEQ())

@@ -208,10 +208,9 @@ void OvmsVehicleSmartEQ::Ticker60(uint32_t ticker)
       {
       m_ddt4all = false;
       m_ddt4all_ticker = 0;
-      if (!m_can_last_acc_state) 
+      if (!canCANbusActive()) 
         {
-        RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS); // enable CAN write access
-        vTaskDelay(50 / portTICK_PERIOD_MS);
+        smartCANbusAccess(false);   // disable CAN write access
         }
       ESP_LOGI(TAG, "DDT4ALL session timeout reached");
       MyNotify.NotifyString("info", "xsq.ddt4all", "DDT4ALL session timeout reached");
