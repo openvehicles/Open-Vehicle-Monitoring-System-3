@@ -1805,11 +1805,7 @@ bool OvmsOTA::AutoFlash(bool force)
     return false;
     }
 
-  bool wifi_online = MyNetManager.m_connected_wifi;
-#ifdef CONFIG_OVMS_COMP_WIFI
-  if (MyPeripherals && MyPeripherals->m_esp32wifi)
-    wifi_online = MyPeripherals->m_esp32wifi->IsWifiOnline();
-#endif
+  bool wifi_online = MyNetManager.IsWifiOnline();
   if ((!wifi_online) && (!MyConfig.GetParamValueBool("ota", "auto.allow.modem", false)))
     {
     ESP_LOGW(TAG, "AutoFlash: Cannot flash without wifi connection, or auto.allow.modem");

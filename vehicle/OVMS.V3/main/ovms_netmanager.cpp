@@ -50,6 +50,12 @@ static const char *TAG = "netmanager";
 #include "ovms_config.h"
 #include "ovms_module.h"
 #include "ovms_boot.h"
+#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V2)
+#include "ovms_server_v2.h"
+#endif
+#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V3)
+#include "ovms_server_v3.h"
+#endif
 #ifdef CONFIG_OVMS_DEV_NETMANAGER_PING
 #include "ping/ping_sock.h"
 #endif // CONFIG_OVMS_DEV_NETMANAGER_PING
@@ -111,6 +117,9 @@ void network_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
       IP2STR(&ni.ip_addr.u_addr.ip4),
       IP2STR(&ni.netmask.u_addr.ip4),
       IP2STR(&ni.gw.u_addr.ip4));
+    writer->printf("  Online: %s (V2/V3 check: %s)\n",
+      MyNetManager.IsNetOnline() ? "yes" : "no",
+      MyNetManager.IsV2V3ConnCheckEnabled() ? "enabled" : "disabled");
     }
   else
     {
@@ -368,6 +377,12 @@ OvmsNetManager::OvmsNetManager()
   m_cfg_wifi_sq_good = -87;
   m_cfg_wifi_sq_bad = -89;
   m_cfg_wifi_bad_reconnect = false;
+  m_cfg_v2v3_conncheck = false;
+  m_cfg_v2v3_conncheck_defined = false;
+  m_v2v3_wifi_offline_timer = 0;
+  m_v2v3_wifi_fail_count = 0;
+  m_v2v3_modem_offline_timer = 0;
+  m_v2v3_modem_fail_count = 0;
 
   for (int i=0; i<DNS_MAX_SERVERS; i++)
     {
@@ -547,7 +562,7 @@ void OvmsNetManager::WifiStaGotIP(std::string event, void* data)
     ScheduleCleanup();
   #endif
 
-  WifiStaCheckSQ(StdMetrics.ms_m_net_wifi_sq);
+  WifiStaCheckSQ(NULL);
   }
 
 void OvmsNetManager::WifiStaLostIP(std::string event, void* data)
@@ -574,6 +589,10 @@ void OvmsNetManager::WifiStaConnected(std::string event, void* data)
 
 void OvmsNetManager::WifiStaStop(std::string event, void* data)
   {
+  m_v2v3_wifi_offline_timer = 0;
+  if (event == "system.wifi.down")
+    m_v2v3_wifi_fail_count = 0;
+
   WifiStaSetSQ(false);
   if (m_wifi_sta)
     {
@@ -607,10 +626,13 @@ void OvmsNetManager::WifiStaGood(std::string event, void* data)
 
 void OvmsNetManager::WifiStaBad(std::string event, void* data)
   {
-  if (m_wifi_sta && m_connected_wifi)
+  if (m_wifi_sta)
     {
-    ESP_LOGI(TAG, "WIFI client has bad signal quality (%.1f dBm); disconnect",
-             StdMetrics.ms_m_net_wifi_sq->AsFloat());
+    if (m_connected_wifi || m_cfg_wifi_bad_reconnect)
+      {
+      ESP_LOGI(TAG, "WIFI client has bad signal quality (%.1f dBm); disconnect",
+               StdMetrics.ms_m_net_wifi_sq->AsFloat());
+      }
     // Stop using the Wifi network:
     WifiDisconnect();
     // If enabled, start reconnecting immediately (for fast transition to next best
@@ -627,12 +649,14 @@ void OvmsNetManager::WifiStaCheckSQ(OvmsMetric* metric)
   if (m_wifi_sta)
     {
     float sq = StdMetrics.ms_m_net_wifi_sq->AsFloat();
+    if (sq <= -127.0f)
+      return;
     if ((!metric || !m_wifi_good) && sq >= m_cfg_wifi_sq_good)
       {
       m_wifi_good = true;
       MyEvents.SignalEvent("network.wifi.sta.good", NULL);
       }
-    else if ((!metric || m_wifi_good) && sq <= m_cfg_wifi_sq_bad)
+    else if ((!metric || m_wifi_good || m_cfg_wifi_bad_reconnect) && sq <= m_cfg_wifi_sq_bad)
       {
       m_wifi_good = false;
       MyEvents.SignalEvent("network.wifi.sta.bad", NULL);
@@ -696,6 +720,76 @@ void OvmsNetManager::Ticker1(std::string event, void *data)
     StartMongooseTask();
     }
 
+  std::string net_type = StdMetrics.ms_m_net_type->AsString();
+
+#ifdef CONFIG_OVMS_COMP_WIFI
+  // Check V2/V3 online status while WIFI client is the active connection:
+  if (net_type == "wifi" && m_connected_wifi && MyPeripherals && MyPeripherals->m_esp32wifi &&
+      MyPeripherals->m_esp32wifi->WifiHasIp())
+    {
+    if (IsWifiOnline())
+      {
+      m_v2v3_wifi_offline_timer = 0;
+      m_v2v3_wifi_fail_count = 0;
+      }
+    else if (++m_v2v3_wifi_offline_timer >= 120)
+      {
+      m_v2v3_wifi_offline_timer = 0;
+      m_v2v3_wifi_fail_count++;
+      if (m_v2v3_wifi_fail_count == 1)
+        {
+        ESP_LOGW(TAG, "V2/V3 connection check failed for 120s, reconnecting WIFI client");
+        MyPeripherals->m_esp32wifi->StartConnect();
+        }
+      else
+        {
+        ESP_LOGW(TAG, "V2/V3 connection check failed (%u), disconnecting WIFI client for 300s (fallback)",
+          (unsigned)m_v2v3_wifi_fail_count);
+        MyPeripherals->m_esp32wifi->Reconnect(NULL, 300);
+        }
+      }
+    }
+  else
+    {
+    m_v2v3_wifi_offline_timer = 0;
+    }
+#endif // CONFIG_OVMS_COMP_WIFI
+
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+  // Check V2/V3 online status while cellular modem is the active connection:
+  if (net_type == "modem" && m_connected_modem && MyPeripherals && MyPeripherals->m_cellular_modem &&
+      MyPeripherals->m_cellular_modem->ModemIsNetMode() &&
+      MyPeripherals->m_cellular_modem->m_mux && MyPeripherals->m_cellular_modem->m_mux->IsMuxUp() &&
+      MyPeripherals->m_cellular_modem->m_ppp && MyPeripherals->m_cellular_modem->m_ppp->m_connected)
+    {
+    if (IsModemOnline())
+      {
+      m_v2v3_modem_offline_timer = 0;
+      m_v2v3_modem_fail_count = 0;
+      }
+    else if (++m_v2v3_modem_offline_timer >= 120)
+      {
+      m_v2v3_modem_offline_timer = 0;
+      m_v2v3_modem_fail_count++;
+      if (m_v2v3_modem_fail_count == 1)
+        {
+        ESP_LOGW(TAG, "V2/V3 connection check failed for 120s, reconnecting cellular modem");
+        MyPeripherals->m_cellular_modem->SendSetState1(modem::NetLoss);
+        }
+      else
+        {
+        ESP_LOGW(TAG, "V2/V3 connection check failed (%u), restarting cellular modem",
+          (unsigned)m_v2v3_modem_fail_count);
+        MyPeripherals->m_cellular_modem->Restart();
+        }
+      }
+    }
+  else
+    {
+    m_v2v3_modem_offline_timer = 0;
+    }
+#endif // CONFIG_OVMS_COMP_CELLULAR
+
   // Check for reboot due to continuously lacking network connectivity:
   if (m_cfg_reboot_no_connection)
     {
@@ -742,6 +836,15 @@ void OvmsNetManager::ModemUp(std::string event, void* data)
 
 void OvmsNetManager::ModemDown(std::string event, void* data)
   {
+  m_v2v3_modem_offline_timer = 0;
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+  if (event == "system.modem.stop" && MyPeripherals && MyPeripherals->m_cellular_modem &&
+      MyPeripherals->m_cellular_modem->GetPowerMode() == Off)
+    {
+    m_v2v3_modem_fail_count = 0;
+    }
+#endif
+
   if (m_connected_modem)
     {
     m_connected_modem = false;
@@ -804,6 +907,103 @@ void OvmsNetManager::ConfigChanged(std::string event, void* data)
     if (param && m_network_any)
       PrioritiseAndIndicate();
     }
+  if (event == "config.mounted" || !param || param->GetName() == "network" || param->GetName() == "auto")
+    {
+    bool v2v3_default =
+#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V2)
+      MyConfig.GetParamValueBool("auto", "server.v2", false) || (MyOvmsServerV2 != NULL) ||
+#endif
+#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V3)
+      MyConfig.GetParamValueBool("auto", "server.v3", false) || (MyOvmsServerV3 != NULL) ||
+#endif
+      false;
+    m_cfg_v2v3_conncheck_defined = MyConfig.IsDefined("network", "conncheck.v2v3");
+    m_cfg_v2v3_conncheck = MyConfig.GetParamValueBool("network", "conncheck.v2v3", v2v3_default);
+    }
+  }
+
+bool OvmsNetManager::IsV2V3ConnCheckEnabled()
+  {
+  if (m_cfg_v2v3_conncheck_defined)
+    return m_cfg_v2v3_conncheck;
+
+  bool v2_started = false;
+#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V2)
+  v2_started = (MyOvmsServerV2 != NULL);
+#endif
+
+  bool v3_started = false;
+#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V3)
+  v3_started = (MyOvmsServerV3 != NULL);
+#endif
+
+  return m_cfg_v2v3_conncheck || v2_started || v3_started;
+  }
+
+bool OvmsNetManager::IsServerOnline()
+  {
+  bool v2_started = false;
+  bool v2_connected = false;
+#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V2)
+  v2_started = (MyOvmsServerV2 != NULL);
+  v2_connected = v2_started && StandardMetrics.ms_s_v2_connected->AsBool();
+#endif
+
+  bool v3_started = false;
+  bool v3_connected = false;
+#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V3)
+  v3_started = (MyOvmsServerV3 != NULL);
+  v3_connected = v3_started && StandardMetrics.ms_s_v3_connected->AsBool();
+#endif
+
+  bool check_v2v3 = m_cfg_v2v3_conncheck_defined ? m_cfg_v2v3_conncheck : (m_cfg_v2v3_conncheck || v2_started || v3_started);
+  if (check_v2v3 && ((v2_started && !v2_connected) || (v3_started && !v3_connected)))
+    return false;
+
+  return true;
+  }
+
+bool OvmsNetManager::IsWifiOnline()
+  {
+#ifdef CONFIG_OVMS_COMP_WIFI
+  if (!m_connected_wifi || !MyPeripherals || !MyPeripherals->m_esp32wifi)
+    return false;
+  if (MyPeripherals->m_esp32wifi->GetPowerMode() == Off ||
+      MyPeripherals->m_esp32wifi->GetMode() == ESP32WIFI_MODE_OFF ||
+      !MyPeripherals->m_esp32wifi->WifiHasIp())
+    return false;
+  return IsServerOnline();
+#else
+  return false;
+#endif
+  }
+
+bool OvmsNetManager::IsModemOnline()
+  {
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+  if (!m_connected_modem || !MyPeripherals || !MyPeripherals->m_cellular_modem)
+    return false;
+  if (MyPeripherals->m_cellular_modem->GetPowerMode() == Off ||
+      !MyPeripherals->m_cellular_modem->ModemIsNetMode() ||
+      !MyPeripherals->m_cellular_modem->m_mux ||
+      !MyPeripherals->m_cellular_modem->m_mux->IsMuxUp() ||
+      !MyPeripherals->m_cellular_modem->m_ppp ||
+      !MyPeripherals->m_cellular_modem->m_ppp->m_connected)
+    return false;
+  return IsServerOnline();
+#else
+  return false;
+#endif
+  }
+
+bool OvmsNetManager::IsNetOnline()
+  {
+  std::string net_type = StdMetrics.ms_m_net_type->AsString();
+  if (net_type == "wifi")
+    return IsWifiOnline();
+  if (net_type == "modem")
+    return IsModemOnline();
+  return false;
   }
 
 void OvmsNetManager::EventSystemShuttingDown(std::string event, void* data)

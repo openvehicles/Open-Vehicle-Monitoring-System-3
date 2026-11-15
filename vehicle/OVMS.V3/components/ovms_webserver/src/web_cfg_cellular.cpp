@@ -26,6 +26,12 @@ static const char *TAG = "webserver";
 #include "ovms_webserver.h"
 #include "ovms_peripherals.h"
 #include "metrics_standard.h"
+#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V2)
+#include "ovms_server_v2.h"
+#endif
+#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V3)
+#include "ovms_server_v3.h"
+#endif
 
 #define _attr(text) (c.encode_html(text).c_str())
 #define _html(text) (c.encode_html(text).c_str())
@@ -39,8 +45,16 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
 {
   auto lock = MyConfig.Lock();
   std::string apn, apn_user, apn_pass, network_dns, pincode, error, gps_parkpause, gps_parkreactivate, gps_parkreactlock, gps_parkholiday, gps_parkholiday_multi, vehicle_stream, model, modem_net_type, modem_net_types_avail;
-  bool enable_gps, enable_gpstime, enable_net, enable_sms, wrongpincode, gps_parkreactawake;
+  bool enable_gps, enable_gpstime, enable_gsmtime, enable_autotz, enable_net, enable_sms, wrongpincode, gps_parkreactawake, cfg_v2v3_check;
   float cfg_sq_good, cfg_sq_bad;
+  bool v2v3_default =
+#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V2)
+    MyConfig.GetParamValueBool("auto", "server.v2", false) || (MyOvmsServerV2 != NULL) ||
+#endif
+#if defined(CONFIG_OVMS_COMP_SERVER) && defined(CONFIG_OVMS_COMP_SERVER_V3)
+    MyConfig.GetParamValueBool("auto", "server.v3", false) || (MyOvmsServerV3 != NULL) ||
+#endif
+    false;
 
   if (c.method == "POST") {
     // process form submission:
@@ -62,6 +76,7 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
     vehicle_stream = c.getvar("vehicle_stream");
     cfg_sq_good = atof(c.getvar("cfg_sq_good").c_str());
     cfg_sq_bad = atof(c.getvar("cfg_sq_bad").c_str());
+    cfg_v2v3_check = (c.getvar("cfg_v2v3_check") == "yes");
     modem_net_type = c.getvar("modem_net_type");
 
     if (cfg_sq_bad >= cfg_sq_good)
@@ -97,6 +112,7 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
         MyConfig.SetParamValue("vehicle", "stream", vehicle_stream);
       MyConfig.SetParamValueFloat("network", "modem.sq.good", cfg_sq_good);
       MyConfig.SetParamValueFloat("network", "modem.sq.bad", cfg_sq_bad);
+      MyConfig.SetParamValueBool("network", "conncheck.v2v3", cfg_v2v3_check);
     }
 
     if (error == "")
@@ -142,6 +158,7 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
   vehicle_stream = MyConfig.GetParamValue("vehicle", "stream","0");
   cfg_sq_good = MyConfig.GetParamValueFloat("network", "modem.sq.good", -93);
   cfg_sq_bad = MyConfig.GetParamValueFloat("network", "modem.sq.bad", -95);
+  cfg_v2v3_check = MyConfig.GetParamValueBool("network", "conncheck.v2v3", v2v3_default);
 
   // generate form:
   c.panel_start("primary", "Cellular modem configuration");
@@ -213,6 +230,9 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
     "<p>Threshold for usable cellular signal strength</p>");
   c.input_slider("Bad signal level", "cfg_sq_bad", 3, "dBm", -1, cfg_sq_bad, -95.0, -128.0, 0.0, 0.1,
     "<p>Threshold for unusable cellular signal strength</p>");
+  c.input_checkbox("V2/V3 connection check", "cfg_v2v3_check", cfg_v2v3_check,
+    "<p>Require active OVMS V2/V3 server connection (if enabled) to consider the network connection online."
+    " Takes into consideration both wifi and cellular connections.</p>");
   c.fieldset_end();
 
   c.fieldset_start("GPS parking and tracking");

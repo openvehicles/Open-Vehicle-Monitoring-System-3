@@ -87,7 +87,7 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
         MyConfig.DeleteInstance("network", "reboot.no.ip");
       else
         MyConfig.SetParamValueBool("network", "reboot.no.ip", cfg_reboot_no_ip);
-      MyConfig.SetParamValueBool("network", "wifi.conncheck.v2v3", cfg_v2v3_check);
+      MyConfig.SetParamValueBool("network", "conncheck.v2v3", cfg_v2v3_check);
       if (!cfg_modem_prefer_on)
         MyConfig.DeleteInstance("network", "modem.prefer.on");
       else
@@ -128,7 +128,7 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
     cfg_sq_bad              = MyConfig.GetParamValueFloat("network", "wifi.sq.bad", -89);
     cfg_bad_reconnect       = MyConfig.GetParamValueBool("network", "wifi.bad.reconnect", false);
     cfg_reboot_no_ip        = MyConfig.GetParamValueBool("network", "reboot.no.ip", false);
-    cfg_v2v3_check          = MyConfig.GetParamValueBool("network", "wifi.conncheck.v2v3", v2v3_default);
+    cfg_v2v3_check          = MyConfig.GetParamValueBool("network", "conncheck.v2v3", v2v3_default);
     cfg_modem_prefer_on     = MyConfig.GetParamValueBool("network", "modem.prefer.on", false);
     cfg_ap2client_timeout   = MyConfig.GetParamValueInt("network", "wifi.ap2client.timeout", 30);
     cfg_ap2client_enabled   = MyConfig.GetParamValueBool("network", "wifi.ap2client.enable", false);
@@ -182,7 +182,8 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
     "<p>Reboot device when there is good signal but the connection fails to obtain an IP address after 5 minutes."
     " Takes into consideration both wifi and cellular connections.</p>");
   c.input_checkbox("V2/V3 connection check", "cfg_v2v3_check", cfg_v2v3_check,
-    "<p>Require active OVMS V2/V3 server connection (if enabled) to consider the Wifi client connection online.</p>");
+    "<p>Require active OVMS V2/V3 server connection (if enabled) to consider the network connection online."
+    " Takes into consideration both wifi and cellular connections.</p>");
   c.input_checkbox("Prefer cellular modem when vehicle is on", "cfg_modem_prefer_on", cfg_modem_prefer_on,
     "<p>Prioritize cellular modem over Wifi when the vehicle is turned on (v.e.on = yes).</p>");
   c.fieldset_end();

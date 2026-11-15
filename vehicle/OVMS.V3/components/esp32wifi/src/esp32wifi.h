@@ -78,7 +78,7 @@ class esp32wifi : public pcp, public InternalRamAllocated
     void StartAccessPointClientMode(std::string apssid, std::string appassword, std::string stassid, std::string stapassword, uint8_t* stabssid=NULL);
     void StopStation();
     void StartConnect();
-    void Reconnect(OvmsWriter* writer);
+    void Reconnect(OvmsWriter* writer, int delay_secs=1);
     int GetScanTime(wifi_active_scan_time_t& active);
     void Scan(OvmsWriter* writer, bool json=false);
     esp32wifi_mode_t GetMode();
@@ -145,10 +145,6 @@ class esp32wifi : public pcp, public InternalRamAllocated
     int m_ap2client_timeout;                     //!< Wifi Mode APClient to client timeout in minutes
     bool m_ap2client_enabled;                    //!< Wifi Mode APClient to client enable/disable
     bool m_ap2client_active;                     //!< Wifi Mode APClient enabled and timeout not reached
-    bool m_v2v3_conncheck;                       //!< Require V2/V3 server connection for IsWifiOnline()
-    bool m_v2v3_conncheck_defined;               //!< Whether network wifi.conncheck.v2v3 is explicitly configured
-    uint16_t m_v2v3_offline_timer;               //!< Seconds with connected STA but failed V2/V3 online check
-    uint8_t m_v2v3_fail_count;                   //!< Consecutive V2/V3 online check timeouts on STA
   };
 
 #endif //#ifndef __ESP32WIFI_H__
