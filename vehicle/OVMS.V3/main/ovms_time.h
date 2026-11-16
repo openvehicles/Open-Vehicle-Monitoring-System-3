@@ -68,10 +68,13 @@ class OvmsTime
     OvmsTimeProviderMap_t m_providers;
     OvmsTimeProvider* m_current;
     struct timezone m_tz;
+    std::string m_auto_tz;
 
   public:
     void Set(const char* provider, int stratum, bool trusted, time_t tim, suseconds_t timu=0);
     void Elect();
+    void SetAutoTimezone(const std::string& tz);
+    void UpdateTimezone();
 
   public:
     void EventConfigChanged(std::string event, void* data);

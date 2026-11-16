@@ -473,10 +473,10 @@ void OvmsVehicleSmartEQ::smartOn()
   m_trickle_counted = false;
   m_12v_trickle_park_marker = 0;
   m_12v_trickle_park_last_min = -1;
+  m_first_startup = 0;
   // reset idle ticker when vehicle turned on to prevent trigger every 60 sec.
   m_idle_ticker = 15 * 60;
   // canwrite enable write access, only when car is on
-
   smartCoolDownPolling(5);
   smartOBDpolling();
   ESP_LOGD(TAG, "smartOn()");
