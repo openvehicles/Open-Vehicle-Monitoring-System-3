@@ -178,6 +178,23 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   dto->RegisterDuktapeObject(dto_aux, "AuxMon");
 
   MyDuktape.RegisterDuktapeObject(dto);
+
+  DuktapeObjectRegistration* dto_bms= new DuktapeObjectRegistration("OvmsBms");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltageSetCellArrangement, 2, "VoltageSetCellArrangement");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltageSetCellDefaultThresholds, DUK_VARARGS, "VoltageSetCellDefaultThresholds");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltageSetCellLimits, 2, "VoltageSetCellLimits");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltageSetCell, 2, "VoltageSetCell");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltageResetCells, DUK_VARARGS, "VoltageResetCells");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsVoltagesRestartCells, 0, "VoltagesRestartCells");
+
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureSetCellArrangement, 2, "TemperatureSetCellArrangement");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureSetCellDefaultThresholds,  2, "TemperatureSetCellDefaultThresholds");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureSetCellLimits, 2, "TemperatureSetCellLimits");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureSetCell, 2, "TemperatureSetCell");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureResetCells, DUK_VARARGS, "TemperatureResetCells");
+  dto_bms->RegisterDuktapeFunction(DukOvmsBmsTemperatureRestartCells, 0, "TemperatureRestartCells");
+  MyDuktape.RegisterDuktapeObject(dto_bms);
+
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 
@@ -524,47 +541,9 @@ OvmsVehicle::OvmsVehicle()
   PollSetChannelKeepalive(60);
 #endif
 
-  m_bms_voltages = NULL;
-  m_bms_vmins = NULL;
-  m_bms_vmaxs = NULL;
-  m_bms_vdevmaxs = NULL;
-  m_bms_valerts = NULL;
-  m_bms_valerts_new = 0;
-  m_bms_vstddev_cnt = 0;
-  m_bms_vstddev_avg = 0;
-  m_bms_has_voltages = false;
-
-  m_bms_temperatures = NULL;
-  m_bms_tmins = NULL;
-  m_bms_tmaxs = NULL;
-  m_bms_tdevmaxs = NULL;
-  m_bms_talerts = NULL;
-  m_bms_talerts_new = 0;
-  m_bms_has_temperatures = false;
-
-  m_bms_bitset_v.clear();
-  m_bms_bitset_t.clear();
-  m_bms_bitset_cv = 0;
-  m_bms_bitset_ct = 0;
-  m_bms_readings_v = 0;
-  m_bms_readingspermodule_v = 0;
-  m_bms_readings_t = 0;
-  m_bms_readingspermodule_t = 0;
-
-  m_bms_limit_tmin = -1000;
-  m_bms_limit_tmax = 1000;
-  m_bms_limit_vmin = -1000;
-  m_bms_limit_vmax = 1000;
-
-  m_bms_defthr_vmaxgrad   = BMS_DEFTHR_VMAXGRAD;
-  m_bms_defthr_vmaxsddev  = BMS_DEFTHR_VMAXSDDEV;
-  m_bms_defthr_vwarn      = BMS_DEFTHR_VWARN;
-  m_bms_defthr_valert     = BMS_DEFTHR_VALERT;
-  m_bms_defthr_twarn      = BMS_DEFTHR_TWARN;
-  m_bms_defthr_talert     = BMS_DEFTHR_TALERT;
-
-  m_bms_vlog_last = 0;
-  m_bms_tlog_last = 0;
+  // Clear Bms Monitoring detail.
+  m_bms.Clear();
+  SetBMSWebmoduleEnabled(false);
 
   m_minsoc = 0;
   m_minsoc_triggered = 0;
@@ -583,6 +562,8 @@ OvmsVehicle::OvmsVehicle()
   m_brakelight_start = 0;
   m_brakelight_basepwr = 0;
   m_brakelight_ignftbrk = false;
+
+  m_bms_webmodule_enabled = false;
 
   m_tpms_lastcheck = 0;
   m_inv_energyused = 0;
@@ -617,6 +598,7 @@ OvmsVehicle::OvmsVehicle()
 
 OvmsVehicle::~OvmsVehicle()
   {
+  SetBMSWebmoduleEnabled(false);
 #ifndef CONFIG_OVMS_COMP_POLLER
   auto vtask = Atomic_GetAndNull(m_vtask);
   if (vtask)
@@ -626,57 +608,6 @@ OvmsVehicle::~OvmsVehicle()
   m_vqueue = nullptr;
 #endif
 
-  if (m_bms_voltages != NULL)
-    {
-    delete [] m_bms_voltages;
-    m_bms_voltages = NULL;
-    }
-  if (m_bms_vmins != NULL)
-    {
-    delete [] m_bms_vmins;
-    m_bms_vmins = NULL;
-    }
-  if (m_bms_vmaxs != NULL)
-    {
-    delete [] m_bms_vmaxs;
-    m_bms_vmaxs = NULL;
-    }
-  if (m_bms_vdevmaxs != NULL)
-    {
-    delete [] m_bms_vdevmaxs;
-    m_bms_vdevmaxs = NULL;
-    }
-  if (m_bms_valerts != NULL)
-    {
-    delete [] m_bms_valerts;
-    m_bms_valerts = NULL;
-    }
-
-  if (m_bms_temperatures != NULL)
-    {
-    delete [] m_bms_temperatures;
-    m_bms_temperatures = NULL;
-    }
-  if (m_bms_tmins != NULL)
-    {
-    delete [] m_bms_tmins;
-    m_bms_tmins = NULL;
-    }
-  if (m_bms_tmaxs != NULL)
-    {
-    delete [] m_bms_tmaxs;
-    m_bms_tmaxs = NULL;
-    }
-  if (m_bms_tdevmaxs != NULL)
-    {
-    delete [] m_bms_tdevmaxs;
-    m_bms_tdevmaxs = NULL;
-    }
-  if (m_bms_talerts != NULL)
-    {
-    delete [] m_bms_talerts;
-    m_bms_talerts = NULL;
-    }
   }
 
 void OvmsVehicle::StartingUp()
@@ -1072,7 +1003,10 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
     } // end every 10 seconds
 
   // BMS ticker:
-  BmsTicker();
+  if (m_bms.BmsTicker(m_autonotifications))
+    {
+    NotifyBmsAlerts();
+    }
 
   // TPMS alerts:
   if (StdMetrics.ms_v_tpms_alert->LastModified() > m_tpms_lastcheck)
@@ -3110,7 +3044,29 @@ void OvmsVehicle::GetDashboardConfig(DashboardConfig& cfg)
       << "]";
   cfg.gaugeset1 = str.str();
   }
+
 #endif // #ifdef CONFIG_OVMS_COMP_WEBSERVER
+void OvmsVehicle::SetBMSWebmoduleEnabled(bool enabled)
+  {
+  if (enabled == m_bms_webmodule_enabled)
+    return;
+
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
+  if (enabled)
+    MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+  else
+    MyWebServer.DeregisterPage("/bms/cellmon");
+#endif
+  m_bms_webmodule_enabled = enabled;
+  }
+void OvmsVehicle::NotifyBmsAlerts()
+  {
+  if (!m_bms.HasReadings())
+    return;
+  StringWriter buf(200);
+  if (m_bms.FormatBmsAlerts(COMMAND_RESULT_SMS, &buf, false))
+    MyNotify.NotifyString("alert", "batt.bms.alert", buf.c_str());
+  }
 
 OvmsBatteryMon::OvmsBatteryMon()
   :

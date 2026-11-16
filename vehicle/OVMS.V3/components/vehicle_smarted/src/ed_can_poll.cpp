@@ -1092,7 +1092,7 @@ void OvmsVehicleSmartED::BmsDiag(int verbosity, OvmsWriter* writer) {
   
   writer->puts(" # ;mV   ;As/10");
   for(int16_t n = 0; n < CELLCOUNT; n++){
-    writer->printf("%3d; %4.0f; %5.0f\n", n+1, m_bms_voltages[n]*1000, m_bms_capacitys[n]);
+    writer->printf("%3d; %4.0f; %5.0f\n", n+1, BmsReadingForModuleVoltages(n)*1000, m_bms_capacitys[n]);
   }
   writer->puts("-------------------------------------------");
   writer->puts("Individual Cell Statistics:");

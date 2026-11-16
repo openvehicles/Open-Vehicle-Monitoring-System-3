@@ -44,9 +44,11 @@
 #include "ovms_mutex.h"
 #include "ovms_semaphore.h"
 #include "vehicle_common.h"
+#include "dbc.h"
 #ifdef CONFIG_OVMS_COMP_POLLER
 #include "vehicle_poller.h"
 #endif
+#include "vehicle_bms.h"
 
 using namespace std;
 struct DashboardConfig;
@@ -148,24 +150,6 @@ struct DashboardConfig;
 #define CMD_SendUSSD                    41  // (USSD_CODE)
 #define CMD_SendRawAT                   49  // (raw AT command)
 // 200+ reserved for custom commands
-
-
-// BMS default deviation thresholds:
-#define BMS_DEFTHR_VMAXGRAD             0.010   // [V]
-#define BMS_DEFTHR_VMAXSDDEV            0.010   // [V]
-#define BMS_DEFTHR_VWARN                0.020   // [V]
-#define BMS_DEFTHR_VALERT               0.030   // [V]
-#define BMS_DEFTHR_TWARN                2.00    // [°C]
-#define BMS_DEFTHR_TALERT               3.00    // [°C]
-
-enum class OvmsStatus : short {
-  OK = 0,
-  Warn = 1,
-  Alert = 2
-};
-inline bool operator<(OvmsStatus lhs, OvmsStatus rhs) {
-  return static_cast<short>(lhs) < static_cast<short>(rhs);
-}
 
 enum class OvmsBatteryState { Unknown, Normal, Charging, ChargingDip, ChargingBlip, Blip, Dip, Low };
 
@@ -355,6 +339,18 @@ class OvmsVehicle : public InternalRamAllocated
     void EnableAuxMonitor(float low_thresh, float charge_thresh);
     void DisableAuxMonitor() { m_aux_enabled = false; }
 
+    void SetBMSWebmoduleEnabled(bool enabled);
+    void RegisterBMSPage()
+      {
+      // Force it at the current position
+      SetBMSWebmoduleEnabled(false);
+      SetBMSWebmoduleEnabled(true);
+      }
+    void DeregisterBMSPage()
+      {
+      SetBMSWebmoduleEnabled(false);
+      }
+
   protected:
     int m_last_drivetime;                   // duration of current/most recent drive [s]
     int m_last_parktime;                    // duration of current/most recent parking period [s]
@@ -508,12 +504,6 @@ class OvmsVehicle : public InternalRamAllocated
       Range = 3,
       Performance = 4
       } vehicle_mode_t;
-    enum class vehicle_bms_status_t
-      {
-      Both,
-      Voltage,
-      Temperature
-      };
 
   public:
     vehicle_mode_t VehicleModeKey(const std::string code);
@@ -612,73 +602,157 @@ class OvmsVehicle : public InternalRamAllocated
 
     bool m_autopoweroff[VEHICLE_MAXBUSSES];
 #endif
+
+    int m_bms_readingspermodule_v;            // Number of BMS voltage readings per module
+    int m_bms_readingspermodule_t;            // Number of BMS temperature readings per module
+    bool m_bms_webmodule_enabled;
+    OvmsBmsMonitor m_bms;
+
     void SendIncomingFrame(const CAN_frame_t *frame);
 
-  // BMS helpers
-  protected:
-    float* m_bms_voltages;                    // BMS voltages (current value)
-    float* m_bms_vmins;                       // BMS minimum voltages seen (since reset)
-    float* m_bms_vmaxs;                       // BMS maximum voltages seen (since reset)
-    float* m_bms_vdevmaxs;                    // BMS maximum voltage deviations seen (since reset)
-    OvmsStatus* m_bms_valerts;                // BMS voltage deviation alerts (since reset)
-    int m_bms_valerts_new;                    // BMS new voltage alerts since last notification
-    int m_bms_vstddev_cnt;                    // BMS internal stddev counter
-    float m_bms_vstddev_avg;                  // BMS internal stddev average
-    bool m_bms_has_voltages;                  // True if BMS has a complete set of voltage values
-    float* m_bms_temperatures;                // BMS temperatures (celcius current value)
-    float* m_bms_tmins;                       // BMS minimum temperatures seen (since reset)
-    float* m_bms_tmaxs;                       // BMS maximum temperatures seen (since reset)
-    float* m_bms_tdevmaxs;                    // BMS maximum temperature deviations seen (since reset)
-    OvmsStatus* m_bms_talerts;                // BMS temperature deviation alerts (since reset)
-    int m_bms_talerts_new;                    // BMS new temperature alerts since last notification
-    bool m_bms_has_temperatures;              // True if BMS has a complete set of temperature values
-    std::vector<bool> m_bms_bitset_v;         // BMS tracking: true if corresponding voltage set
-    std::vector<bool> m_bms_bitset_t;         // BMS tracking: true if corresponding temperature set
-    int m_bms_bitset_cv;                      // BMS tracking: count of unique voltage values set
-    int m_bms_bitset_ct;                      // BMS tracking: count of unique temperature values set
-    int m_bms_readings_v;                     // Number of BMS voltage readings expected
-    int m_bms_readingspermodule_v;            // Number of BMS voltage readings per module
-    int m_bms_readings_t;                     // Number of BMS temperature readings expected
-    int m_bms_readingspermodule_t;            // Number of BMS temperature readings per module
-    float m_bms_limit_tmin;                   // Minimum temperature limit (for sanity checking)
-    float m_bms_limit_tmax;                   // Maximum temperature limit (for sanity checking)
-    float m_bms_limit_vmin;                   // Minimum voltage limit (for sanity checking)
-    float m_bms_limit_vmax;                   // Maximum voltage limit (for sanity checking)
-    float m_bms_defthr_vmaxgrad;              // Default voltage deviation max valid gradient [V]
-    float m_bms_defthr_vmaxsddev;             // Default voltage deviation max valid stddev deviation [V]
-    float m_bms_defthr_vwarn;                 // Default voltage deviation warn threshold [V]
-    float m_bms_defthr_valert;                // Default voltage deviation alert threshold [V]
-    float m_bms_defthr_twarn;                 // Default temperature deviation warn threshold [°C]
-    float m_bms_defthr_talert;                // Default temperature deviation alert threshold [°C]
-    uint32_t m_bms_vlog_last;                 // Last log time for voltages
-    uint32_t m_bms_tlog_last;                 // Last log time for temperatures
-
-  protected:
-    void BmsSetCellArrangementVoltage(int readings, int readingspermodule);
-    void BmsSetCellArrangementTemperature(int readings, int readingspermodule);
-    void BmsSetCellDefaultThresholdsVoltage(float warn, float alert, float maxgrad=-1, float maxsddev=-1);
-    void BmsSetCellDefaultThresholdsTemperature(float warn, float alert);
-    void BmsSetCellLimitsVoltage(float min, float max);
-    void BmsSetCellLimitsTemperature(float min, float max);
-    void BmsSetCellVoltage(int index, float value);
-    void BmsResetCellVoltages(bool full = false);
-    void BmsSetCellTemperature(int index, float value);
-    void BmsResetCellTemperatures(bool full = false);
-    void BmsRestartCellVoltages();
-    void BmsRestartCellTemperatures();
-    void BmsTicker();
     virtual void NotifyBmsAlerts();
-
   public:
-    int BmsGetCellArangementVoltage(int* readings=NULL, int* readingspermodule=NULL);
-    int BmsGetCellArangementTemperature(int* readings=NULL, int* readingspermodule=NULL);
-    void BmsGetCellDefaultThresholdsVoltage(float* warn, float* alert, float* maxgrad=NULL, float* maxsddev=NULL);
-    void BmsGetCellDefaultThresholdsTemperature(float* warn, float* alert);
-    void BmsResetCellStats();
-    virtual void BmsStatus(int verbosity, OvmsWriter* writer, vehicle_bms_status_t statusmode);
-    virtual bool FormatBmsAlerts(int verbosity, OvmsWriter* writer, bool show_warnings);
-    bool BmsCheckChangeCellArrangementVoltage(int readings, int readingspermodule = 0);
-    bool BmsCheckChangeCellArrangementTemperature(int readings, int readingspermodule = 0);
+
+    bool BmsHasVoltageValues() { return m_bms.HasVoltageValues();}
+    bool BmsHasTemperatureValues() { return m_bms.HasTemperatureValues();}
+    void BmsSetCellArrangementVoltage(int readings, int readingspermodule)
+      {
+      bool wasenabled = m_bms.IsEnabled(OvmsBmsMonitor::bms_status_t::Both);
+      m_bms_readingspermodule_v = readingspermodule;
+      m_bms.SetCellArrangementVoltage(readings);
+
+      bool isenabled = m_bms.IsEnabled(OvmsBmsMonitor::bms_status_t::Both);
+      // Only set web-module status if transitioning from or to 'not Enabled' state
+      if (!isenabled || !wasenabled)
+        SetBMSWebmoduleEnabled(isenabled);
+      }
+    void BmsSetCellArrangementTemperature(int readings, int readingspermodule)
+      {
+      bool wasenabled = m_bms.IsEnabled(OvmsBmsMonitor::bms_status_t::Both);
+      m_bms_readingspermodule_t = readingspermodule;
+      m_bms.SetCellArrangementTemperature(readings);
+      bool isenabled = m_bms.IsEnabled(OvmsBmsMonitor::bms_status_t::Both);
+      // Only set web-module status if transitioning from or to 'not Enabled' state
+      if (!isenabled || !wasenabled)
+        SetBMSWebmoduleEnabled(isenabled);
+      }
+    void BmsSetCellDefaultThresholdsVoltage(float warn, float alert, float maxgrad=-1, float maxsddev=-1)
+      {
+      m_bms.SetCellDefaultThresholdsVoltage(warn, alert, maxgrad, maxsddev);
+      }
+    void BmsSetCellDefaultThresholdsTemperature(float warn, float alert)
+      {
+      m_bms.SetCellDefaultThresholdsTemperature(warn, alert);
+      }
+    void BmsSetCellLimitsVoltage(float min, float max)
+      {
+      m_bms.SetCellLimitsVoltage(min, max);
+      }
+    void BmsSetCellLimitsTemperature(float min, float max)
+      {
+      m_bms.SetCellLimitsTemperature(min, max);
+      }
+    void BmsSetCellVoltage(int index, float value)
+      {
+      m_bms.SetCellVoltage(index, value);
+      }
+    void BmsResetCellVoltages(bool full = false)
+      {
+      m_bms.ResetCellVoltages(full);
+      }
+    void BmsSetCellTemperature(int index, float value)
+      {
+      m_bms.SetCellTemperature(index, value);
+      }
+    void BmsResetCellTemperatures(bool full = false)
+      {
+      m_bms.ResetCellTemperatures(full);
+      }
+    void BmsRestartCellVoltages()
+      {
+      m_bms.RestartCellVoltages();
+      }
+    void BmsRestartCellTemperatures()
+      {
+      m_bms.RestartCellTemperatures();
+      }
+    int BmsReadingsPerModuleVoltages()
+      {
+
+      return m_bms_readingspermodule_v;
+      }
+    int BmsReadingsPerModuleTemperatures()
+      {
+      return m_bms_readingspermodule_t;
+      }
+    float BmsReadingForModuleVoltages(int n)
+      {
+      return m_bms.ReadingForModuleVoltages(n);
+      }
+    float BmsReadingForModuleTemeratures(int n)
+      {
+      return m_bms.ReadingForModuleTemeratures(n);
+      }
+  public:
+    void BmsResetCellStats()
+      {
+      return m_bms.ResetCellStats();
+      }
+    virtual bool FormatBmsAlerts(int verbosity, OvmsWriter* writer, bool show_warnings)
+      {
+      return m_bms.FormatBmsAlerts(verbosity, writer, show_warnings);
+      }
+    virtual void BmsStatus(int verbosity, OvmsWriter* writer, OvmsBmsMonitor::bms_status_t statusmode)
+      {
+      return m_bms.Status(verbosity, writer, statusmode, m_bms_readingspermodule_v, m_bms_readingspermodule_t);
+      }
+    bool BmsCheckChangeCellArrangementVoltage(int readings, int readingspermodule = 0)
+      {
+      // Passing in 0 will leave the readings per module unchanged.
+      bool changed = false;
+      if ((readingspermodule > 0) && (m_bms_readingspermodule_v != readingspermodule))
+        {
+        m_bms_readingspermodule_v = readingspermodule;
+        changed = true;
+        }
+      if (m_bms.CheckChangeCellArrangementVoltage(readings))
+        changed = true;
+      return changed;
+      }
+
+    bool BmsCheckChangeCellArrangementTemperature(int readings, int readingspermodule = 0)
+      {
+      // Passing in 0 will leave the readings per module unchanged.
+      bool changed = false;
+      if ((readingspermodule > 0) && (m_bms_readingspermodule_t != readingspermodule))
+        {
+        m_bms_readingspermodule_t = readingspermodule;
+        changed = true;
+        }
+      if (m_bms.CheckChangeCellArrangementTemperature(readings))
+        changed = true;
+      return changed;
+      }
+    int BmsGetCellArangementVoltage(int* readings=NULL, int* readingspermodule=NULL)
+      {
+      if (readingspermodule)
+        *readingspermodule = m_bms_readingspermodule_v;
+      return m_bms.GetCellArangementVoltage(readings);
+      }
+    int BmsGetCellArangementTemperature(int* readings=NULL, int* readingspermodule=NULL)
+      {
+      if (readingspermodule)
+        *readingspermodule = m_bms_readingspermodule_t;
+      return m_bms.GetCellArangementTemperature(readings);
+      }
+    void BmsGetCellDefaultThresholdsVoltage(float* warn, float* alert, float* maxgrad=NULL, float* maxsddev=NULL)
+      {
+      m_bms.GetCellDefaultThresholdsVoltage(warn, alert, maxgrad, maxsddev);
+      }
+    void BmsGetCellDefaultThresholdsTemperature(float* warn, float* alert)
+      {
+      m_bms.GetCellDefaultThresholdsTemperature(warn, alert);
+      }
 
   protected:
     bool m_is_shutdown;
@@ -806,6 +880,20 @@ class OvmsVehicleFactory
     static duk_ret_t DukOvmsVehicleAuxMonEnable(duk_context *ctx);
     static duk_ret_t DukOvmsVehicleAuxMonDisable(duk_context *ctx);
     static duk_ret_t DukOvmsVehicleAuxMonStatus(duk_context *ctx);
+    // BMS
+    static duk_ret_t DukOvmsBmsVoltageSetCellArrangement(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsVoltageSetCellDefaultThresholds(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsVoltageSetCellLimits(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsVoltageSetCell(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsVoltageResetCells(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsVoltagesRestartCells(duk_context *ctx);
+
+    static duk_ret_t DukOvmsBmsTemperatureSetCellArrangement(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsTemperatureSetCellDefaultThresholds(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsTemperatureSetCellLimits(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsTemperatureSetCell(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsTemperatureResetCells(duk_context *ctx);
+    static duk_ret_t DukOvmsBmsTemperatureRestartCells(duk_context *ctx);
 #endif // CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   };
 

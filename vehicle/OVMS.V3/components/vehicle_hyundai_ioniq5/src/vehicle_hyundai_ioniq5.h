@@ -451,6 +451,7 @@ protected:
 public:
   void GetDashboardConfig(DashboardConfig &cfg) override;
   virtual void WebInit();
+  void WebUninit();
   static void WebCfgFeatures(PageEntry_t &p, PageContext_t &c);
   static void WebCfgBattery(PageEntry_t &p, PageContext_t &c);
   static void WebBattMon(PageEntry_t &p, PageContext_t &c);

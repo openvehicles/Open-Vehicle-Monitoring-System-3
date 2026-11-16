@@ -58,7 +58,6 @@ void OvmsVehicleVoltAmpera::WebInit()
   MyWebServer.RegisterPage("/xva/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
 
   // TODO: Battery monitoring
-  //MyWebServer.RegisterPage("/xva/battmon", "Battery Monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
   }
 
 void OvmsVehicleVoltAmpera::WebCleanup()
@@ -67,7 +66,6 @@ void OvmsVehicleVoltAmpera::WebCleanup()
   MyWebServer.DeregisterPage("/xva/features");
 
   // TODO: Battery monitoring
-  //MyWebServer.DeregisterPage("/xva/battmon");
   }
 
 /**
