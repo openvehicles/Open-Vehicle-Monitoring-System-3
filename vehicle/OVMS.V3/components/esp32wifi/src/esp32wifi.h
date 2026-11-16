@@ -78,7 +78,7 @@ class esp32wifi : public pcp, public InternalRamAllocated
     void StartAccessPointClientMode(std::string apssid, std::string appassword, std::string stassid, std::string stapassword, uint8_t* stabssid=NULL);
     void StopStation();
     void StartConnect();
-    void Reconnect(OvmsWriter* writer);
+    void Reconnect(OvmsWriter* writer, int delay_secs=1);
     int GetScanTime(wifi_active_scan_time_t& active);
     void Scan(OvmsWriter* writer, bool json=false);
     esp32wifi_mode_t GetMode();
@@ -91,6 +91,7 @@ class esp32wifi : public pcp, public InternalRamAllocated
     void SetAPWifiBW();
     void SetSTAWifiMAC(std::string ssid="");
     bool WifiHasIp();
+    bool IsWifiOnline();
 
   public:
     void EventWifiStaState(std::string event, void* data);

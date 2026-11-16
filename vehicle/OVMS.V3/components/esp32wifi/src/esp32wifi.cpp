@@ -40,6 +40,7 @@ static const char *TAG = "esp32wifi";
 #include "ovms.h"
 #include "ovms_config.h"
 #include "ovms_peripherals.h"
+#include "ovms_netmanager.h"
 #include "ovms_events.h"
 #include "metrics_standard.h"
 #include "ovms_notify.h"
@@ -788,7 +789,7 @@ void esp32wifi::StartAccessPointClientMode(std::string apssid, std::string appas
   // connection started in EventWifiStaState()
   }
 
-void esp32wifi::Reconnect(OvmsWriter* writer)
+void esp32wifi::Reconnect(OvmsWriter* writer, int delay_secs /*=1*/)
   {
   if (m_mode != ESP32WIFI_MODE_CLIENT && m_mode != ESP32WIFI_MODE_APCLIENT)
     {
@@ -803,12 +804,12 @@ void esp32wifi::Reconnect(OvmsWriter* writer)
     writer->puts("Starting Wifi client reconnect.");
   else
     ESP_LOGI(TAG, "Reconnect: starting Wifi client reconnect");
+  // schedule the reconnect via EventTimer1():
+  m_sta_reconnect = monotonictime + (delay_secs > 0 ? delay_secs : 1);
   if (!m_sta_connected)
     {
     // not connected, but a connect attempt may be running (potentially stuck), stop it:
     esp_wifi_disconnect();
-    // schedule the reconnect via EventTimer1():
-    m_sta_reconnect = monotonictime + 1;
     }
   else
     {
@@ -1104,7 +1105,10 @@ void esp32wifi::UpdateNetMetrics()
   if (m_sta_connected && esp_wifi_sta_get_ap_info(&m_sta_ap_info) == ESP_OK)
     {
     int newrssi = m_sta_ap_info.rssi * 10;
-    m_sta_rssi = (m_sta_rssi * 3 + newrssi) / 4;
+    if (m_sta_rssi <= -1270)
+      m_sta_rssi = newrssi;
+    else
+      m_sta_rssi = (m_sta_rssi * 3 + newrssi) / 4;
     }
   else
     {
@@ -1145,9 +1149,19 @@ void esp32wifi::EventWifiGotIp(std::string event, void* data)
 
 bool esp32wifi::WifiHasIp()
   {
-  char numstr[150];
-  sprintf(numstr, IPSTR, IP2STR(&m_ip_info_sta.ip));
-  return strcmp(numstr, "0.0.0.0") == 1;
+  if (!m_poweredup || !m_sta_connected || (m_mode != ESP32WIFI_MODE_CLIENT && m_mode != ESP32WIFI_MODE_APCLIENT))
+    return false;
+#if ESP_IDF_VERSION_MAJOR >= 4
+  esp_netif_get_ip_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), &m_ip_info_sta);
+#else
+  tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &m_ip_info_sta);
+#endif
+  return (m_ip_info_sta.ip.addr != 0);
+  }
+
+bool esp32wifi::IsWifiOnline()
+  {
+  return MyNetManager.IsWifiOnline();
   }
 
 void esp32wifi::EventWifiLostIp(std::string event, void* data)
@@ -1429,6 +1443,12 @@ void esp32wifi::EventWifiScanDone(std::string event, void* data)
         k+1, (const char*)list[k].ssid, MAC2STR(list[k].bssid), list[k].primary, list[k].rssi);
       if (ap_connect >= 0)
         continue;
+      if (MyNetManager.IsWifiBadReconnectEnabled() && list[k].rssi <= m_bad_dbm)
+        {
+        ESP_LOGD(TAG, "ScanDone: skipping ssid='%s' bssid='" MACSTR "' rssi=%d <= bad threshold %.1f",
+          (const char*)list[k].ssid, MAC2STR(list[k].bssid), list[k].rssi, m_bad_dbm);
+        continue;
+        }
       if (m_sta_ssid.empty())
         {
         // scanning mode:
@@ -1535,10 +1555,12 @@ void esp32wifi::OutputStatus(int verbosity, OvmsWriter* writer)
 
   if (m_mode == ESP32WIFI_MODE_CLIENT || m_mode == ESP32WIFI_MODE_APCLIENT)
     {
-    writer->printf("\nSTA SSID: %s (%.1f dBm) [%s]\n  MAC: " MACSTR "\n  IP: " IPSTR "/" IPSTR "\n  GW: " IPSTR "\n  AP: " MACSTR "\n",
+    writer->printf("\nSTA SSID: %s (%.1f dBm) [%s]\n  MAC: " MACSTR "\n  IP: " IPSTR "/" IPSTR "\n  GW: " IPSTR "\n  AP: " MACSTR "\n  Online: %s (V2/V3 check: %s)\n",
       m_wifi_sta_cfg.sta.ssid, (float)m_sta_rssi/10, (m_sta_ssid.empty()) ? "scanning" : "fixed", MAC2STR(m_mac_sta),
       IP2STR(&m_ip_info_sta.ip), IP2STR(&m_ip_info_sta.netmask), IP2STR(&m_ip_info_sta.gw),
-      MAC2STR(m_sta_ap_info.bssid));
+      MAC2STR(m_sta_ap_info.bssid),
+      MyNetManager.IsWifiOnline() ? "yes" : "no",
+      MyNetManager.IsV2V3ConnCheckEnabled() ? "enabled" : "disabled");
     }
 
   if (m_mode == ESP32WIFI_MODE_AP || m_mode == ESP32WIFI_MODE_APCLIENT)
@@ -1593,6 +1615,12 @@ void esp32wifi::ConfigChanged(std::string event, void* data)
     // Network config has been changed, apply:
     m_good_dbm = MyConfig.GetParamValueFloat("network", "wifi.sq.good", -87);
     m_bad_dbm = MyConfig.GetParamValueFloat("network", "wifi.sq.bad", -89);
+    if (m_good_dbm < m_bad_dbm)
+      {
+      float x = m_good_dbm;
+      m_good_dbm = m_bad_dbm;
+      m_bad_dbm = x;
+      }
     m_ap2client_timeout  = MyConfig.GetParamValueInt("network", "wifi.ap2client.timeout", 30) * 60;        //!< Wifi Mode APClient to client timeout in minutes to seconds for ticker1
     m_ap2client_enabled  = MyConfig.GetParamValueInt("network", "wifi.ap2client.enable", false);           //!< Wifi Mode APClient to client enable/disable    
     m_ap2client_active = m_ap2client_enabled;                                                              // Mirror enabled to active

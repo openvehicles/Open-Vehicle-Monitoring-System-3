@@ -38,6 +38,7 @@ static const char *TAG = "cellular";
 #include <locale>
 #include "ovms_cellular.h"
 #include "ovms_peripherals.h"
+#include "ovms_netmanager.h"
 #include "metrics_standard.h"
 #include "ovms_config.h"
 #include "ovms_events.h"
@@ -580,6 +581,9 @@ void modem::SupportSummary(OvmsWriter* writer, bool debug /*=FALSE*/)
     if (m_ppp->m_connected)
       {
       writer->printf("  PPP: Connected on channel: #%d\n", m_ppp->m_channel);
+      writer->printf("     Online: %s (V2/V3 check: %s)\n",
+        MyNetManager.IsModemOnline() ? "yes" : "no",
+        MyNetManager.IsV2V3ConnCheckEnabled() ? "enabled" : "disabled");
       }
     else
       {
