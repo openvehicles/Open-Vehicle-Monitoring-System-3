@@ -126,6 +126,13 @@ public:
 
   OvmsMetricBool*  m_v_emergency_lights;
 
+  // Receive Buffer for OBD ISOTP polls.
+  std::string obd_rxbuf;
+  uint16_t obd_module;
+  uint16_t obd_rxtype;
+  uint16_t obd_rxpid;
+  uint16_t obd_frame;
+
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     public:
       static void WebAuxBattery(PageEntry_t& p, PageContext_t& c);
