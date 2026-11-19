@@ -233,24 +233,15 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandWakeup() {
     for (int i = 0; i < 10; i++) 
       {
       if (IsAwakeEQ()) 
-        {
-        break;
-        }      
+        break; 
       obd->WriteStandard(0x350, 8, data);
       vTaskDelay(200 / portTICK_PERIOD_MS);
       obd->WriteStandard(0x634, 4, data2);
       vTaskDelay(200 / portTICK_PERIOD_MS);
-      }
-
-    if (IsAwakeEQ())
-      {
-      m_cmd_wakeup = true;
-      vTaskDelay(500 / portTICK_PERIOD_MS); // allow ECUs to stabilize before diagnostic requests
-      ESP_LOGI(TAG, "Vehicle is now awake");
-      return Success;
-      }
-    ESP_LOGE(TAG, "Vehicle wakeup failed (timeout)");
-    return Fail;
+      }      
+    m_cmd_wakeup = true;
+    ESP_LOGI(TAG, "Vehicle is now awake");
+    return Success;
     } 
   else 
     {
