@@ -295,7 +295,6 @@ void OvmsVehicleSmartEQ::CheckParkTimeTrickle(uint32_t ticker) {
 
 void OvmsVehicleSmartEQ::ReCalcADCfactor(float can12V, OvmsWriter* writer) {
   #ifdef CONFIG_OVMS_COMP_ADC
-    static constexpr float ADC_CALIB_FACTOR = 0.993f;  // empirical calibration factor
     static_assert(ADC_SAMPLES >= 3, "ADC_SAMPLES must be at least 3 for trimmed average");
 
     if (can12V < 11.0f || can12V > 16.0f)
