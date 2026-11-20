@@ -149,6 +149,9 @@ Open Vehicle Monitor System v3 - Change log
   New notifications (+ implied events):
     - [alert] server.v2.auth.failure         -- Incorrect server V2 login credentials
     - [alert] server.v3.auth.failure         -- Incorrect server V3 login credentials
+- VW e-Golf: fix v.e.locked showing "unlocked" for a car locked from inside (central-lock
+    button) or locked while the ignition was switched on. The lock state now comes from
+    KCAN 0x583 byte 7, which reads locked for every lock method.
 - VW e-Golf: set v.e.charging12v (12V battery charging) while the HV system is active (KCAN
     0x187 HV_Bordnetz_aktiv), HV charging is in progress or remote climate is running. The DC-DC
     converter is the only 12V charge source; Power Management relies on this metric.

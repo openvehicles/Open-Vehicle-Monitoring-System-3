@@ -66,6 +66,48 @@ void test_soc_0x131() {
     delete v;
 }
 
+// v.e.locked from 0x583 d[7] (0x80 locked / 0x40 unlocked). Frames are real KCAN captures
+// (2026-11-12 / 2026-11-20); d[2] is the lock-state value that the old decode read bit 1 of.
+void test_lock_0x583() {
+    printf("\ntest_lock_0x583\n");
+    auto* v = make_vehicle();
+
+    auto f = make_frame(0x583, {0x00, 0x00, 0x0A, 0x00, 0x00, 0x08, 0x57, 0x80});  // fob lock
+    v->IncomingFrameCan3(&f);
+    CHECK(StandardMetrics.ms_v_env_locked->AsBool() == true, "fob lock (d[2]=0x0A) -> locked");
+
+    f = make_frame(0x583, {0x00, 0x00, 0x40, 0x00, 0x00, 0x08, 0x53, 0x40});  // fob unlock, single press
+    v->IncomingFrameCan3(&f);
+    CHECK(StandardMetrics.ms_v_env_locked->AsBool() == false, "partly unlocked (d[2]=0x40) -> unlocked");
+
+    // Regression: locked from inside (central-lock button) has d[2] bit 1 clear.
+    f = make_frame(0x583, {0x00, 0x00, 0x05, 0x00, 0x00, 0x08, 0x57, 0x80});
+    v->IncomingFrameCan3(&f);
+    CHECK(StandardMetrics.ms_v_env_locked->AsBool() == true, "locked from inside (d[2]=0x05) -> locked");
+
+    f = make_frame(0x583, {0x00, 0x00, 0x80, 0x00, 0x00, 0x08, 0x43, 0x40});  // all unlocked
+    v->IncomingFrameCan3(&f);
+    CHECK(StandardMetrics.ms_v_env_locked->AsBool() == false, "all unlocked (d[2]=0x80) -> unlocked");
+
+    // Locked from inside with a valid key and ignition on (alarm disarmed, d[1]=0x10).
+    f = make_frame(0x583, {0x00, 0x10, 0x05, 0x00, 0x00, 0x08, 0x57, 0x80});
+    v->IncomingFrameCan3(&f);
+    CHECK(StandardMetrics.ms_v_env_locked->AsBool() == true, "locked, ignition on (d[1]=0x10) -> locked");
+
+    // A d[7] value never seen on-car leaves the metric unchanged.
+    f = make_frame(0x583, {0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00});
+    v->IncomingFrameCan3(&f);
+    CHECK(StandardMetrics.ms_v_env_locked->AsBool() == true, "unknown d[7]=0x00 -> unchanged");
+
+    // Door bits are unaffected: driver door open while all unlocked.
+    f = make_frame(0x583, {0x00, 0x00, 0x80, 0x01, 0x00, 0x08, 0x43, 0x40});
+    v->IncomingFrameCan3(&f);
+    CHECK(StandardMetrics.ms_v_door_fl->AsBool() == true &&
+          StandardMetrics.ms_v_env_locked->AsBool() == false, "FL open + unlocked");
+
+    delete v;
+}
+
 void test_speed_0xFD() {
     printf("\ntest_speed_0xFD\n");
     auto* v = make_vehicle();
@@ -393,6 +435,7 @@ int main() {
     printf("=== vehicle_vwegolf CAN decode tests ===\n");
 
     test_soc_0x131();
+    test_lock_0x583();
     test_speed_0xFD();
     test_gear_0x187_park();
     test_charging12v();
