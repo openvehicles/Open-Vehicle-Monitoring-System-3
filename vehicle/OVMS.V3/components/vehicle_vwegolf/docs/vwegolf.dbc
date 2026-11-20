@@ -46,7 +46,8 @@ BO_ 1158 GPS_Position: 8 Gateway
  SG_ LonSign : 56|1@1+ (1,0) [0|1] "" OVMS
 
 BO_ 1411 ZV_02: 8 BCM
- SG_ Locked : 17|1@1+ (1,0) [0|1] "" OVMS
+ SG_ LockState : 16|8@1+ (1,0) [0|255] "" OVMS
+ SG_ Locked : 62|2@1+ (1,0) [0|3] "" OVMS
  SG_ DoorFL : 24|1@1+ (1,0) [0|1] "" OVMS
  SG_ DoorFR : 25|1@1+ (1,0) [0|1] "" OVMS
  SG_ DoorRL : 26|1@1+ (1,0) [0|1] "" OVMS
@@ -226,7 +227,8 @@ CM_ SG_ 1158 Latitude "Factor 1e-6 deg/LSB. Magnitude only (27 bits). Apply LatS
 CM_ SG_ 1158 LatSign "0=North, 1=South. Bit 55 (d[6] MSB). Inferred from bit layout; confirmed 0 for known N/E location. Needs S/W capture to fully verify.";
 CM_ SG_ 1158 Longitude "Factor 1e-6 deg/LSB. Magnitude only (28 bits). Apply LonSign for hemisphere.";
 CM_ SG_ 1158 LonSign "0=East, 1=West. Bit 56 (d[7] bit 0). Inferred from bit layout; confirmed 0 for known N/E location. Needs S/W capture to fully verify.";
-CM_ SG_ 1411 Locked "1 = locked externally (ZV external lock signal).";
+CM_ SG_ 1411 LockState "Lock state: 0x0A locked with the fob or KESSY (alarm armed), 0x05 locked from inside, 0x40 partly unlocked (single-press unlock), 0x80 all unlocked, 0x8A locked with the tailgate open; 0x08 / 0x04 briefly while locking. Not a plain lock flag: bit 1 alone reads a car locked from inside as unlocked.";
+CM_ SG_ 1411 Locked "2 = locked, 1 = unlocked, whatever the lock method; the only values seen on-car. Drives v.e.locked.";
 CM_ SG_ 1428 ChargeTimerMode "Raw value 1 = timer active. Other values = timer inactive.";
 CM_ SG_ 1428 CabinSetpoint "Factor 0.5 degC/LSB, offset +15.5 degC. Range 15.5–31.5 degC.";
 CM_ SG_ 1514 ClimaCabinTemp "Cabin temperature as measured by the Climatronic ECU sensor.";
@@ -251,7 +253,7 @@ VAL_ 902 ActiveProfile 0 "Inactive" 2 "Normal" 5 "Eco" 8 "Eco_plus" ;
 VAL_ 1428 ChargeType 0 "None" 1 "AC_Type2" 2 "DC_CCS" ;
 VAL_ 1428 ChargeTimerMode 0 "Inactive" 1 "Active" 2 "Unknown_2" 3 "Unknown_3" ;
 VAL_ 1428 ChargeInProgress 0 "Idle" 1 "Charging" ;
-VAL_ 1411 Locked 0 "Unlocked" 1 "Locked" ;
+VAL_ 1411 Locked 1 "Unlocked" 2 "Locked" ;
 VAL_ 1411 DoorFL 0 "Closed" 1 "Open" ;
 VAL_ 1411 DoorFR 0 "Closed" 1 "Open" ;
 VAL_ 1411 DoorRL 0 "Closed" 1 "Open" ;
