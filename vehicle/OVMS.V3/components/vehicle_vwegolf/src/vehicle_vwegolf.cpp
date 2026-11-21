@@ -47,6 +47,20 @@ OvmsVehicleVWeGolf::OvmsVehicleVWeGolf() {
     // Front windscreen heating active during remote pre-conditioning (0x594 byte 7 bit 7).
     m_env_heated_front_window = MyMetrics.InitBool("xvg.v.env.heated_front_window", SM_STALE_MIN, false);
 
+    // Body signals from the comfort bus (decoded in IncomingFrameCan3). Windows and per-door locks
+    // can't change while the car sleeps, so they go stale slowly: a window left open while parked
+    // stays visible. Metric names must be literals (OvmsMetric keeps the pointer).
+    m_window[0]    = MyMetrics.InitInt("xvg.v.d.window.fl", SM_STALE_HIGH, -1, Percentage);
+    m_window[1]    = MyMetrics.InitInt("xvg.v.d.window.fr", SM_STALE_HIGH, -1, Percentage);
+    m_window[2]    = MyMetrics.InitInt("xvg.v.d.window.rl", SM_STALE_HIGH, -1, Percentage);
+    m_window[3]    = MyMetrics.InitInt("xvg.v.d.window.rr", SM_STALE_HIGH, -1, Percentage);
+    m_door_lock[0] = MyMetrics.InitBool("xvg.v.d.lock.fl", SM_STALE_HIGH, false);
+    m_door_lock[1] = MyMetrics.InitBool("xvg.v.d.lock.fr", SM_STALE_HIGH, false);
+    m_door_lock[2] = MyMetrics.InitBool("xvg.v.d.lock.rl", SM_STALE_HIGH, false);
+    m_door_lock[3] = MyMetrics.InitBool("xvg.v.d.lock.rr", SM_STALE_HIGH, false);
+    m_sidelights     = MyMetrics.InitBool("xvg.v.e.sidelights", SM_STALE_MID, false);
+    m_rhd_metric     = MyMetrics.InitBool("xvg.v.rhd", SM_STALE_NONE, false);
+
     // The J533 gateway rebroadcasts the powertrain/HV frames the module reads — gear (0x187),
     // VIN (0x6B4), SoC, pack current/voltage, speed — onto KCAN (CAN3) with the comfort/clima traffic,
     // so a single KCAN tap sees everything (confirmed in drive captures: gear and VIN both appear on
@@ -356,14 +370,28 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
         }
         case 0x583:  // ZV_02: central locking and door open states.
         {
-            // d[2] bit 1: locked externally. d[3] bits 4:0: trunk, rr, rl, fr, fl (1=open).
-            StdMetrics.ms_v_env_locked->SetValue((d[2] & 0x2) >> 1);
-            StdMetrics.ms_v_door_fl->SetValue((d[3] & 0x1) >> 0);
-            StdMetrics.ms_v_door_fr->SetValue((d[3] & 0x2) >> 1);
-            StdMetrics.ms_v_door_rl->SetValue((d[3] & 0x4) >> 2);
-            StdMetrics.ms_v_door_rr->SetValue((d[3] & 0x8) >> 3);
+            // d[7] bits 7:6: 0x80 = locked, 0x40 = unlocked, both for the fob and the interior
+            // central-lock button; other values not seen on-car, metric left as is.
+            // d[2] is a lock-state value, not a flag: 0x0A locked with the fob (alarm armed),
+            // 0x05 locked from inside, 0x40 partly unlocked (single-press unlock), 0x80 all
+            // unlocked; reading its bit 1 alone showed a car locked from inside as unlocked.
+            // d[3] bits 4:0 (1 = open): tailgate, rear passenger side, rear driver side, passenger,
+            // driver. d[6] bit 2 / bit 4: rear door driver side / passenger side locked. Driver /
+            // passenger based like the window frames (OEM OCU); SideIndex() maps them to left / right.
+            if ((d[7] & 0xC0) == 0x80)
+                StdMetrics.ms_v_env_locked->SetValue(true);
+            else if ((d[7] & 0xC0) == 0x40)
+                StdMetrics.ms_v_env_locked->SetValue(false);
+            {
+                OvmsMetricBool* const door[4] = {StdMetrics.ms_v_door_fl, StdMetrics.ms_v_door_fr,
+                                                 StdMetrics.ms_v_door_rl, StdMetrics.ms_v_door_rr};
+                for (uint8_t seat = 0; seat < 4; seat++)
+                    door[SideIndex(seat)]->SetValue(((d[3] >> seat) & 0x1) != 0);
+            }
             StdMetrics.ms_v_door_trunk->SetValue((d[3] & 0x10) >> 4);
-            // ESP_LOGV(TAG, "0x0583 locked=%u fl=%u fr=%u rl=%u rr=%u trunk=%u", (d[2] & 0x2) >> 1,
+            m_door_lock[SideIndex(2)]->SetValue((d[6] & 0x04) != 0);
+            m_door_lock[SideIndex(3)]->SetValue((d[6] & 0x10) != 0);
+            // ESP_LOGV(TAG, "0x0583 lock=0x%02x fl=%u fr=%u rl=%u rr=%u trunk=%u", d[7],
                      // d[3] & 0x1, (d[3] & 0x2) >> 1, (d[3] & 0x4) >> 2, (d[3] & 0x8) >> 3,
                      // (d[3] & 0x10) >> 4);
             break;
@@ -674,10 +702,13 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
                      // StdMetrics.ms_v_bat_range_ideal->AsInt());
             break;
         }
-        case 0x65A:  // BCM_01: bonnet/hood open indicator (MHWIVSchalter, d[4] bit 0).
+        case 0x65A:  // BCM_01: bonnet/hood open.
         {
-            StdMetrics.ms_v_door_hood->SetValue(d[4] & 0x1);
-            // ESP_LOGV(TAG, "0x065A hood=%u", d[4] & 0x1);
+            // d[3] bit 7: bonnet switch, set as soon as the release pops the bonnet and clear when it is
+            // closed (the bit the OEM OCU reads). d[4] bit 0 (MHWIVSchalter) is set exactly 10 s later and
+            // stayed set after closing with the ignition off, so it is not used.
+            StdMetrics.ms_v_door_hood->SetValue((d[3] & 0x80) != 0);
+            // ESP_LOGV(TAG, "0x065A hood=%u", (d[3] & 0x80) != 0);
             break;
         }
         case 0x66E:  // InnenTemp: cabin interior temperature sensor.
@@ -776,6 +807,45 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
             m_drivetrain_ready = (d[7] & 0x20) != 0;
             StandardMetrics.ms_v_env_on->SetValue(m_kl15_on && m_drivetrain_ready);
             // ESP_LOGV(TAG, "0x391 READY=%u", m_drivetrain_ready);
+            break;
+        }
+        case 0x3D0:  // TSG_FT_01: driver's door
+        case 0x3D1:  // TSG_BT_01: passenger's door
+        case 0x3CE:  // TSG_HFS_01: rear door, driver side
+        case 0x3CF:  // TSG_HBFS_01: rear door, passenger side
+        {
+            // d[3]: window position in 0.5 % steps (0 = closed, ~200 = fully open). d[4] bit 7: position
+            // valid (clear in the first frames after a wake: keep the last value); bit 2: window at its
+            // closed stop (the rear windows read 2 there). d[0] bit 1: door locked, front doors only (the
+            // rear frames' bit stays 0 even when locked; the rear locks come from 0x583).
+            if (p_frame->FIR.B.DLC < 5) break;
+            const uint8_t seat = p_frame->MsgID == 0x3D0 ? 0 : p_frame->MsgID == 0x3D1 ? 1
+                               : p_frame->MsgID == 0x3CE ? 2 : 3;
+            const uint8_t idx = SideIndex(seat);
+            if (seat < 2) m_door_lock[idx]->SetValue((d[0] & 0x02) != 0);
+            if (d[4] & 0x80) {
+                const int pct = (d[4] & 0x04) ? 0 : (d[3] + 1) / 2;
+                m_window[idx]->SetValue(pct > 100 ? 100 : pct);
+            }
+            break;
+        }
+        case 0x3D5:  // Licht_Anf_01: light requests
+        {
+            // d[2] bit 6: light switch in the side-light position.
+            if (p_frame->FIR.B.DLC < 3) break;
+            m_sidelights->SetValue((d[2] & 0x40) != 0);
+            break;
+        }
+        case 0x32A:  // LH_EPS_01: steering
+        {
+            // d[5] bits 1-2: steering side. 1 = left-hand drive (seen on-car), 2 = right-hand drive (OEM
+            // OCU firmware; not yet seen on a car). Other values keep the last known side.
+            if (p_frame->FIR.B.DLC < 6) break;
+            const uint8_t side = (d[5] >> 1) & 0x3;
+            if (side == 1 || side == 2) {
+                m_rhd = side == 2;
+                m_rhd_metric->SetValue(m_rhd);
+            }
             break;
         }
         case 0x3C0:  // clamp status received
