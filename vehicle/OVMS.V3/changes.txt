@@ -152,6 +152,16 @@ Open Vehicle Monitor System v3 - Change log
 - VW e-Golf: fix v.e.locked showing "unlocked" for a car locked from inside (central-lock
     button) or locked while the ignition was switched on. The lock state now comes from
     KCAN 0x583 byte 7, which reads locked for every lock method.
+- VW e-Golf: add door, window and light status from the comfort bus: lock state per door, window
+    positions and side lights. Left / right follow the steering side reported by the car, as in
+    the OEM telematics unit (verified on a left-hand-drive car only); on right-hand-drive cars this
+    also swaps the door-open metrics v.d.fl / v.d.fr and v.d.rl / v.d.rr. v.d.hood now follows the
+    bonnet switch: it showed the bonnet open 10 s late and could stay "open" after closing.
+  New metrics:
+    xvg.v.d.lock.fl / .fr / .rl / .rr      -- bool: door locked
+    xvg.v.d.window.fl / .fr / .rl / .rr    -- window position in % open (0 = closed, -1 = not seen yet)
+    xvg.v.e.sidelights                     -- bool: light switch in the side-light position
+    xvg.v.rhd                              -- bool: right-hand-drive car (steering module, KCAN 0x32A)
 - VW e-Golf: set v.e.charging12v (12V battery charging) while the HV system is active (KCAN
     0x187 HV_Bordnetz_aktiv), HV charging is in progress or remote climate is running. The DC-DC
     converter is the only 12V charge source; Power Management relies on this metric.

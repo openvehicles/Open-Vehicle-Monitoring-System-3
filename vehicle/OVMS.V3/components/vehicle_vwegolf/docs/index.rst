@@ -79,6 +79,7 @@ Charge Control              Charge-current limit, start/stop (see below)
 Lock/Unlock Vehicle         No
 Valet Mode Control          No
 12V Charging Status         Yes (``v.e.charging12v``, see below)
+Doors, Windows, Lights      Doors, locks, window positions, bonnet, side lights (see below)
 Others
 =========================== ==============
 
@@ -90,6 +91,31 @@ Others
   this is whenever the HV system is up: the HV-system-active bit of KCAN frame 0x187 (bit 15, ``HV_Bordnetz_aktiv``
   of ``Motor_EV_01`` in opendbc), HV charging in progress, or remote climate running. It clears when KCAN goes silent
 * OVMS Power Management (``power`` config) relies on this metric to tell whether the 12V battery is being charged
+
+-------------------------
+Doors, Windows and Lights
+-------------------------
+
+All read from the comfort bus while the car is awake. The values are kept while the car sleeps (windows and locks
+cannot change then).
+
+================================ =========================================================================
+Metric                           Meaning
+================================ =========================================================================
+``v.d.fl`` … ``v.d.rr``          Door open (standard metrics), ``v.d.trunk`` tailgate, ``v.d.hood`` bonnet
+``v.e.locked``                   Car locked (any lock method: key fob, keyless entry, central-lock button)
+``xvg.v.d.lock.fl`` … ``rr``     Door locked, per door
+``xvg.v.d.window.fl`` … ``rr``   Window position in % open (0 = closed, 100 = fully open, -1 = not seen yet)
+``xvg.v.e.sidelights``           Light switch in the side-light position
+``xvg.v.rhd``                    Steering side reported by the car: ``yes`` = right-hand drive
+================================ =========================================================================
+
+* With single-press unlocking set in the car, the first press unlocks only the driver's door and the rear door
+  behind it; the per-door lock metrics show this
+* Left / right: the car reports doors, windows and locks per driver / passenger side. OVMS maps them to left / right
+  using ``xvg.v.rhd``. This was verified on a left-hand-drive car only; the right-hand-drive mapping follows the OEM
+  telematics unit's firmware. Owners of right-hand-drive cars: please report on the OVMS forum whether ``xvg.v.rhd``
+  reads ``yes`` and whether the doors and windows show on the correct side
 
 ---------------------
 Cabin Climate Control

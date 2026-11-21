@@ -112,6 +112,7 @@ extern OvmsNotify MyNotify;
 static constexpr int Minutes = 0;
 static constexpr int Amps    = 0;
 static constexpr int Celcius = 0;  // OVMS spells it 'Celcius'
+static constexpr int Percentage = 0;
 
 struct CAN_frame_t {
     canbus*    origin   = nullptr;
@@ -257,9 +258,12 @@ extern StandardMetricsType StandardMetrics;
 // ---------------------------------------------------------------------------
 // Metric registry (subset) — InitInt creates a standalone custom metric.
 // ---------------------------------------------------------------------------
+static constexpr int SM_STALE_NONE = 0;
 static constexpr int SM_STALE_MIN = 60;
+static constexpr int SM_STALE_MID = 120;
+static constexpr int SM_STALE_HIGH = 3600;
 struct OvmsMetrics {
-    OvmsMetricInt* InitInt(const char* name, int /*autostale*/ = 0, int value = 0) {
+    OvmsMetricInt* InitInt(const char* name, int /*autostale*/ = 0, int value = 0, int /*units*/ = 0) {
         // Real OVMS metrics are singletons by name owned by the framework for the process
         // lifetime; mirror that so repeated registrations return the same object and the harness
         // owns every allocation (no per-vehicle leak — the registry frees them at exit).
