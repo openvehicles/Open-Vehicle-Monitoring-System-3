@@ -140,6 +140,21 @@ class OvmsVehicleVWeGolf : public OvmsVehicle {
     // Heated front windshield
     OvmsMetricBool* m_env_heated_front_window = nullptr;
 
+    // Body signals (comfort bus): window positions, per-door locks, side lights.
+    // The door / window frames are driver / passenger based; m_rhd (from 0x32A) maps them to left /
+    // right, as the OEM OCU does. Array index: 0 fl, 1 fr, 2 rl, 3 rr.
+    bool m_rhd = false;                          // right-hand drive per 0x32A; LHD until the car says so
+    OvmsMetricBool* m_rhd_metric = nullptr;      // xvg.v.rhd
+    OvmsMetricInt*  m_window[4] = {};            // xvg.v.d.window.*: % open, 0 = closed, -1 = not seen
+    OvmsMetricBool* m_door_lock[4] = {};         // xvg.v.d.lock.*: door locked
+    int8_t m_lock_mode = -1;                     // 0x583 d[7]: 1 locked, 0 unlocked, -1 not seen yet
+    // v.e.locked = locking mode locked and every door locked (see UpdateLocked in the .cpp).
+    void UpdateLocked();
+    OvmsMetricBool* m_sidelights = nullptr;      // xvg.v.e.sidelights: light switch on side lights
+    // Metric index for a driver / passenger based signal. seat: 0 driver, 1 passenger, 2 rear driver
+    // side, 3 rear passenger side. LHD: the same; RHD: left and right swapped.
+    uint8_t SideIndex(uint8_t seat) const { return m_rhd ? (uint8_t)(seat ^ 1) : seat; }
+
     // `xvg charge profile list` handler: fetch the car's charge profiles (charge locations) via the
     // BatteryControl controller and print them to the writer. Blocks (bounded) while the BCU is woken
     // and answers. Read-only — it never writes a profile.
