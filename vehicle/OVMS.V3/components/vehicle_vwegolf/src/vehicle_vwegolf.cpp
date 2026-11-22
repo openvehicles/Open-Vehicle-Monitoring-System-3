@@ -356,14 +356,22 @@ void OvmsVehicleVWeGolf::IncomingFrameCan3(CAN_frame_t* p_frame) {
         }
         case 0x583:  // ZV_02: central locking and door open states.
         {
-            // d[2] bit 1: locked externally. d[3] bits 4:0: trunk, rr, rl, fr, fl (1=open).
-            StdMetrics.ms_v_env_locked->SetValue((d[2] & 0x2) >> 1);
+            // d[7] bits 7:6: 0x80 = locked, 0x40 = unlocked, both for the fob and the interior
+            // central-lock button; other values not seen on-car, metric left as is.
+            // d[2] is a lock-state value, not a flag: 0x0A locked with the fob (alarm armed),
+            // 0x05 locked from inside, 0x40 partly unlocked (single-press unlock), 0x80 all
+            // unlocked; reading its bit 1 alone showed a car locked from inside as unlocked.
+            // d[3] bits 4:0: trunk, rr, rl, fr, fl (1=open).
+            if ((d[7] & 0xC0) == 0x80)
+                StdMetrics.ms_v_env_locked->SetValue(true);
+            else if ((d[7] & 0xC0) == 0x40)
+                StdMetrics.ms_v_env_locked->SetValue(false);
             StdMetrics.ms_v_door_fl->SetValue((d[3] & 0x1) >> 0);
             StdMetrics.ms_v_door_fr->SetValue((d[3] & 0x2) >> 1);
             StdMetrics.ms_v_door_rl->SetValue((d[3] & 0x4) >> 2);
             StdMetrics.ms_v_door_rr->SetValue((d[3] & 0x8) >> 3);
             StdMetrics.ms_v_door_trunk->SetValue((d[3] & 0x10) >> 4);
-            // ESP_LOGV(TAG, "0x0583 locked=%u fl=%u fr=%u rl=%u rr=%u trunk=%u", (d[2] & 0x2) >> 1,
+            // ESP_LOGV(TAG, "0x0583 lock=0x%02x fl=%u fr=%u rl=%u rr=%u trunk=%u", d[7],
                      // d[3] & 0x1, (d[3] & 0x2) >> 1, (d[3] & 0x4) >> 2, (d[3] & 0x8) >> 3,
                      // (d[3] & 0x10) >> 4);
             break;
