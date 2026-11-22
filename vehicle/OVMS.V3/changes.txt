@@ -1,6 +1,25 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Network Manager / WiFi / Cellular / Power Management:
+    - Added centralized V2/V3 server connection check in `OvmsNetManager` (`[network] wifi.conncheck.v2v3`,
+      configurable in both WiFi and Cellular web UIs, enabled by default when V2 or V3 server is active).
+      When the active network interface has IP connectivity but fails the V2/V3 online check for 120s,
+      `OvmsNetManager` triggers an automatic reconnect (WiFi scan/reconnect or cellular `NetLoss` PDP/PPP
+      reset on first failure; 300s WiFi client disconnect fallback or cellular modem restart on subsequent
+      failures) and reports the online/check status in `network status`, `wifi status`, and `cellular status`.
+    - Added option to prioritize cellular modem over WiFi while the vehicle is switched on
+      (`[network] modem.prefer.on`).
+    - Improved `[network] wifi.bad.reconnect` handling: skip access points with RSSI at or below the
+      configured `wifi.sq.bad` threshold during WiFi scans and ensure immediate disconnect/reconnect
+      even if signal quality never reached the `wifi.sq.good` threshold after association.
+    - Power Management: use V2/V3-aware WiFi online state for `modemoff_wifi_delay`, `wifioff_if_disconnected`,
+      and `modem_wifi_fallback` (with a 5-minute fallback delay on server link loss and immediate event-based
+      fallback on `network.wifi.sta.bad` / `network.wifi.down`), and defer restoring `notcharging_timer`
+      from `parktime` by 10 minutes after boot.
+  New configs:
+    [network] wifi.conncheck.v2v3 (bool, default auto) -- require active V2/V3 server connection for online state
+    [network] modem.prefer.on (bool, default false)    -- prefer cellular modem over WiFi when vehicle is on
 - Time / Cellular: added automatic timezone detection via cellular network (NITZ) and GPS lookup,
     and optional system time synchronization from cellular network (NITZ).
     When enabled (`[modem] enable.autotz`), cellular NITZ updates the timezone dynamically in memory

@@ -121,6 +121,8 @@ class OvmsNetManager
     void Ticker1(std::string event, void *data);
     void ModemUp(std::string event, void* data);
     void ModemDown(std::string event, void* data);
+    void VehicleOn(std::string event, void* data);
+    void VehicleOff(std::string event, void* data);
     void InterfaceUp(std::string event, void* data);
     void ConfigChanged(std::string event, void* data);
     void EventSystemShuttingDown(std::string event, void* data);
@@ -129,6 +131,12 @@ class OvmsNetManager
   public:
     void DoSafePrioritiseAndIndicate();
     esp_err_t GetNetifList(std::vector<struct netif>& netiflist, int& netifdefault);
+    bool IsServerOnline();
+    bool IsWifiOnline();
+    bool IsModemOnline();
+    bool IsNetOnline();
+    bool IsV2V3ConnCheckEnabled();
+    bool IsWifiBadReconnectEnabled() const { return m_cfg_wifi_bad_reconnect; }
 
   protected:
     void PrioritiseAndIndicate();
@@ -158,9 +166,16 @@ class OvmsNetManager
   protected:
     std::string m_cfg_dnslist;              // config network dns            [iplist] default ""
     bool m_cfg_reboot_no_connection;        // config network reboot.no.ip   [bool] default false
+    bool m_cfg_modem_prefer_on;             // config network modem.prefer.on [bool] default false
     float m_cfg_wifi_sq_good;               // config network wifi.sq.good   [dBm] default -87
     float m_cfg_wifi_sq_bad;                // config network wifi.sq.bad    [dBm] default -89
     bool m_cfg_wifi_bad_reconnect;          // config network wifi.bad.reconnect [bool] default false
+    bool m_cfg_v2v3_conncheck;              // config network conncheck.v2v3 [bool]
+    bool m_cfg_v2v3_conncheck_defined;      // whether network conncheck.v2v3 is explicitly configured
+    uint16_t m_v2v3_wifi_offline_timer;     // seconds with connected Wifi STA but failed V2/V3 online check
+    uint8_t m_v2v3_wifi_fail_count;         // consecutive V2/V3 online check timeouts on Wifi STA
+    uint16_t m_v2v3_modem_offline_timer;    // seconds with connected Modem PPP but failed V2/V3 online check
+    uint8_t m_v2v3_modem_fail_count;        // consecutive V2/V3 online check timeouts on Modem PPP
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   protected:
