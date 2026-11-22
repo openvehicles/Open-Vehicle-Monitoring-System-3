@@ -957,9 +957,13 @@ bool OvmsNetManager::IsServerOnline()
 #endif
 
   bool check_v2v3 = m_cfg_v2v3_conncheck_defined ? m_cfg_v2v3_conncheck : (m_cfg_v2v3_conncheck || v2_started || v3_started);
-  if (check_v2v3 && ((v2_started && !v2_connected) || (v3_started && !v3_connected)))
+
+  // This test must only return false on known states of missing connectivity,
+  // i.e. if both server connections are started, both need to be offline to trigger false:
+  if (check_v2v3 && (v2_started || v3_started) && (!v2_started || !v2_connected) && (!v3_started || !v3_connected))
     return false;
 
+  // Treat 'unknown' as online (default)
   return true;
   }
 
