@@ -41,6 +41,7 @@
 #define MAX_POLL_DATA_LEN 126
 #define CELLCOUNT 96
 #define SQ_CANDATA_TIMEOUT 10          // seconds until car goes to sleep without CAN activity
+#define ADC_CALIB_FACTOR 0.9925f       // empirical calibration factor
 
 #include "ovms_log.h"
 

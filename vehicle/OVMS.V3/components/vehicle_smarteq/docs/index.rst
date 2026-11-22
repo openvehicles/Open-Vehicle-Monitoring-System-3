@@ -373,3 +373,103 @@ The data fields are:
 This record contains location data and vehicle power/energy data, so it is considered
 privacy-sensitive. For that reason the feature is disabled by default and must be
 explicitly enabled by the user in the smart EQ web UI.
+
+
+-------------------------
+ADC factor history log
+-------------------------
+
+Whenever the 12V ADC calibration factor is recalculated and stored (either automatically during
+12V charging or manually via ``xsq calcadc``), ``ReCalcADCfactor()`` emits a data notification
+on subtype ``xsq.adc.log.factor`` of type ``XSQ-ADC-FactorLog``. The record format is:
+
+::
+
+   XSQ-ADC-FactorLog,1,2592000,<adc_factor_new>,<adc_factor_prev>
+
+The data fields are:
+
+* ``1``: record format version
+* ``2592000``: retention/validity period in seconds (30 days) for the V2 history record
+* ``adc_factor_new``: newly calculated 12V ADC calibration factor (precision 3)
+* ``adc_factor_prev``: previous 12V ADC calibration factor (precision 3)
+
+
+-------------------------------
+12V undervoltage history log
+-------------------------------
+
+When a 12V undervoltage alert is triggered or cleared, ``smart12VHistory()`` records the voltage
+in ``xsq.12v.undervolt.history`` and emits a data notification on subtype
+``xsq.12v.log.undervoltage`` of type ``XSQ-12V-undervoltagelog``. The record format is:
+
+::
+
+   XSQ-12V-undervoltagelog,1,2592000,<12v_voltage>,<usm_12v>,<bms_12v>
+
+The data fields are:
+
+* ``1``: record format version
+* ``2592000``: retention/validity period in seconds (30 days) for the V2 history record
+* ``12v_voltage``: module 12V system voltage from ``v.b.12v.voltage`` in V (precision 2)
+* ``usm_12v``: 12V USM voltage from ``xsq.evc.12v.dcdc[3]`` in V (precision 2)
+* ``bms_12v``: 12V BMS clamp 30 voltage from ``xsq.bms.voltages[6]`` in V (precision 2)
+
+
+-------------------------
+DCDC charging history log
+-------------------------
+
+When DCDC logging is enabled and the 12V DCDC converter is actively charging, ``smartDCDCHistory()``
+emits a periodic (every 60 seconds) data notification on subtype ``xsq.dcdc.log.charging`` of type
+``XSQ-DCDC-charging``. The record format is:
+
+::
+
+   XSQ-DCDC-charging,1,864000,<12v_voltage>,<dcdc_volt>,<dcdc_volt_req>,<dcdc_load_pct>,<dcdc_power_w>,<dcdc_current_a>
+
+The data fields are:
+
+* ``1``: record format version
+* ``864000``: retention/validity period in seconds (10 days) for the V2 history record
+* ``12v_voltage``: module 12V system voltage from ``v.b.12v.voltage`` in V (precision 2)
+* ``dcdc_volt``: DCDC 12V output voltage from ``xsq.evc.12v.dcdc[1]`` in V (precision 2)
+* ``dcdc_volt_req``: DCDC requested voltage from ``xsq.evc.12v.dcdc[0]`` in V (precision 2)
+* ``dcdc_load_pct``: DCDC converter load from ``xsq.evc.12v.dcdc[7]`` in % (precision 2)
+* ``dcdc_power_w``: DCDC converter power from ``xsq.evc.12v.dcdc[2]`` in W (precision 0)
+* ``dcdc_current_a``: DCDC converter current from ``xsq.evc.12v.dcdc[6]`` in A (precision 2)
+
+
+--------------------------------
+BMS contactor cycle history log
+--------------------------------
+
+Whenever the remaining HV battery contactor cycle counter changes between two BMS readings,
+``PollReply_BMS_HVContactorCycles()`` emits a data notification on subtype
+``xsq.bms.log.contactor`` of type ``XSQ-BMS-ContactorLog``. The record format is:
+
+::
+
+   XSQ-BMS-ContactorLog,5,2592000,<cycles_max>,<cycles_prev>,<cycles_now>,<cycles_diff>,<odometer_km>,<bms_mileage_km>,<can_soc_pct>,<can_soh_pct>,<usm_12v>,<contactor_state>,<bms_prod_data>,<bat_serial>,<evc_traceability>,<tcc_12v_24h>,<cchanges_1h>,<bms_id_data>
+
+The data fields are:
+
+* ``5``: record format version
+* ``2592000``: retention/validity period in seconds (30 days) for the V2 history record
+* ``cycles_max``: maximum contactor cycles (typically 200,000)
+* ``cycles_prev``: previous remaining contactor cycle count
+* ``cycles_now``: current remaining contactor cycle count
+* ``cycles_diff``: contactor cycles decremented since previous reading (``cycles_prev - cycles_now``)
+* ``odometer_km``: vehicle odometer in km (precision 1)
+* ``bms_mileage_km``: BMS internal mileage from ``xsq.bms.mileage`` in km (precision 0)
+* ``can_soc_pct``: CAN battery state of charge in % (precision 1)
+* ``can_soh_pct``: CAN battery state of health in % (precision 0)
+* ``usm_12v``: 12V USM voltage from ``xsq.evc.12v.dcdc[3]`` in V (precision 2)
+* ``contactor_state``: HV contactor state text from ``xsq.bms.contact``
+* ``bms_prod_data``: MP-encoded BMS production data from ``xsq.bms.prod.data``
+* ``bat_serial``: battery serial number from ``xsq.v.bat.serial``
+* ``evc_traceability``: MP-encoded EVC traceability data from ``xsq.evc.traceability``
+* ``tcc_12v_24h``: 12V trickle charge count within the last 24 hours from ``xsq.12v.trickle.count``
+* ``cchanges_1h``: number of contactor cycle changes within the last hour from ``xsq.bms.contactor.cycles[4]``
+* ``bms_id_data``: MP-encoded BMS identification data from ``xsq.bms.id.ident.data``
+
