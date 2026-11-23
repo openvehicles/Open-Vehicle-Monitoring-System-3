@@ -172,10 +172,6 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
         {
         if (MyOvmsServerV3)
           {
-          const int64_t now = monotonictime;
-          MyOvmsServerV3->m_last_rx = now;
-          MyOvmsServerV3->m_connected_since = now;
-          MyOvmsServerV3->m_probe_sent = false;
           MyOvmsServerV3->m_sendall = true;
           MyOvmsServerV3->m_notify_info_pending = true;
           MyOvmsServerV3->m_notify_error_pending = true;
@@ -193,6 +189,10 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
     case MG_EV_MQTT_SUBACK:
       ESP_LOGV(TAG, "OvmsServerV3MongooseCallback(MG_EV_MQTT_SUBACK)");
       ESP_LOGI(TAG, "Subscription acknowledged");
+      if (MyOvmsServerV3)
+        {
+        MyOvmsServerV3->NoteReceive();
+        }
       break;
     case MG_EV_MQTT_PUBLISH:
       ESP_LOGV(TAG, "OvmsServerV3MongooseCallback(MG_EV_MQTT_PUBLISH)");
@@ -200,10 +200,10 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
              msg->topic.p, (int) msg->payload.len, msg->payload.p);
       if (MyOvmsServerV3)
         {
-        MyOvmsServerV3->m_last_rx = monotonictime;
-        MyOvmsServerV3->m_probe_sent = false;
         MyOvmsServerV3->IncomingMsg(std::string(msg->topic.p,msg->topic.len),
                                     std::string(msg->payload.p,msg->payload.len));
+        if (MyOvmsServerV3 && MyOvmsServerV3->m_mgconn == nc)
+          MyOvmsServerV3->NoteReceive();
         }
       if (msg->qos == 1)
         {
@@ -217,26 +217,39 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
     case MG_EV_MQTT_PUBACK:
       ESP_LOGV(TAG, "OvmsServerV3MongooseCallback(MG_EV_MQTT_PUBACK)");
       ESP_LOGI(TAG, "Message publishing acknowledged (msg_id: %d)", msg->message_id);
+      if (MyOvmsServerV3)
+        {
+        MyOvmsServerV3->NoteReceive();
+        }
       break;
     case MG_EV_MQTT_PUBREL:
       ESP_LOGV(TAG, "OvmsServerV3MongooseCallback(MG_EV_MQTT_PUBREL)");
+      if (MyOvmsServerV3)
+        {
+        MyOvmsServerV3->NoteReceive();
+        }
       mg_mqtt_pubcomp(nc, msg->message_id);
       break;
     case MG_EV_MQTT_PUBREC:
       ESP_LOGV(TAG, "OvmsServerV3MongooseCallback(MG_EV_MQTT_PUBREC)");
       if (MyOvmsServerV3)
         {
+        MyOvmsServerV3->NoteReceive();
         MyOvmsServerV3->IncomingPubRec(msg->message_id);
         }
       break;
     case MG_EV_MQTT_PUBCOMP:
       ESP_LOGV(TAG, "OvmsServerV3MongooseCallback(MG_EV_MQTT_PUBCOMP)");
-      break;
-    case MG_EV_RECV:
       if (MyOvmsServerV3)
         {
-        MyOvmsServerV3->m_last_rx = monotonictime;
-        MyOvmsServerV3->m_probe_sent = false;
+        MyOvmsServerV3->NoteReceive();
+        }
+      break;
+    case MG_EV_MQTT_PINGRESP:
+    case MG_EV_MQTT_UNSUBACK:
+      if (MyOvmsServerV3)
+        {
+        MyOvmsServerV3->NoteReceive();
         }
       break;
     case MG_EV_CLOSE:
@@ -263,6 +276,10 @@ OvmsServerV3::OvmsServerV3(const char* name)
     ESP_LOGI(TAG, "OVMS Server V3 registered metric modifier is #%d",MyOvmsServerV3Modifier);
     }
 
+  m_state = Undefined;
+  m_last_rx = 0;
+  m_connected_since = 0;
+  m_probe_sent = false;
   SetStatus("Server has been started", false, WaitNetwork);
   m_connretry = 0;
   m_connection_counter = 0;
@@ -271,9 +288,6 @@ OvmsServerV3::OvmsServerV3(const char* name)
   m_lasttx = 0;
   m_lasttx_sendall = 0;
   m_lasttx_priority = 0;
-  m_last_rx = 0;
-  m_connected_since = 0;
-  m_probe_sent = false;
   m_peers = 0;
   m_updatetime_idle = 600;
   m_updatetime_connected = 10;
@@ -1223,6 +1237,12 @@ void OvmsServerV3::Disconnect()
   StandardMetrics.ms_s_v3_peers->SetValue(0);
   }
 
+void OvmsServerV3::NoteReceive()
+  {
+  m_last_rx = monotonictime;
+  m_probe_sent = false;
+  }
+
 uint16_t OvmsServerV3::NextMsgId()
   {
   // skip id 0:
@@ -1237,9 +1257,21 @@ void OvmsServerV3::SetStatus(const char* status, bool fault /*=false*/, State ne
   else
     ESP_LOGI(TAG, "Status: %s", status);
   m_status = status;
-  if (newstate != Undefined)
+  if (newstate != Undefined && newstate != m_state)
     {
     m_state = newstate;
+    if (m_state == OvmsServerV3::Connected)
+      {
+      m_connected_since = monotonictime;
+      m_last_rx = m_connected_since;
+      m_probe_sent = false;
+      }
+    else
+      {
+      m_connected_since = 0;
+      m_last_rx = 0;
+      m_probe_sent = false;
+      }
     switch (m_state)
       {
       case OvmsServerV3::WaitNetwork:
