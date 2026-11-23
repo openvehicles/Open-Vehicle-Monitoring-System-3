@@ -229,9 +229,10 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
       ESP_LOGV(TAG, "OvmsServerV2MongooseCallback(MG_EV_RECV)");
       if (MyOvmsServerV2)
         {
-        MyOvmsServerV2->NoteReceive();
         size_t read = MyOvmsServerV2->IncomingData((uint8_t*)nc->recv_mbuf.buf, nc->recv_mbuf.len);
         mbuf_remove(&nc->recv_mbuf, read);
+        if (MyOvmsServerV2 && MyOvmsServerV2->m_mgconn == nc)
+          MyOvmsServerV2->NoteReceive();
         }
       break;
     default:
@@ -241,7 +242,6 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
 
 void OvmsServerV2::ProcessServerMsg()
   {
-  NoteReceive();
   std::string line = m_buffer->ReadLine();
 
   if (line.compare(0,7,"MP-S 0 ") == 0)
@@ -421,6 +421,9 @@ void OvmsServerV2::ProcessServerMsg()
     default:
       break;
     }
+
+  if (m_mgconn)
+    NoteReceive();
   }
 
 void OvmsServerV2::ProcessCommand(const char* payload)
@@ -917,10 +920,13 @@ void OvmsServerV2::SetStatus(const char* status, bool fault, State newstate)
       {
       m_connected_since = monotonictime;
       m_last_rx = m_connected_since;
+      m_probe_sent = false;
       }
     else
       {
       m_connected_since = 0;
+      m_last_rx = 0;
+      m_probe_sent = false;
       }
     switch (m_state)
       {
@@ -1035,6 +1041,7 @@ void OvmsServerV2::Disconnect()
   m_connretry = 0;
   m_last_rx = 0;
   m_connected_since = 0;
+  m_probe_sent = false;
   StandardMetrics.ms_s_v2_connected->SetValue(false);
   StandardMetrics.ms_s_v2_peers->SetValue(0);
   }
@@ -1051,6 +1058,7 @@ void OvmsServerV2::Reconnect(int connretry)
   m_connretry = connretry;
   m_last_rx = 0;
   m_connected_since = 0;
+  m_probe_sent = false;
   StandardMetrics.ms_s_v2_connected->SetValue(false);
   StandardMetrics.ms_s_v2_peers->SetValue(0);
   }
@@ -2325,8 +2333,15 @@ void OvmsServerV2::LivenessCheck()
       !StandardMetrics.ms_s_v2_connected->AsBool())
     return;
 
-  const int64_t silence = monotonictime - m_last_rx;
-  if (silence < (uint32_t)m_updatetime_probe)
+  const int64_t now = monotonictime;
+  if (m_last_rx == 0)
+    {
+    m_last_rx = now;
+    return;
+    }
+
+  const int64_t silence = now - m_last_rx;
+  if (silence < m_updatetime_probe)
     {
     m_probe_sent = false;
     return;
@@ -2334,16 +2349,16 @@ void OvmsServerV2::LivenessCheck()
 
   if (!m_probe_sent)
     {
-    ESP_LOGV(TAG, "No inbound V2 traffic for %lus, sending ping", (unsigned long)silence);
+    ESP_LOGV(TAG, "No inbound V2 traffic for %llds, sending ping", (long long)silence);
     Transmit("MP-0 A");
     m_probe_sent = true;
     return;
     }
 
-  if (silence >= (uint32_t)(m_updatetime_probe + 30))
+  if (silence >= (m_updatetime_probe + 30))
     {
-    ESP_LOGE(TAG, "OVMS V2 liveness timeout after %lus with no inbound traffic, reconnecting",
-             (unsigned long)silence);
+    ESP_LOGE(TAG, "OVMS V2 liveness timeout after %llds with no inbound traffic, reconnecting",
+             (long long)silence);
     Reconnect(30);
     SetStatus("Liveness timeout, reconnecting", true, WaitReconnect);
     }
@@ -2480,6 +2495,10 @@ OvmsServerV2::OvmsServerV2(const char* name)
     }
 
   m_buffer = new OvmsBuffer(1024);
+  m_state = Undefined;
+  m_last_rx = 0;
+  m_connected_since = 0;
+  m_probe_sent = false;
   SetStatus("Server has been started", false, WaitNetwork);
   m_now_stat = false;
   m_now_gen = false;
@@ -2495,9 +2514,6 @@ OvmsServerV2::OvmsServerV2(const char* name)
   m_updatetime_probe = 60;
   m_legacy_field_enc = false;
   m_liveness_enabled = false;
-  m_probe_sent = false;
-  m_last_rx = 0;
-  m_connected_since = 0;
   m_lasttx = 0;
   m_lasttx_stream = 0;
   m_peers = 0;
