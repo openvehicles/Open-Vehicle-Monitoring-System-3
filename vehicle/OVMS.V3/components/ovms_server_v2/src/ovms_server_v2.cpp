@@ -229,6 +229,7 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
       ESP_LOGV(TAG, "OvmsServerV2MongooseCallback(MG_EV_RECV)");
       if (MyOvmsServerV2)
         {
+        MyOvmsServerV2->NoteReceive();
         size_t read = MyOvmsServerV2->IncomingData((uint8_t*)nc->recv_mbuf.buf, nc->recv_mbuf.len);
         mbuf_remove(&nc->recv_mbuf, read);
         }
@@ -240,7 +241,7 @@ static void OvmsServerV2MongooseCallback(struct mg_connection *nc, int ev, void 
 
 void OvmsServerV2::ProcessServerMsg()
   {
-  m_lastrx_time = monotonictime;
+  NoteReceive();
   std::string line = m_buffer->ReadLine();
 
   if (line.compare(0,7,"MP-S 0 ") == 0)
@@ -1039,6 +1040,12 @@ void OvmsServerV2::Reconnect(int connretry)
   m_connretry = connretry;
   StandardMetrics.ms_s_v2_connected->SetValue(false);
   StandardMetrics.ms_s_v2_peers->SetValue(0);
+  }
+
+void OvmsServerV2::NoteReceive()
+  {
+  m_lastrx_time = monotonictime;
+  m_probe_sent = false;
   }
 
 size_t OvmsServerV2::IncomingData(uint8_t* data, size_t len)
@@ -2213,10 +2220,13 @@ void OvmsServerV2::ConfigChanged(OvmsConfigParam* param)
   auto cfglock = MyConfig.Lock();
 
   // Read new configuration:
-  m_streaming = MyConfig.GetParamValueInt("vehicle", "stream", 0);
-  m_updatetime_connected = MyConfig.GetParamValueInt("server.v2", "updatetime.connected", 60);
-  m_updatetime_idle = MyConfig.GetParamValueInt("server.v2", "updatetime.idle", 600);
-  m_legacy_field_enc = MyConfig.GetParamValueBool("server.v2", "workaround.legacy_field_enc", false);
+  m_streaming = MyConfig.GetParamValueInt("vehicle", "stream", m_streaming);
+  m_updatetime_connected = MyConfig.GetParamValueInt("server.v2", "updatetime.connected", m_updatetime_connected);
+  m_updatetime_idle = MyConfig.GetParamValueInt("server.v2", "updatetime.idle", m_updatetime_idle);
+  m_updatetime_probe = MyConfig.GetParamValueInt("server.v2", "updatetime.probe", m_updatetime_probe);
+  if (m_updatetime_probe < 10) m_updatetime_probe = 10;
+  m_liveness_enabled = MyConfig.GetParamValueBool("server.v2", "liveness.enabled", m_liveness_enabled);
+  m_legacy_field_enc = MyConfig.GetParamValueBool("server.v2", "workaround.legacy_field_enc", m_legacy_field_enc);
 
   if (!param) return;
 
@@ -2296,6 +2306,36 @@ void OvmsServerV2::NetmanStop(std::string event, void* data)
     }
   }
 
+void OvmsServerV2::LivenessCheck()
+  {
+  if (!m_liveness_enabled || !m_mgconn ||
+      !StandardMetrics.ms_s_v2_connected->AsBool())
+    return;
+
+  const uint32_t silence = monotonictime - m_lastrx_time;
+  if (silence < (uint32_t)m_updatetime_probe)
+    {
+    m_probe_sent = false;
+    return;
+    }
+
+  if (!m_probe_sent)
+    {
+    ESP_LOGV(TAG, "No inbound V2 traffic for %lus, sending ping", (unsigned long)silence);
+    Transmit("MP-0 A");
+    m_probe_sent = true;
+    return;
+    }
+
+  if (silence >= (uint32_t)(m_updatetime_probe + 30))
+    {
+    ESP_LOGE(TAG, "OVMS V2 liveness timeout after %lus with no inbound traffic, reconnecting",
+             (unsigned long)silence);
+    Reconnect(30);
+    SetStatus("Liveness timeout, reconnecting", true, WaitReconnect);
+    }
+  }
+
 void OvmsServerV2::Ticker1(std::string event, void* data)
   {
   if (m_connretry > 0)
@@ -2321,24 +2361,29 @@ void OvmsServerV2::Ticker1(std::string event, void* data)
     {
     uint32_t now = monotonictime;
 
-    // check for issue #241 condition:
-    int rxtimeout = MyConfig.GetParamValueInt("server.v2", "timeout.rx", 960);
-    if (rxtimeout != 0)
+    if (m_liveness_enabled)
+      LivenessCheck();
+    else
       {
-      if (rxtimeout < 120) rxtimeout = 120;
-      if (++m_ping_ticker >= rxtimeout - 60)
+      // check for issue #241 condition:
+      int rxtimeout = MyConfig.GetParamValueInt("server.v2", "timeout.rx", 960);
+      if (rxtimeout != 0)
         {
-        // send ping:
-        Transmit("MP-0 A");
-        m_ping_ticker = 0;
-        }
-      else if (now >= m_lastrx_time + rxtimeout)
-        {
-        ESP_LOGW(TAG, "Detected stale connection (issue #241), restarting network");
-        SetStatus("Restarting network", false, WaitNetwork);
-        Disconnect();
-        MyNetManager.RestartNetwork();
-        return;
+        if (rxtimeout < 120) rxtimeout = 120;
+        if (++m_ping_ticker >= rxtimeout - 60)
+          {
+          // send ping:
+          Transmit("MP-0 A");
+          m_ping_ticker = 0;
+          }
+        else if (now >= m_lastrx_time + rxtimeout)
+          {
+          ESP_LOGW(TAG, "Detected stale connection (issue #241), restarting network");
+          SetStatus("Restarting network", false, WaitNetwork);
+          Disconnect();
+          MyNetManager.RestartNetwork();
+          return;
+          }
         }
       }
 
@@ -2434,7 +2479,10 @@ OvmsServerV2::OvmsServerV2(const char* name)
   m_streaming = 0;
   m_updatetime_idle = 600;
   m_updatetime_connected = 60;
+  m_updatetime_probe = 60;
   m_legacy_field_enc = false;
+  m_liveness_enabled = false;
+  m_probe_sent = false;
   m_lasttx = 0;
   m_lasttx_stream = 0;
   m_peers = 0;

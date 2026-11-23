@@ -1,6 +1,12 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Server V2 (MP): added an optional liveness check in the web UI. When enabled, the client sends
+    an MP ping after the configured period without inbound traffic and reconnects if no response is
+    received within another 30 seconds. When disabled, the existing `timeout.rx` workaround remains
+    in effect.
+    [server.v2] liveness.enabled (bool, default false)
+    [server.v2] updatetime.probe (int, default: 60, minimum: 10 seconds)
 - Network Manager / WiFi / Cellular / Power Management:
     - Added centralized V2/V3 server connection check in `OvmsNetManager` (`[network] wifi.conncheck.v2v3`,
       configurable in both WiFi and Cellular web UIs, enabled by default when V2 or V3 server is active).

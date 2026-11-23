@@ -39,9 +39,9 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
   auto lock = MyConfig.Lock();
   std::string error;
   std::string server, vehicleid, password, port;
-  std::string updatetime_connected, updatetime_idle;
+  std::string updatetime_connected, updatetime_idle, updatetime_probe;
   bool tls;
-  bool ios_tpms_workaround, legacy_field_enc;
+  bool ios_tpms_workaround, legacy_field_enc, liveness_enabled;
 
   if (c.method == "POST") {
     // process form submission:
@@ -52,8 +52,10 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
     port = c.getvar("port");
     updatetime_connected = c.getvar("updatetime_connected");
     updatetime_idle = c.getvar("updatetime_idle");
+    updatetime_probe = c.getvar("updatetime_probe");
     ios_tpms_workaround = (c.getvar("ios_tpms_workaround") == "yes");
     legacy_field_enc = (c.getvar("legacy_field_enc") == "yes");
+    liveness_enabled = (c.getvar("liveness_enabled") == "yes");
 
     // validate:
     if (port != "") {
@@ -76,6 +78,11 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
         error += "<li data-input=\"updatetime_idle\">Update interval (idle) must be at least 1 second</li>";
       }
     }
+    if (updatetime_probe != "") {
+      if (atoi(updatetime_probe.c_str()) < 10) {
+        error += "<li data-input=\"updatetime_probe\">Liveness probe interval must be at least 10 seconds</li>";
+      }
+    }
 
     if (error == "") {
       // success:
@@ -87,6 +94,8 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
         MyConfig.SetParamValue("password","server.v2", password);
       MyConfig.SetParamValue("server.v2", "updatetime.connected", updatetime_connected);
       MyConfig.SetParamValue("server.v2", "updatetime.idle", updatetime_idle);
+      MyConfig.SetParamValue("server.v2", "updatetime.probe", updatetime_probe);
+      MyConfig.SetParamValueBool("server.v2", "liveness.enabled", liveness_enabled);
       MyConfig.SetParamValueBool("server.v2", "workaround.ios_tpms_display", ios_tpms_workaround);
       MyConfig.SetParamValueBool("server.v2", "workaround.legacy_field_enc", legacy_field_enc);
 
@@ -121,8 +130,10 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
     port = MyConfig.GetParamValue("server.v2", "port");
     updatetime_connected = MyConfig.GetParamValue("server.v2", "updatetime.connected");
     updatetime_idle = MyConfig.GetParamValue("server.v2", "updatetime.idle");
+    updatetime_probe = MyConfig.GetParamValue("server.v2", "updatetime.probe", "60");
     ios_tpms_workaround = MyConfig.GetParamValueBool("server.v2", "workaround.ios_tpms_display", true);  // default enabled, effective only for iOS OVMS app 1.8.6
     legacy_field_enc = MyConfig.GetParamValueBool("server.v2", "workaround.legacy_field_enc", false);
+    liveness_enabled = MyConfig.GetParamValueBool("server.v2", "liveness.enabled", false);
 
     // generate form:
     c.head(200);
@@ -151,6 +162,14 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
     "optional, in seconds, default: 60");
   c.input_text("…idle", "updatetime_idle", updatetime_idle.c_str(),
     "optional, in seconds, default: 600");
+  c.fieldset_end();
+
+  c.fieldset_start("Liveness check");
+  c.input_checkbox("Enable V2 liveness check", "liveness_enabled", liveness_enabled,
+    "<p>Sends an MP ping after inbound traffic has been silent for the probe interval,"
+    " then reconnects after another 30 seconds of silence.</p>");
+  c.input_text("Probe interval", "updatetime_probe", updatetime_probe.c_str(),
+    "in seconds, minimum: 10, default: 60");
   c.fieldset_end();
 
   c.fieldset_start("Workarounds");
