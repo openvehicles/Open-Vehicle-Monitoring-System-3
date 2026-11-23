@@ -113,6 +113,8 @@ class OvmsServerV2 : public OvmsServer, MongooseClient
       };
     State m_state;
     std::string m_status;
+    int64_t m_last_rx;
+    int64_t m_connected_since;
     void SetStatus(const char* status, bool fault=false, State newstate=Undefined);
 
   public:
@@ -158,7 +160,6 @@ class OvmsServerV2 : public OvmsServer, MongooseClient
     bool m_liveness_enabled;
     bool m_probe_sent;
 
-    uint32_t m_lastrx_time = 0;
     int m_ping_ticker = 0;
     uint32_t m_lasttx = 0;
     uint32_t m_lasttx_stream = 0;

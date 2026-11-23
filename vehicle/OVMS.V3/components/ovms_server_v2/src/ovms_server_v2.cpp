@@ -913,6 +913,15 @@ void OvmsServerV2::SetStatus(const char* status, bool fault, State newstate)
   if (newstate != Undefined && newstate != m_state)
     {
     m_state = newstate;
+    if (m_state == OvmsServerV2::Connected)
+      {
+      m_connected_since = monotonictime;
+      m_last_rx = m_connected_since;
+      }
+    else
+      {
+      m_connected_since = 0;
+      }
     switch (m_state)
       {
       case OvmsServerV2::WaitNetwork:
@@ -1024,6 +1033,8 @@ void OvmsServerV2::Disconnect()
     }
   m_buffer->EmptyAll();
   m_connretry = 0;
+  m_last_rx = 0;
+  m_connected_since = 0;
   StandardMetrics.ms_s_v2_connected->SetValue(false);
   StandardMetrics.ms_s_v2_peers->SetValue(0);
   }
@@ -1038,13 +1049,15 @@ void OvmsServerV2::Reconnect(int connretry)
     }
   m_buffer->EmptyAll();
   m_connretry = connretry;
+  m_last_rx = 0;
+  m_connected_since = 0;
   StandardMetrics.ms_s_v2_connected->SetValue(false);
   StandardMetrics.ms_s_v2_peers->SetValue(0);
   }
 
 void OvmsServerV2::NoteReceive()
   {
-  m_lastrx_time = monotonictime;
+  m_last_rx = monotonictime;
   m_probe_sent = false;
   }
 
@@ -2312,7 +2325,7 @@ void OvmsServerV2::LivenessCheck()
       !StandardMetrics.ms_s_v2_connected->AsBool())
     return;
 
-  const uint32_t silence = monotonictime - m_lastrx_time;
+  const int64_t silence = monotonictime - m_last_rx;
   if (silence < (uint32_t)m_updatetime_probe)
     {
     m_probe_sent = false;
@@ -2376,7 +2389,7 @@ void OvmsServerV2::Ticker1(std::string event, void* data)
           Transmit("MP-0 A");
           m_ping_ticker = 0;
           }
-        else if (now >= m_lastrx_time + rxtimeout)
+        else if (now >= m_last_rx + rxtimeout)
           {
           ESP_LOGW(TAG, "Detected stale connection (issue #241), restarting network");
           SetStatus("Restarting network", false, WaitNetwork);
@@ -2483,6 +2496,8 @@ OvmsServerV2::OvmsServerV2(const char* name)
   m_legacy_field_enc = false;
   m_liveness_enabled = false;
   m_probe_sent = false;
+  m_last_rx = 0;
+  m_connected_since = 0;
   m_lasttx = 0;
   m_lasttx_stream = 0;
   m_peers = 0;
@@ -2650,6 +2665,16 @@ void ovmsv2_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
       default:
         writer->puts("State: undetermined");
         break;
+      }
+    if (MyOvmsServerV2->m_connected_since > 0)
+      {
+      writer->printf("       Connected since: %llds ago\n",
+                     (long long)(monotonictime - MyOvmsServerV2->m_connected_since));
+      }
+    if (MyOvmsServerV2->m_last_rx > 0)
+      {
+      writer->printf("       Last RX: %llds ago\n",
+                     (long long)(monotonictime - MyOvmsServerV2->m_last_rx));
       }
     writer->printf("       %s\n",MyOvmsServerV2->m_status.c_str());
     }
