@@ -316,7 +316,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     obdii_7e4              = map->GetValueBool("obdii.7e4", true);
     obdii_7e4_dcdc         = map->GetValueBool("obdii.7e4.dcdc", true);
 
-    m_reboot_time          = map->GetValueInt("rebootnw", 30);
+    m_reboot_time          = map->GetValueInt("rebootnw", 20);
     m_park_timeout_secs    = map->GetValueInt("park.timeout", 600);
     m_full_km              = map->GetValueInt("full.km", 126);
     m_cfg_preset_version   = map->GetValueInt("cfg.preset.ver", 0);
