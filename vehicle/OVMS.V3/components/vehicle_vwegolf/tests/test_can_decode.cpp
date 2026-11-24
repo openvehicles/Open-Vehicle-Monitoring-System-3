@@ -68,11 +68,18 @@ void test_soc_0x131() {
 
 // v.e.locked from 0x583 d[7] (0x80 locked / 0x40 unlocked). Frames are real KCAN captures
 // (2026-11-12 / 2026-11-20); d[2] is the lock-state value that the old decode read bit 1 of.
+// v.e.locked also needs every door locked: the front doors report theirs in 0x3D0 / 0x3D1 (fed
+// first, locked), the rear doors in 0x583 d[6] (0x57 = both locked).
 void test_lock_0x583() {
     printf("\ntest_lock_0x583\n");
     auto* v = make_vehicle();
 
-    auto f = make_frame(0x583, {0x00, 0x00, 0x0A, 0x00, 0x00, 0x08, 0x57, 0x80});  // fob lock
+    auto f = make_frame(0x3D0, {0x02, 0x00, 0x00, 0xc1, 0x80, 0x00, 0x10, 0x00});  // driver's door locked
+    v->IncomingFrameCan3(&f);
+    f = make_frame(0x3D1, {0x02, 0x00, 0x01, 0xc1, 0x80, 0x00, 0x00, 0x30});       // passenger's door locked
+    v->IncomingFrameCan3(&f);
+
+    f = make_frame(0x583, {0x00, 0x00, 0x0A, 0x00, 0x00, 0x08, 0x57, 0x80});  // fob lock
     v->IncomingFrameCan3(&f);
     CHECK(StandardMetrics.ms_v_env_locked->AsBool() == true, "fob lock (d[2]=0x0A) -> locked");
 
@@ -94,8 +101,8 @@ void test_lock_0x583() {
     v->IncomingFrameCan3(&f);
     CHECK(StandardMetrics.ms_v_env_locked->AsBool() == true, "locked, ignition on (d[1]=0x10) -> locked");
 
-    // A d[7] value never seen on-car leaves the metric unchanged.
-    f = make_frame(0x583, {0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00});
+    // A d[7] value never seen on-car leaves the locking mode unchanged.
+    f = make_frame(0x583, {0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x57, 0x00});
     v->IncomingFrameCan3(&f);
     CHECK(StandardMetrics.ms_v_env_locked->AsBool() == true, "unknown d[7]=0x00 -> unchanged");
 
@@ -104,6 +111,129 @@ void test_lock_0x583() {
     v->IncomingFrameCan3(&f);
     CHECK(StandardMetrics.ms_v_door_fl->AsBool() == true &&
           StandardMetrics.ms_v_env_locked->AsBool() == false, "FL open + unlocked");
+
+    delete v;
+}
+
+// Car locked from inside, then one door unlocked by pulling its inside handle: only that door's lock
+// bit clears, 0x583 d[7] stays 0x80 (locked) and d[2] goes 0x05 -> 0x04. Real KCAN frames, LHD car,
+// 2026-11-22 (capture unlock-modes).
+void test_lock_inside_handle() {
+    printf("\ntest_lock_inside_handle\n");
+    auto* v = make_vehicle();
+    auto feed = [&](uint32_t id, std::initializer_list<uint8_t> bytes) {
+        auto f = make_frame(id, bytes);
+        v->IncomingFrameCan3(&f);
+    };
+    auto locked = [] { return StandardMetrics.ms_v_env_locked->AsBool(); };
+    auto lock = [](const char* name) { return g_metrics.numbers[name] != 0; };
+
+    // Module just started: the locking mode arrives before the front doors' own frames.
+    feed(0x583, {0x00, 0x00, 0x05, 0x00, 0x00, 0x88, 0x57, 0x80});
+    CHECK(!locked(), "locked mode, front doors not seen yet -> not locked");
+    feed(0x3D1, {0x02, 0x00, 0x01, 0xc1, 0x80, 0x00, 0x00, 0x30});
+    feed(0x3D0, {0x02, 0x00, 0x00, 0xc1, 0x80, 0x00, 0x10, 0x00});
+    CHECK(locked() && lock("xvg.v.d.lock.fl") && lock("xvg.v.d.lock.fr") && lock("xvg.v.d.lock.rl") &&
+          lock("xvg.v.d.lock.rr"), "locked from inside, all four doors locked -> locked");
+
+    // Rear left (driver side) inside handle: unlocked, then opened.
+    feed(0x583, {0x00, 0x00, 0x04, 0x00, 0x00, 0x88, 0x53, 0x80});
+    CHECK(!lock("xvg.v.d.lock.rl") && lock("xvg.v.d.lock.rr") && !locked(),
+          "rear left inside handle: rl unlocked, mode still locked -> not locked");
+    feed(0x583, {0x00, 0x00, 0x04, 0x04, 0x00, 0x88, 0x53, 0x80});
+    CHECK(StandardMetrics.ms_v_door_rl->AsBool() && !locked(), "rear left open -> not locked");
+    feed(0x583, {0x00, 0x00, 0x05, 0x00, 0x00, 0x88, 0x57, 0x80});
+    CHECK(locked(), "locked again with the button -> locked");
+
+    // Rear right (passenger side) inside handle.
+    feed(0x583, {0x00, 0x00, 0x04, 0x00, 0x00, 0x88, 0x47, 0x80});
+    CHECK(!lock("xvg.v.d.lock.rr") && lock("xvg.v.d.lock.rl") && !locked(),
+          "rear right inside handle: rr unlocked -> not locked");
+    feed(0x583, {0x00, 0x00, 0x05, 0x00, 0x00, 0x88, 0x57, 0x80});
+    CHECK(locked(), "locked again -> locked");
+
+    // Passenger's inside handle: the door unit reports it before 0x583 changes.
+    feed(0x3D1, {0x01, 0x00, 0x02, 0xc1, 0x80, 0x00, 0x00, 0x30});
+    CHECK(!lock("xvg.v.d.lock.fr") && lock("xvg.v.d.lock.fl") && !locked(),
+          "passenger inside handle: fr unlocked -> not locked");
+    feed(0x583, {0x00, 0x00, 0x04, 0x02, 0x00, 0x88, 0x57, 0x80});
+    CHECK(StandardMetrics.ms_v_door_fr->AsBool() && !locked(), "passenger door open, rear doors locked -> not locked");
+
+    delete v;
+}
+
+// Body signals: windows, per-door locks, bonnet, side lights, steering side. Frames are real KCAN
+// captures (2026-11-12 / 2026-11-20, LHD car) except the RHD 0x32A value, which comes from the OEM OCU
+// firmware and has not been seen on a car.
+static double num(const char* name) { return g_metrics.numbers[name]; }
+
+void test_body_signals() {
+    printf("\ntest_body_signals\n");
+    auto* v = make_vehicle();
+    auto feed = [&](uint32_t id, std::initializer_list<uint8_t> bytes) {
+        auto f = make_frame(id, bytes);
+        v->IncomingFrameCan3(&f);
+    };
+
+    // Windows (LHD until 0x32A says otherwise): closed, moving, half, fully open, invalid.
+    CHECK(num("xvg.v.d.window.fl") == -1, "window not seen yet -> -1");
+    feed(0x3D0, {0x02, 0x00, 0x00, 0x00, 0x8c, 0x00, 0x03, 0x00});  // driver: closed, locked
+    CHECK(num("xvg.v.d.window.fl") == 0 && num("xvg.v.d.lock.fl") == 1, "driver closed + locked -> fl 0 %, fl locked");
+    feed(0x3D0, {0x02, 0x00, 0x80, 0x06, 0x82, 0x00, 0x03, 0x00});  // moving down, raw 6
+    CHECK(num("xvg.v.d.window.fl") == 3, "driver moving down, raw 6 -> 3 %");
+    feed(0x3D0, {0x02, 0x00, 0x00, 0x73, 0x80, 0x00, 0x03, 0x00});  // raw 115 ("about half")
+    CHECK(num("xvg.v.d.window.fl") == 58, "driver raw 115 -> 58 %");
+    feed(0x3D0, {0x02, 0x00, 0x00, 0xc1, 0x80, 0x00, 0x03, 0x00});  // raw 193, fully down
+    CHECK(num("xvg.v.d.window.fl") == 97, "driver raw 193 -> 97 %");
+    feed(0x3CF, {0x00, 0x00, 0x00, 0xc8, 0x88, 0x10, 0x80, 0x00});  // rear passenger side, raw 200, end stop
+    CHECK(num("xvg.v.d.window.rr") == 100, "rear passenger side raw 200 -> rr 100 %");
+    feed(0x3CE, {0x00, 0x00, 0x00, 0x02, 0x84, 0x10, 0x80, 0x00});  // rear driver side closed, reads 2
+    CHECK(num("xvg.v.d.window.rl") == 0, "rear driver side at closed stop (raw 2) -> rl 0 %");
+    feed(0x3CF, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x01});  // first frame after a wake: invalid
+    CHECK(num("xvg.v.d.window.rr") == 100, "invalid position (d[4] bit 7 clear) -> rr unchanged");
+    feed(0x3D1, {0x00, 0x00, 0x01, 0x00, 0x8c, 0x00, 0x00, 0x30});  // passenger: closed, unlocked
+    CHECK(num("xvg.v.d.window.fr") == 0 && num("xvg.v.d.lock.fr") == 0, "passenger closed + unlocked");
+
+    // Rear door locks from 0x583 d[6] (the rear window frames carry no lock state).
+    feed(0x583, {0x00, 0x00, 0x0a, 0x00, 0x00, 0x08, 0x57, 0x80});  // locked with the fob
+    CHECK(num("xvg.v.d.lock.rl") == 1 && num("xvg.v.d.lock.rr") == 1, "fob lock -> rl / rr locked");
+    feed(0x583, {0x00, 0x00, 0x40, 0x00, 0x00, 0x08, 0x53, 0x40});  // single-press unlock
+    CHECK(num("xvg.v.d.lock.rl") == 0 && num("xvg.v.d.lock.rr") == 1, "single-press unlock -> rl unlocked, rr locked");
+    feed(0x583, {0x00, 0x00, 0x80, 0x04, 0x00, 0x08, 0x43, 0x40});  // all unlocked, rear left open
+    CHECK(num("xvg.v.d.lock.rr") == 0 && num("ms_v_door_rl") == 1 && num("ms_v_door_fl") == 0,
+          "all unlocked, rear driver side door open -> rr unlocked, v.d.rl open");
+
+    // Bonnet: d[3] bit 7 is the switch; d[4] bit 0 follows 10 s later and stayed set after closing with
+    // the ignition off (body-check, 2026-11-20).
+    feed(0x65A, {0x00, 0x00, 0x00, 0x88, 0x00, 0x00, 0x3c, 0x00});  // release pulled: popped open
+    CHECK(num("ms_v_door_hood") == 1, "bonnet released -> v.d.hood open at once");
+    feed(0x65A, {0x00, 0x00, 0x00, 0x88, 0x01, 0x00, 0x3c, 0x00});  // 10 s later: d[4] bit 0 too
+    CHECK(num("ms_v_door_hood") == 1, "d[4] bit 0 set as well -> still open");
+    feed(0x65A, {0x00, 0x00, 0x00, 0x08, 0x01, 0x00, 0x3c, 0x00});  // closed, d[4] bit 0 still set
+    CHECK(num("ms_v_door_hood") == 0, "bonnet closed, d[4] bit 0 still set -> v.d.hood closed");
+    feed(0x65A, {0x00, 0x00, 0x00, 0x08, 0x00, 0x80, 0x3d, 0x00});
+    CHECK(num("ms_v_door_hood") == 0, "both bits clear -> closed");
+
+    // Side lights.
+    feed(0x3D5, {0x00, 0x00, 0x40, 0x02, 0x04, 0x00, 0x00, 0x00});
+    CHECK(num("xvg.v.e.sidelights") == 1, "light switch on side lights -> sidelights on");
+    feed(0x3D5, {0x00, 0x00, 0x00, 0x02, 0x04, 0x00, 0x00, 0x00});
+    CHECK(num("xvg.v.e.sidelights") == 0, "light switch off -> sidelights off");
+
+    // Steering side: LHD as read on the test car, then RHD swaps every left / right pair.
+    feed(0x32A, {0x1c, 0x01, 0x00, 0x40, 0x80, 0x02, 0x00, 0x00});  // d[5] bits 1-2 = 01
+    CHECK(num("xvg.v.rhd") == 0, "0x32A d[5]=0x02 -> LHD");
+    feed(0x32A, {0x1c, 0x01, 0x00, 0x40, 0x80, 0x04, 0x00, 0x00});  // d[5] bits 1-2 = 10
+    CHECK(num("xvg.v.rhd") == 1, "0x32A d[5]=0x04 -> RHD");
+    feed(0x3D0, {0x02, 0x00, 0x00, 0x73, 0x80, 0x00, 0x03, 0x00});  // driver's door: right on RHD
+    CHECK(num("xvg.v.d.window.fr") == 58 && num("xvg.v.d.lock.fr") == 1, "RHD: driver's window / lock -> fr");
+    feed(0x3CE, {0x00, 0x00, 0x00, 0xc8, 0x88, 0x10, 0x80, 0x00});  // rear driver side: right on RHD
+    CHECK(num("xvg.v.d.window.rr") == 100, "RHD: rear driver side window -> rr");
+    feed(0x583, {0x00, 0x00, 0x40, 0x01, 0x00, 0x08, 0x53, 0x40});  // driver's door open, rear driver side unlocked
+    CHECK(num("ms_v_door_fr") == 1 && num("ms_v_door_fl") == 0, "RHD: driver's door open -> v.d.fr");
+    CHECK(num("xvg.v.d.lock.rr") == 0 && num("xvg.v.d.lock.rl") == 1, "RHD: rear driver side unlocked -> rr");
+    feed(0x32A, {0x1c, 0x01, 0x00, 0x40, 0x80, 0x00, 0x00, 0x00});  // d[5] bits 1-2 = 00: not a side
+    CHECK(num("xvg.v.rhd") == 1, "0x32A side value 0 -> last side kept");
 
     delete v;
 }
@@ -436,6 +566,8 @@ int main() {
 
     test_soc_0x131();
     test_lock_0x583();
+    test_lock_inside_handle();
+    test_body_signals();
     test_speed_0xFD();
     test_gear_0x187_park();
     test_charging12v();
