@@ -656,54 +656,57 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
 
   // Update xsq preset version
   map_xsq["cfg.preset.ver"] = STR(PRESET_VERSION);
-  if (map_xsq.find("charge12v.threshold") == map_xsq.end())
-    map_xsq["charge12v.threshold"] = "11.70";
 
   // modem section - single map operation
   bool need_stream = false;
   {
-    auto m = MyConfig.GetParamMap("modem");
+    auto map_modem = MyConfig.GetParamMap("modem");
     bool changed = false;
-    if (m.find("gps.parkpause") == m.end())
+    if (map_modem.find("gps.parkpause") == map_modem.end())
       {
-      m["gps.parkpause"] = "600";
-      m["gps.parkreactivate"] = "100";
-      m["gps.parkreactlock"] = "5";
+      map_modem["gps.parkpause"] = "600";
+      map_modem["gps.parkreactivate"] = "100";
+      map_modem["gps.parkreactlock"] = "5";
       need_stream = true;
       changed = true;
       }
-    if (m.find("gps.parkreactawake") == m.end())
-      { m["gps.parkreactawake"] = "yes"; changed = true; }
-    if (m.find("net.type") == m.end())
-      { m["net.type"] = "4G"; changed = true; }
+    if (map_modem.find("gps.parkreactawake") == map_modem.end())
+      { map_modem["gps.parkreactawake"] = "yes"; changed = true; }
+    if (map_modem.find("net.type") == map_modem.end())
+      { map_modem["net.type"] = "4G"; changed = true; }
+    if (map_modem.find("enable.gpstime") == map_modem.end())
+      { map_modem["enable.gpstime"] = "yes"; changed = true; }
+    if (map_modem.find("enable.gsmtime") == map_modem.end())
+      { map_modem["enable.gsmtime"] = "yes"; changed = true; }
+    if (map_modem.find("enable.sms") == map_modem.end())
+      { map_modem["enable.sms"] = "no"; changed = true; }
     if (changed)
-      MyConfig.SetParamMap("modem", m);
+      MyConfig.SetParamMap("modem", map_modem);
   }
 
   // vehicle section - single map operation
   {
-    auto m = MyConfig.GetParamMap("vehicle");
+    auto map_vehicle = MyConfig.GetParamMap("vehicle");
     bool changed = false;
-    auto it_ref = m.find("12v.ref");    
-    auto it_alert = m.find("12v.alert");
     if (PRESET_VERSION == PRESET_VERSION_12VREF) 
     {
-      m["12v.ref"] = "12.5";
-      m["12v.alert"] = "0.8";
+      map_vehicle["12v.ref"] = "12.5";
+      map_vehicle["12v.alert"] = "0.8";
+      map_xsq["charge12v.threshold"] = "11.70";
       changed = true;
     }
-    if (it_ref == m.end())
+    if (map_vehicle.find("12v.ref") == map_vehicle.end())
       {
-      m["12v.ref"] = "12.5";
+      map_vehicle["12v.ref"] = "12.5";
       changed = true;
       }
-    if (it_alert == m.end())
+    if (map_vehicle.find("12v.alert") == map_vehicle.end())
       {
-      m["12v.alert"] = "0.8";
+      map_vehicle["12v.alert"] = "0.8";
       changed = true;
       }
     if (need_stream)
-      { m["stream"] = "10"; changed = true; }
+      { map_vehicle["stream"] = "10"; changed = true; }
     // TPMS migration: read from already-loaded map_xsq
     if (map_xsq.count("TPMS_FL"))
       {
@@ -713,30 +716,36 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandPreset(int verbosity, 
       for (int i = 0; i < 4; i++)
         {
         auto it = map_xsq.find(xk[i]);
-        m[vk[i]] = (it != map_xsq.end() && !it->second.empty()) ? it->second : dd[i];
+        map_vehicle[vk[i]] = (it != map_xsq.end() && !it->second.empty()) ? it->second : dd[i];
         }
       changed = true;
       }
     if (changed)
-      MyConfig.SetParamMap("vehicle", m);
+      MyConfig.SetParamMap("vehicle", map_vehicle);
   }
 
   // network section - single map operation
   {
-    auto m = MyConfig.GetParamMap("network");
+    auto map_net = MyConfig.GetParamMap("network");
     bool changed = false;
-    if (m.find("wifi.ap2client.enable") == m.end())
-      { m["wifi.ap2client.enable"] = "yes"; changed = true; }
-    if (m.find("wifi.bad.reconnect") == m.end())
-      { m["wifi.bad.reconnect"] = "yes"; changed = true; }
-    if (m.find("wifi.sq.good") == m.end())
-      { m["wifi.sq.good"] = "-80"; changed = true; }
-    if (m.find("wifi.sq.bad") == m.end())
-      { m["wifi.sq.bad"] = "-85"; changed = true; }
-    if (m.erase("type") > 0)
+    if (map_net.find("wifi.ap2client.enable") == map_net.end())
+      { map_net["wifi.ap2client.enable"] = "yes"; map_net["wifi.ap2client.timeout"] = "10"; changed = true; }
+    if (map_net.find("wifi.bad.reconnect") == map_net.end())
+      { map_net["wifi.bad.reconnect"] = "yes"; changed = true; }
+    if (map_net.find("modem.prefer.on") == map_net.end())
+      { map_net["modem.prefer.on"] = "yes"; changed = true; }
+    if (map_net.find("modem.sq.good") == map_net.end())
+      {
+      map_net["modem.sq.good"] = "-105";
+      map_net["modem.sq.bad"] = "-110";
       changed = true;
+      }    
+    if (map_net.erase("type") > 0)
+      changed = true;
+    if (map_net.find("net.type") == map_net.end())
+      { map_net["net.type"] = "4G"; changed = true; }
     if (changed)
-      MyConfig.SetParamMap("network", m);
+      MyConfig.SetParamMap("network", map_net);
   }
 
   // ota section - migrate old server
@@ -862,6 +871,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandSetDefault(int verbosi
   map_modem["gps.parkpause"] = "600";
   map_modem["gps.parkreactivate"] = "100";
   map_modem["gps.parkreactlock"] = "5";
+  map_modem["enable.gpstime"] = "yes";
+  map_modem["enable.gsmtime"] = "yes";
+  map_modem["enable.sms"] = "no";  
   MyConfig.SetParamMap("modem", map_modem);
 
   // vehicle section
@@ -881,11 +893,13 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartEQ::CommandSetDefault(int verbosi
   // network section
   auto map_net = MyConfig.GetParamMap("network");
   map_net["wifi.ap2client.enable"] = "yes";
+  map_net["wifi.ap2client.timeout"] = "10";
   map_net["wifi.bad.reconnect"] = "yes";
-  map_net["wifi.sq.good"] = "-80";
-  map_net["wifi.sq.bad"] = "-85";
-  map_net.erase("modem.sq.good");
-  map_net.erase("modem.sq.bad");
+  map_net["modem.prefer.on"] = "yes";
+  map_net["modem.sq.good"] = "-105";
+  map_net["modem.sq.bad"] = "-110";
+  map_net.erase("wifi.sq.good");
+  map_net.erase("wifi.sq.bad");
   MyConfig.SetParamMap("network", map_net);
   
   if (writer) 

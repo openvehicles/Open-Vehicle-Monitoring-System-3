@@ -154,7 +154,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     if (map["obdii.745.tpms"].empty())         map["obdii.745.tpms"] = "yes";
     if (map["obdii.7e4"].empty())              map["obdii.7e4"] = "yes";
     if (map["obdii.7e4.dcdc"].empty())         map["obdii.7e4.dcdc"] = "yes";
-    if (map["rebootnw"].empty())               map["rebootnw"] = "30";
+    if (map["rebootnw"].empty())               map["rebootnw"] = "20";
     if (map["full.km"].empty())                map["full.km"] = "126";
     if (map["bms.contactor.1h.limit"].empty()) map["bms.contactor.1h.limit"] = "8";
     c.head(200);
@@ -215,7 +215,7 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     "<p>Warn if parked &gt;10min and doors open</p>");
   c.input_checkbox("Extended statistics", "extstats", strtobool(map["extended.stats"]),
       "<p>Maintenance + trip data. Not recommended for iOS app!</p>");
-  c.input_slider("Restart Network Time", "rebootnw", 3, "min",-1, atof(map["rebootnw"].c_str()), 30, 0, 60, 1,
+  c.input_slider("Restart Network Time", "rebootnw", 3, "min",-1, atof(map["rebootnw"].c_str()), 20, 0, 60, 1,
     "<p>0=off. Auto-restart network on v2 disconnect</p>");
   c.input_slider("Contactor 1h limit", "contactor_1h_limit", 3, "/h",-1, atof(map["bms.contactor.1h.limit"].c_str()), 8, 1, 100, 1,
     "<p>Max contactor cycles per hour before alert (default: 8)</p>");
@@ -576,7 +576,7 @@ void OvmsVehicleSmartEQ::WebCfgTrickle(PageEntry_t& p, PageContext_t& c) {
       return true;
     };
 
-    if (!validFloat(map["charge12v.threshold"], 11.25, 12.25, "12V trickle charge threshold")) map["charge12v.threshold"] = "11.75";
+    if (!validFloat(map["charge12v.threshold"], 11.25, 12.25, "12V trickle charge threshold")) map["charge12v.threshold"] = "11.70";
     if (!validFloat(map_veh["12v.ref"], 12.00, 13.50, "12V reference voltage")) map_veh["12v.ref"] = "12.50";
     if (!validFloat(map["12v.trickle.time"], 5, 30, "Trickle charge duration")) map["12v.trickle.time"] = "10";
     if (!validInt(map["12v.trickle.park.days"], 0, 60, "Park time trickle days")) map["12v.trickle.park.days"] = "0";
@@ -825,7 +825,7 @@ void OvmsVehicleSmartEQ::WebCfgTrickle(PageEntry_t& p, PageContext_t& c) {
   c.input_slider("12V Reference Voltage", "ref12V", 3, "V", -1, atof(map_veh["12v.ref"].c_str()), 12.50, 12.20, 12.80, 0.05,
     "<p>Reference voltage of the 12V battery (default: 12.50V). Sets <code>[vehicle] 12v.ref</code>.</p>");
 
-  c.input_slider("Start 12V trickle charge at", "charge12v_threshold", 3, "V", -1, atof(map["charge12v.threshold"].c_str()), 11.70, 11.25, 12.25, 0.05,
+  c.input_slider("Start 12V trickle charge at", "charge12v_threshold", 3, "V", -1, atof(map["charge12v.threshold"].c_str()), 11.70, 11.50, 12.50, 0.05,
     "<p>Voltage threshold to initiate 12V trickle charging (default: 11.70V).</p>"
     "<p>Sets <code>[vehicle] 12v.alert</code> to <i>Reference Voltage &minus; Start Threshold</i>.</p>");
 
