@@ -1,6 +1,10 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Server V2: fix task watchdog crash during an OTA flash started by a server shell command (MP command 7):
+    the command runs in the Mongoose task and holds the Mongoose lock while flashing, so the periodic
+    ping blocked the events task. The ping and the stale connection check are now skipped while an OTA
+    flash is in progress, and the ping no longer blocks the events task if the Mongoose task is busy.
 - Network Manager / WiFi / Cellular / Power Management:
     - Added centralized V2/V3 server connection check in `OvmsNetManager` (`[network] wifi.conncheck.v2v3`,
       configurable in both WiFi and Cellular web UIs, enabled by default when V2 or V3 server is active).
