@@ -63,11 +63,11 @@
 #define MS_N_WIFI_NETWORK           "m.net.wifi.network"
 #define MS_N_WIFI_SQ                "m.net.wifi.sq"
 
-#ifdef CONFIG_OVMS_COMP_MAX7317
+#if defined(CONFIG_OVMS_COMP_MAX7317) || defined(CONFIG_OVMS_COMP_ESP32EGPIO)
 #define MS_M_EGPIO_INPUT            "m.egpio.input"
 #define MS_M_EGPIO_MONITOR          "m.egpio.monitor"
 #define MS_M_EGPIO_OUTPUT           "m.egpio.output"
-#endif //CONFIG_OVMS_COMP_MAX7317
+#endif //CONFIG_OVMS_COMP_MAX7317 || CONFIG_OVMS_COMP_ESP32EGPIO
 #define MS_M_OBD2ECU_ON             "m.obdc2ecu.on"
 
 #define MS_S_V2_CONNECTED           "s.v2.connected"
@@ -307,11 +307,11 @@ class MetricsStandard
     OvmsMetricBool*  ms_m_net_ip;                         // True = device has ip available
     OvmsMetricBool*  ms_m_net_good_sq;                    // True = sq is above the configured threshold for sq usability
 
-#ifdef CONFIG_OVMS_COMP_MAX7317
-    OvmsMetricBitset<10,0>* ms_m_egpio_input;             // EGPIO (MAX7317) input port state (ports 0…9)
-    OvmsMetricBitset<10,0>* ms_m_egpio_output;            // EGPIO (MAX7317) output port state
-    OvmsMetricBitset<10,0>* ms_m_egpio_monitor;           // EGPIO (MAX7317) input monitoring state
-#endif //CONFIG_OVMS_COMP_MAX7317
+#if defined(CONFIG_OVMS_COMP_MAX7317) || defined(CONFIG_OVMS_COMP_ESP32EGPIO)
+    OvmsMetricBitset<10,0>* ms_m_egpio_input;             // EGPIO (MAX7317/ESP32EGPIO) input port state (ports 0…9)
+    OvmsMetricBitset<10,0>* ms_m_egpio_output;            // EGPIO (MAX7317/ESP32EGPIO) output port state
+    OvmsMetricBitset<10,0>* ms_m_egpio_monitor;           // EGPIO (MAX7317/ESP32EGPIO) input monitoring state
+#endif //CONFIG_OVMS_COMP_MAX7317 || CONFIG_OVMS_COMP_ESP32EGPIO
     OvmsMetricBool* ms_m_obd2ecu_on;                      // OBD2ECU process is on.
 
     OvmsMetricBool*   ms_s_v2_connected;                  // True = V2 server connected [1]
