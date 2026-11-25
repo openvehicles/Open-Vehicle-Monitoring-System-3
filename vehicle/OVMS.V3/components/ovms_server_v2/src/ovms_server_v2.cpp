@@ -1647,7 +1647,8 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
     StandardMetrics.ms_v_env_service_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_env_service_time->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_m_hardware->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_m_net_mdm_mode->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_m_net_mdm_mode->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_m_net_type->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
@@ -1676,6 +1677,8 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
     << mp_encode(StandardMetrics.ms_m_hardware->AsString(""))
     << ","
     << mp_encode(StandardMetrics.ms_m_net_mdm_mode->AsString(""))
+    << ","
+    << mp_encode(StandardMetrics.ms_m_net_type->AsString(""))
     ;
 
   Transmit(buffer.str().c_str());

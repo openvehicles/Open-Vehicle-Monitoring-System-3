@@ -195,6 +195,7 @@ This message is sent <cartoserver> "C", or <servertoapp> "s", and transmits the 
 * Time to next scheduled maintenance/service [seconds]
 * OVMS hardware version
 * Cellular connection mode and status [LTE,Online]
+* Network type [wifi,modem,none]
 
 --------------------------------
 Server firmware message 0x66 "f"
