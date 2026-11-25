@@ -229,7 +229,7 @@ OvmsEvents::OvmsEvents()
   cmd_eventtrace->RegisterCommand("off","Turn event tracing OFF",event_trace);
 
   m_taskqueue = xQueueCreate(CONFIG_OVMS_HW_EVENT_QUEUE_SIZE,sizeof(event_queue_t));
-  xTaskCreatePinnedToCore(EventLaunchTask, "OVMS Events", 8192, (void*)this, 8, &m_taskid, CORE(1));
+  xTaskCreatePinnedToCore(EventLaunchTask, "OVMS Events", 12288, (void*)this, 8, &m_taskid, CORE(1));
   AddTaskToMap(m_taskid);
 
   #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
@@ -250,6 +250,7 @@ OvmsEvents::~OvmsEvents()
 void OvmsEvents::EventTask()
   {
   event_queue_t msg;
+  int detect_event_loop_blockage = 0;
 
   esp_task_wdt_add(NULL); // WATCHDOG is active for this task
   while(1)
@@ -269,7 +270,25 @@ void OvmsEvents::EventTask()
           break;
         case EVENT_signal:
           m_current_event = msg.body.signal.event;
-          HandleQueueSignalEvent(&msg);
+          if (startsWith(m_current_event, "ticker.") && uxQueueSpacesAvailable(m_taskqueue) < CONFIG_OVMS_HW_EVENT_QUEUE_SIZE/5)
+            {
+            ESP_LOGE(TAG, "Droped %s, counter %i", m_current_event.c_str(), detect_event_loop_blockage);
+            FreeQueueSignalEvent(&msg);
+            detect_event_loop_blockage++;
+            if (detect_event_loop_blockage > 30)
+              {
+              ESP_LOGE(TAG, "Timer service / ticker timer has died => aborting");
+              MyBoot.Restart();
+              }
+            }
+          else
+            {
+            HandleQueueSignalEvent(&msg);
+            if (startsWith(m_current_event, "ticker.") && detect_event_loop_blockage > 0)
+              {
+              detect_event_loop_blockage--;
+              }
+            }
           esp_task_wdt_reset(); // Reset WATCHDOG timer for this task
           m_current_event.clear();
           break;
