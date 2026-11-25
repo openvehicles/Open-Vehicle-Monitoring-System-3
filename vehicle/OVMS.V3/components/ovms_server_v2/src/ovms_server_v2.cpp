@@ -2186,6 +2186,9 @@ void OvmsServerV2::EventListener(std::string event, void* data)
   else if (event == "ota.flash.done" || event == "ota.flash.abort")
     {
     m_ota_paused = false;
+    // restart the stale connection timeout, no data may have been received
+    // while flashing:
+    m_lastrx_time = monotonictime;
     }
   else if (event == "system.modem.received.ussd")
     {
@@ -2321,6 +2324,14 @@ void OvmsServerV2::Ticker1(std::string event, void* data)
     {
     uint32_t now = monotonictime;
 
+    // An OTA flash may be executed as a server command (MP "c7"), which runs
+    // in the Mongoose task and holds the Mongoose lock for several minutes.
+    // While flashing, skip the ping and the stale connection check: a blocking
+    // Transmit() or Disconnect() would stall the events task and trigger the
+    // task watchdog, and no data is received while the command is running.
+    if (m_ota_paused)
+      return;
+
     // check for issue #241 condition:
     int rxtimeout = MyConfig.GetParamValueInt("server.v2", "timeout.rx", 960);
     if (rxtimeout != 0)
@@ -2328,9 +2339,10 @@ void OvmsServerV2::Ticker1(std::string event, void* data)
       if (rxtimeout < 120) rxtimeout = 120;
       if (++m_ping_ticker >= rxtimeout - 60)
         {
-        // send ping:
-        Transmit("MP-0 A");
-        m_ping_ticker = 0;
+        // send ping; don't block the events task if the Mongoose task is busy
+        // (e.g. executing a long server command), retry on the next tick:
+        if (Transmit("MP-0 A", pdMS_TO_TICKS(1000)))
+          m_ping_ticker = 0;
         }
       else if (now >= m_lastrx_time + rxtimeout)
         {
@@ -2341,9 +2353,6 @@ void OvmsServerV2::Ticker1(std::string event, void* data)
         return;
         }
       }
-
-    if (m_ota_paused)
-      return;
 
     // Periodic transmission of metrics
     bool caron = StandardMetrics.ms_v_env_on->AsBool();
