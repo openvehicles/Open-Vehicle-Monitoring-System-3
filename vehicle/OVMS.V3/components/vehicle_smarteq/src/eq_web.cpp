@@ -89,10 +89,24 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   if (c.method == "POST") {
     // process form submission:
     std::string canwrite_mode = c.getvar("canwrite_mode");
-    map["canwrite"]               = (canwrite_mode == "ON") ? "yes" : "no";
-    map["canwrite.caron"]         = (canwrite_mode == "CARON") ? "yes" : "no";
-    map["canwrite.caroff"]        = (canwrite_mode == "CAROFF") ? "yes" : "no";
-    map["canwrite.sleep"]         = (c.getvar("disable_canwrite") == "yes") ? "yes" : "no";
+    bool disable_canwrite = (c.getvar("disable_canwrite") == "yes");
+    bool canwrite_alert = (c.getvar("canwrite_alert") == "yes");
+
+    map["canwrite.alert"]         = canwrite_alert ? "yes" : "no";
+    if (canwrite_alert) {
+      if ((canwrite_mode != "OFF" && !canwrite_mode.empty()) || disable_canwrite) {
+        error += "<li>CAN write options cannot be enabled while HV contactor alert lock is active (set 'HV Contactor Alert Lock' to Off first)</li>";
+      }
+      map["canwrite"]             = "no";
+      map["canwrite.caron"]       = "no";
+      map["canwrite.caroff"]      = "no";
+      map["canwrite.sleep"]       = "no";
+    } else {
+      map["canwrite"]             = (canwrite_mode == "ON") ? "yes" : "no";
+      map["canwrite.caron"]       = (canwrite_mode == "CARON") ? "yes" : "no";
+      map["canwrite.caroff"]      = (canwrite_mode == "CAROFF") ? "yes" : "no";
+      map["canwrite.sleep"]       = disable_canwrite ? "yes" : "no";
+    }
     map["led"]                    = (c.getvar("led") == "yes") ? "yes" : "no";
     map["rebootnw"]               = c.getvar("rebootnw");
     map["resettrip"]              = (c.getvar("resettrip") == "yes") ? "yes" : "no";
@@ -157,7 +171,27 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     if (map["rebootnw"].empty())               map["rebootnw"] = "20";
     if (map["full.km"].empty())                map["full.km"] = "126";
     if (map["bms.contactor.1h.limit"].empty()) map["bms.contactor.1h.limit"] = "8";
+    if (map["canwrite.alert"].empty())         map["canwrite.alert"] = "no";
     c.head(200);
+  }
+
+  int cycles_max      = sq->mt_bms_contactor_cycles ? sq->mt_bms_contactor_cycles->GetElemValue(0) : 0;
+  int cycles_now      = sq->mt_bms_contactor_cycles ? sq->mt_bms_contactor_cycles->GetElemValue(1) : 0;
+  int cycles_consumed = sq->mt_bms_contactor_cycles ? sq->mt_bms_contactor_cycles->GetElemValue(2) : 0;
+  int cycles_diff     = sq->mt_bms_contactor_cycles ? sq->mt_bms_contactor_cycles->GetElemValue(3) : 0;
+  int cycles_1h       = sq->mt_bms_contactor_cycles ? sq->mt_bms_contactor_cycles->GetElemValue(4) : 0;
+  bool alert_lock     = strtobool(map["canwrite.alert"]);
+
+  if (alert_lock) {
+    char warn_buf[512];
+    snprintf(warn_buf, sizeof(warn_buf),
+      "<p class=\"lead\">Warning: CAN write disabled due to HV contactor cycle alert!</p>"
+      "<p>An unexpected HV contactor cycle step-down (&gt;100 counts) was detected "
+      "(current HV contactor cycle count: <strong>%d</strong> remaining / <strong>%d</strong> max, consumed: <strong>%d</strong>, last diff: <strong>%d</strong>, 1h changes: <strong>%d</strong>). "
+      "All CAN write modes and sleep polling option are locked to <strong>Off</strong> to prevent contactor wear. "
+      "Set <em>HV Contactor Alert Lock</em> to <strong>Off</strong> below to unlock CAN write access.</p>",
+      cycles_now, cycles_max, cycles_consumed, cycles_diff, cycles_1h);
+    c.alert("warning", warn_buf);
   }
 
   // generate form:
@@ -167,9 +201,11 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.fieldset_start("Remote Control");
 
   std::string canwrite_mode = "OFF";
-  if (strtobool(map["canwrite"])) canwrite_mode = "ON";
-  else if (strtobool(map["canwrite.caron"])) canwrite_mode = "CARON";
-  else if (strtobool(map["canwrite.caroff"])) canwrite_mode = "CAROFF";
+  if (!alert_lock) {
+    if (strtobool(map["canwrite"])) canwrite_mode = "ON";
+    else if (strtobool(map["canwrite.caron"])) canwrite_mode = "CARON";
+    else if (strtobool(map["canwrite.caroff"])) canwrite_mode = "CAROFF";
+  }
   c.input_radiobtn_start("CAN Bus Write Access", "canwrite_mode");
     c.input_radiobtn_option("canwrite_mode", "Off", "OFF", canwrite_mode == "OFF");
     c.input_radiobtn_option("canwrite_mode", "On", "ON", canwrite_mode == "ON");
@@ -185,8 +221,20 @@ void OvmsVehicleSmartEQ::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     " Polling is disabled, when the vehicle is in awake/sleep mode</p></dd>"
     "</dl>");
 
-  c.input_checkbox("Disable CAN polling during sleep", "disable_canwrite", strtobool(map["canwrite.sleep"]),
+  c.input_checkbox("Disable CAN polling during sleep", "disable_canwrite", !alert_lock && strtobool(map["canwrite.sleep"]),
     "<p>Clears polling list when vehicle is in sleep mode</p>");
+
+  char alert_hint[512];
+  snprintf(alert_hint, sizeof(alert_hint),
+    "<p>Automatically set to <strong>On</strong> when an unexpected HV contactor cycle jump (&gt;100 counts) is detected. "
+    "While <strong>On</strong>, all CAN write modes and sleep polling option are locked to <strong>Off</strong>. "
+    "Switch to <strong>Off</strong> to re-enable CAN write configuration.</p>"
+    "<p>Current HV contactor cycle count: <strong>%d</strong> remaining of <strong>%d</strong> (consumed: <strong>%d</strong>, last diff: <strong>%d</strong>, 1h changes: <strong>%d</strong>)</p>",
+    cycles_now, cycles_max, cycles_consumed, cycles_diff, cycles_1h);
+  c.input_radiobtn_start("HV Contactor Alert Lock", "canwrite_alert");
+    c.input_radiobtn_option("canwrite_alert", "Off", "no", !alert_lock);
+    c.input_radiobtn_option("canwrite_alert", "On", "yes", alert_lock);
+  c.input_radiobtn_end(alert_hint);
   c.fieldset_end(); 
 
   // trip reset or OBD activation

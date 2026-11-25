@@ -389,9 +389,14 @@ void OvmsVehicleSmartEQ::PollReply_BMS_HVContactorCycles(const char* data, uint1
         {
         smartCoolDownPolling();
         smartOBDpolling(false);
-        MyConfig.SetParamValueBool("xsq", "canwrite", false);
-        MyConfig.SetParamValueBool("xsq", "canwrite.caron", false);
-        MyConfig.SetParamValueBool("xsq", "canwrite.caroff", false);
+        auto lock = MyConfig.Lock();
+        ConfigParamMap map = MyConfig.GetParamMap("xsq");
+        map["canwrite"] = "no";
+        map["canwrite.caron"] = "no";
+        map["canwrite.caroff"] = "no";
+        map["canwrite.sleep"] = "no";
+        map["canwrite.alert"] = "yes";
+        MyConfig.SetParamMap("xsq", map);
         }
       }
     // Alert if consumed cycles are above expected for a healthy contactor (e.g. above 50000 cycles consumed)
