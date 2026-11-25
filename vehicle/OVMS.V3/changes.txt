@@ -33,11 +33,12 @@ Open Vehicle Monitor System v3 - Change log
   New config:
     [modem] enable.autotz (bool, default false)       -- automatically set timezone dynamically from cellular network (NITZ)
     [modem] enable.gsmtime (bool, default false)      -- set system time from cellular network (NITZ)
-- smart EQ: added scheduled park-time 12V trickle charging
+- smart EQ: added scheduled park-time 12V trickle charging and HV contactor alert CAN write lock
   New configs:
     [xsq] 12v.trickle.park.days       -- Trickle after park days (0 = disabled, 1–60 days, default: 0)
     [xsq] 12v.trickle.park.time       -- Scheduled time (local time ``HH:MM``, default: ``12:00``)
     [xsq] 12v.trickle.park.duration   -- Park trickle duration (5 / 10 / 15 / 20 / 25 / 30 min, default: 10 min)
+    [xsq] canwrite.alert              -- Lock CAN write options when an unexpected HV contactor cycle jump (>100) is detected (bool, default: no)
   New commands:
     xsq settrickle [args]             -- Show/configure park-time 12V trickle charging (<days>/<HH:MM>[/<duration>] | 0)
 - Maxus eDeliver 3: added support for MJ2022+ (CATL LFP) vans

@@ -293,6 +293,7 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     m_enable_write_caron   = map->GetValueBool("canwrite.caron", false);
     m_enable_write_caroff  = map->GetValueBool("canwrite.caroff", false);
     m_disable_write_sleep  = map->GetValueBool("canwrite.sleep", false);
+    m_disable_write_alert  = map->GetValueBool("canwrite.alert", false);
     m_enable_LED_state     = map->GetValueBool("led", false);
     m_bcvalue              = map->GetValueBool("bcvalue", false);
     m_enable_lock_state    = map->GetValueBool("unlock.warning", true);
@@ -356,14 +357,33 @@ void OvmsVehicleSmartEQ::ConfigChanged(OvmsConfigParam* param) {
     }
 #endif
 
+  // block all CAN write options while HV contactor alert lock is active
+  if (m_disable_write_alert && (m_enable_write || m_enable_write_caron || m_enable_write_caroff || m_disable_write_sleep))
+    {
+    m_enable_write = false;
+    m_enable_write_caron = false;
+    m_enable_write_caroff = false;
+    m_disable_write_sleep = false;
+    auto lock = MyConfig.Lock();
+    ConfigParamMap map_xsq = MyConfig.GetParamMap("xsq");
+    map_xsq["canwrite"] = "no";
+    map_xsq["canwrite.caron"] = "no";
+    map_xsq["canwrite.caroff"] = "no";
+    map_xsq["canwrite.sleep"] = "no";
+    MyConfig.SetParamMap("xsq", map_xsq);
+    }
+
   // disable caron/off write modes if at least two write modes are enabled
   if ((m_enable_write && (m_enable_write_caron || m_enable_write_caroff)) ||
       (m_enable_write_caron && m_enable_write_caroff))
     {
     m_enable_write_caron = false;
     m_enable_write_caroff = false;
-    MyConfig.SetParamValueBool("xsq", "canwrite.caron", false);
-    MyConfig.SetParamValueBool("xsq", "canwrite.caroff", false);
+    auto lock = MyConfig.Lock();
+    ConfigParamMap map_xsq = MyConfig.GetParamMap("xsq");
+    map_xsq["canwrite.caron"] = "no";
+    map_xsq["canwrite.caroff"] = "no";
+    MyConfig.SetParamMap("xsq", map_xsq);
     }
 
   // Set the state of the CAN access and polling, according to the user selection
