@@ -6,7 +6,6 @@ static const char *TAG = "ovms_main";
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_system.h"
-#include "nvs_flash.h"
 #include <stdio.h>
 #include <string.h>
 #include "ovms.h"
@@ -14,6 +13,7 @@ static const char *TAG = "ovms_main";
 #include "ovms_housekeeping.h"
 #include "ovms_events.h"
 #include "ovms_config.h"
+#include "ovms_nvs.h"
 #include "ovms_module.h"
 #include "ovms_boot.h"
 #include <esp_task_wdt.h>
@@ -60,15 +60,17 @@ Peripherals* MyPeripherals = NULL;
 
 void app_main(void)
   {
-  if (nvs_flash_init() == ESP_ERR_NVS_NO_FREE_PAGES)
-    {
-    nvs_flash_erase();
-    nvs_flash_init();
-    }
+
+  // This must be the first call, it initializes the NVS subsystem which is
+  // used by other components - among which the Wifi
+  MyNonVolatileStorage.Init();
 
   ESP_LOGI(TAG, "Executing on CPU core %d",xPortGetCoreID());
   AddTaskToMap(xTaskGetCurrentTaskHandle());
   MyBoot.Init();
+
+  ESP_LOGI(TAG, "Handling Non-Volatile stored values...");
+  MyNonVolatileStorage.Start();
 
   ESP_LOGI(TAG, "Mounting CONFIG...");
   MyConfig.mount();
