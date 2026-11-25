@@ -735,7 +735,7 @@ void OvmsHyundaiIoniqEv::IncomingBMC_Full(uint16_t type, uint16_t pid, const std
             }
           }
         }
-        if (isfinal && m_bms_bitset_cv > 0) {
+        if (isfinal && BmsHasVoltageValues()) {
           // Finalise with what we have!
           int cellcount = iq_last_voltage_cell + 1;
           if (BmsCheckChangeCellArrangementVoltage(cellcount) && !hif_override_capacity)

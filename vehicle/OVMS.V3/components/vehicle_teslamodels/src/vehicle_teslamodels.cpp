@@ -64,7 +64,7 @@ OvmsVehicleTeslaModelS::OvmsVehicleTeslaModelS()
   BmsSetCellLimitsTemperature(-90,90);
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
-  MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+  SetBMSWebmoduleEnabled(true);
 #endif
   }
 
@@ -73,7 +73,7 @@ OvmsVehicleTeslaModelS::~OvmsVehicleTeslaModelS()
   ESP_LOGI(TAG, "Shutdown Tesla Model S vehicle module");
   MyCommandApp.UnregisterCommand("xts");
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
-  MyWebServer.DeregisterPage("/bms/cellmon");
+  SetBMSWebmoduleEnabled(false);
 #endif
   }
 

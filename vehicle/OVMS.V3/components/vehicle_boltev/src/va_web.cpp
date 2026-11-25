@@ -55,16 +55,11 @@ void OvmsVehicleBoltEV::WebInit()
     // vehicle menu:
     MyWebServer.RegisterPage("/xcb/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
 
-    // TODO: Battery monitoring
-    //MyWebServer.RegisterPage("/xcb/battmon", "Battery Monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
 }
 
 void OvmsVehicleBoltEV::WebCleanup()
 {
     MyWebServer.DeregisterPage("/xcb/features");
-
-    // TODO: Battery monitoring
-    //MyWebServer.DeregisterPage("/xcb/battmon");
 }
 
 /**

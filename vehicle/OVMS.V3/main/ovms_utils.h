@@ -62,6 +62,12 @@
 #define ROUNDPREC(fval,prec) (round((fval) * pow(10,(prec))) / pow(10,(prec)))
 #define CEILPREC(fval,prec)  (ceil((fval)  * pow(10,(prec))) / pow(10,(prec)))
 
+template<typename INT>
+INT round_up_div(INT value, INT divis)
+  {
+    return (value + divis -1) / divis;
+  }
+
 // Integer step rounding:
 #ifndef roundup
 #define roundup(n, step)  ((((n) + ((step) - 1)) / (step)) * (step))
