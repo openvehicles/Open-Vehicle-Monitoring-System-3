@@ -22,6 +22,7 @@
 */
 
 #include "ovms_webserver.h"
+#include "ovms_utils.h"
 
 #define _attr(text) (c.encode_html(text).c_str())
 #define _html(text) (c.encode_html(text).c_str())
@@ -37,28 +38,30 @@
 void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
 {
   auto lock = MyConfig.Lock();
+  ConfigParamMap map = MyConfig.GetParamMap("server.v2");
+  std::string vehicleid = MyConfig.GetParamValue("vehicle", "id");
+  std::string password;
   std::string error;
-  std::string server, vehicleid, password, port;
-  std::string updatetime_connected, updatetime_idle;
-  bool tls;
-  bool ios_tpms_workaround, legacy_field_enc;
 
   if (c.method == "POST") {
     // process form submission:
-    server = c.getvar("server");
-    tls = (c.getvar("tls") == "yes");
+    map["server"] = c.getvar("server");
+    map["tls"] = (c.getvar("tls") == "yes") ? "yes" : "no";
     vehicleid = c.getvar("vehicleid");
     password = c.getvar("password");
-    port = c.getvar("port");
-    updatetime_connected = c.getvar("updatetime_connected");
-    updatetime_idle = c.getvar("updatetime_idle");
-    ios_tpms_workaround = (c.getvar("ios_tpms_workaround") == "yes");
-    legacy_field_enc = (c.getvar("legacy_field_enc") == "yes");
+    map["port"] = c.getvar("port");
+    map["updatetime.connected"] = c.getvar("updatetime_connected");
+    map["updatetime.idle"] = c.getvar("updatetime_idle");
+    map["updatetime.probe"] = c.getvar("updatetime_probe");
+    map["timeout.rx"] = c.getvar("timeout_rx");
+    map["liveness.enabled"] = (c.getvar("liveness_enabled") == "yes") ? "yes" : "no";
+    map["workaround.ios_tpms_display"] = (c.getvar("ios_tpms_workaround") == "yes") ? "yes" : "no";
+    map["workaround.legacy_field_enc"] = (c.getvar("legacy_field_enc") == "yes") ? "yes" : "no";
 
     // validate:
-    if (port != "") {
-      if (port.find_first_not_of("0123456789") != std::string::npos
-          || atoi(port.c_str()) < 0 || atoi(port.c_str()) > 65535) {
+    if (!map["port"].empty()) {
+      if (map["port"].find_first_not_of("0123456789") != std::string::npos
+          || atoi(map["port"].c_str()) < 0 || atoi(map["port"].c_str()) > 65535) {
         error += "<li data-input=\"port\">Port must be an integer value in the range 0…65535</li>";
       }
     }
@@ -66,29 +69,47 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
       error += "<li data-input=\"vehicleid\">Vehicle ID must not be empty</li>";
     if (vehicleid.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-") != std::string::npos)
       error += "<li data-input=\"vehicleid\">Vehicle ID may only contain ASCII letters, digits and '-'</li>";
-    if (updatetime_connected != "") {
-      if (atoi(updatetime_connected.c_str()) < 1) {
+    if (!map["updatetime.connected"].empty()) {
+      if (atoi(map["updatetime.connected"].c_str()) < 1) {
         error += "<li data-input=\"updatetime_connected\">Update interval (connected) must be at least 1 second</li>";
       }
     }
-    if (updatetime_idle != "") {
-      if (atoi(updatetime_idle.c_str()) < 1) {
+    if (!map["updatetime.idle"].empty()) {
+      if (atoi(map["updatetime.idle"].c_str()) < 1) {
         error += "<li data-input=\"updatetime_idle\">Update interval (idle) must be at least 1 second</li>";
       }
     }
+    if (!map["updatetime.probe"].empty()) {
+      if (atoi(map["updatetime.probe"].c_str()) < 10) {
+        error += "<li data-input=\"updatetime_probe\">Liveness probe interval must be at least 10 seconds</li>";
+      }
+    }
+    if (!map["timeout.rx"].empty()) {
+      int rxtimeout = atoi(map["timeout.rx"].c_str());
+      if (map["timeout.rx"].find_first_not_of("0123456789") != std::string::npos
+          || (rxtimeout != 0 && rxtimeout < 120)) {
+        error += "<li data-input=\"timeout_rx\">Network RX timeout must be 0 (disabled) or at least 120 seconds</li>";
+      }
+    }
 
-    if (error == "") {
+    if (error.empty()) {
+      // remove empty optional instances before storing:
+      if (map["port"].empty())
+        map.erase("port");
+      if (map["updatetime.connected"].empty())
+        map.erase("updatetime.connected");
+      if (map["updatetime.idle"].empty())
+        map.erase("updatetime.idle");
+      if (map["updatetime.probe"].empty())
+        map.erase("updatetime.probe");
+      if (map["timeout.rx"].empty())
+        map.erase("timeout.rx");
+
       // success:
-      MyConfig.SetParamValue("server.v2", "server", server);
-      MyConfig.SetParamValueBool("server.v2", "tls", tls);
-      MyConfig.SetParamValue("server.v2", "port", port);
+      MyConfig.SetParamMap("server.v2", map);
       MyConfig.SetParamValue("vehicle", "id", vehicleid);
-      if (password != "")
-        MyConfig.SetParamValue("password","server.v2", password);
-      MyConfig.SetParamValue("server.v2", "updatetime.connected", updatetime_connected);
-      MyConfig.SetParamValue("server.v2", "updatetime.idle", updatetime_idle);
-      MyConfig.SetParamValueBool("server.v2", "workaround.ios_tpms_display", ios_tpms_workaround);
-      MyConfig.SetParamValueBool("server.v2", "workaround.legacy_field_enc", legacy_field_enc);
+      if (!password.empty())
+        MyConfig.SetParamValue("password", "server.v2", password);
 
       std::string info =
         "<p class=\"lead\">Server V2 (MP) connection configured.</p>"
@@ -113,16 +134,13 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
     c.alert("danger", error.c_str());
   }
   else {
-    // read configuration:
-    server = MyConfig.GetParamValue("server.v2", "server");
-    tls = MyConfig.GetParamValueBool("server.v2", "tls", false);
-    vehicleid = MyConfig.GetParamValue("vehicle", "id");
-    password = MyConfig.GetParamValue("password", "server.v2");
-    port = MyConfig.GetParamValue("server.v2", "port");
-    updatetime_connected = MyConfig.GetParamValue("server.v2", "updatetime.connected");
-    updatetime_idle = MyConfig.GetParamValue("server.v2", "updatetime.idle");
-    ios_tpms_workaround = MyConfig.GetParamValueBool("server.v2", "workaround.ios_tpms_display", true);  // default enabled, effective only for iOS OVMS app 1.8.6
-    legacy_field_enc = MyConfig.GetParamValueBool("server.v2", "workaround.legacy_field_enc", false);
+    // fill in defaults:
+    if (map["updatetime.probe"].empty())
+      map["updatetime.probe"] = "60";
+    if (map["timeout.rx"].empty())
+      map["timeout.rx"] = "960";
+    if (map.find("workaround.ios_tpms_display") == map.end())
+      map["workaround.ios_tpms_display"] = "yes";  // default enabled, effective only for iOS OVMS app 1.8.6
 
     // generate form:
     c.head(200);
@@ -131,15 +149,15 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
   c.panel_start("primary", "Server V2 (MP) configuration");
   c.form_start(p.uri);
 
-  c.input_text("Server", "server", server.c_str(), "Enter host name or IP address",
+  c.input_text("Server", "server", map["server"].c_str(), "Enter host name or IP address",
     "<p>Public OVMS V2 servers:</p>"
     "<ul>"
       "<li><code>api.openvehicles.com</code> <a href=\"https://www.openvehicles.com/user/register\" target=\"_blank\">Registration</a></li>"
       "<li><code>ovms.dexters-web.de</code> <a href=\"https://dexters-web.de/?action=NewAccount\" target=\"_blank\">Registration</a></li>"
     "</ul>");
-  c.input_checkbox("Enable TLS", "tls", tls,
+  c.input_checkbox("Enable TLS", "tls", strtobool(map["tls"]),
     "<p>Note: enable transport layer security (encryption) if your server supports it (all public OVMS servers do).</p>");
-  c.input_text("Port", "port", port.c_str(), "optional, default: 6867 (no TLS) / 6870 (TLS)");
+  c.input_text("Port", "port", map["port"].c_str(), "optional, default: 6867 (no TLS) / 6870 (TLS)");
   c.input_text("Vehicle ID", "vehicleid", vehicleid.c_str(), "Use ASCII letters, digits and '-'",
     NULL, "autocomplete=\"section-serverv2 username\"");
   c.input_password("Server password", "password", "", "empty = no change",
@@ -147,17 +165,32 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
     "autocomplete=\"section-serverv2 current-password\"");
 
   c.fieldset_start("Update intervals");
-  c.input_text("…connected", "updatetime_connected", updatetime_connected.c_str(),
+  c.input_text("…connected", "updatetime_connected", map["updatetime.connected"].c_str(),
     "optional, in seconds, default: 60");
-  c.input_text("…idle", "updatetime_idle", updatetime_idle.c_str(),
+  c.input_text("…idle", "updatetime_idle", map["updatetime.idle"].c_str(),
     "optional, in seconds, default: 600");
   c.fieldset_end();
 
+  c.fieldset_start("Liveness check");
+  c.input_checkbox("Enable V2 liveness check", "liveness_enabled", strtobool(map["liveness.enabled"]),
+    "<p>Sends an MP ping after inbound traffic has been silent for the probe interval,"
+    " then reconnects after another 30 seconds of silence.</p>");
+  c.input_text("Probe interval", "updatetime_probe", map["updatetime.probe"].c_str(),
+    "default: 60",
+    "<p>Time in seconds of inactivity before sending an MP ping to the server.</p>"
+    "<p>Note: the server may not respond to pings if it is busy, so the liveness check will only trigger a reconnect after another 30 seconds of silence.</p>");
+  c.input_text("Network RX timeout", "timeout_rx", map["timeout.rx"].c_str(),
+    "default: 960",
+    "<p>Restarts the network connection if no inbound traffic has been received within this timeout.</p>"
+    "<p>Liveness check enable/disable has no effect of this setting.</p>"
+    "<p>in seconds, 0 = disabled, minimum: 120, default: 960</p>");
+  c.fieldset_end();
+
   c.fieldset_start("Workarounds");
-  c.input_checkbox("iOS TPMS display fix", "ios_tpms_workaround", ios_tpms_workaround,
+  c.input_checkbox("iOS TPMS display fix", "ios_tpms_workaround", strtobool(map["workaround.ios_tpms_display"]),
     "<p>Workaround for legacy iOS App, hiding zero/negative temperatures to keep other TPMS data visible.</p>"
     "<p>With the fix enabled, use command <code>tpms</code> to show actual temperatures at/below zero.</p>");
-  c.input_checkbox("Legacy field encoding", "legacy_field_enc", legacy_field_enc,
+  c.input_checkbox("Legacy field encoding", "legacy_field_enc", strtobool(map["workaround.legacy_field_enc"]),
     "<p>Workaround for legacy V2/MP Apps/clients cutting off command responses and text notifications"
     " at the first comma.</p><p>If enabled, all commas in these payloads are changed into semicolons.</p>");
   c.fieldset_end();
