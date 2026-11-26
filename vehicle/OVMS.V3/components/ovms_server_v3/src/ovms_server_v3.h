@@ -140,6 +140,7 @@ class OvmsServerV3 : public OvmsServer, MongooseClient
     virtual void SetPowerMode(PowerMode powermode);
     void Connect();
     void Disconnect();
+    void NoteReceive();
     uint16_t NextMsgId();
     void TransmitAllMetrics();
     void TransmitModifiedMetrics();
