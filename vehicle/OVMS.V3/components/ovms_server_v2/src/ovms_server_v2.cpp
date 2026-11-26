@@ -925,8 +925,7 @@ void OvmsServerV2::SetStatus(const char* status, bool fault, State newstate)
     else
       {
       m_connected_since = 0;
-      if (m_state == OvmsServerV2::WaitNetwork)
-        m_last_rx = 0;
+      m_last_rx = 0;
       m_probe_sent = false;
       }
     switch (m_state)
@@ -1040,6 +1039,7 @@ void OvmsServerV2::Disconnect()
     }
   m_buffer->EmptyAll();
   m_connretry = 0;
+  m_last_rx = 0;
   m_connected_since = 0;
   m_probe_sent = false;
   StandardMetrics.ms_s_v2_connected->SetValue(false);
@@ -1056,8 +1056,7 @@ void OvmsServerV2::Reconnect(int connretry)
     }
   m_buffer->EmptyAll();
   m_connretry = connretry;
-  if (connretry < 0)
-    m_last_rx = 0;
+  m_last_rx = 0;
   m_connected_since = 0;
   m_probe_sent = false;
   StandardMetrics.ms_s_v2_connected->SetValue(false);
@@ -2215,8 +2214,6 @@ void OvmsServerV2::EventListener(std::string event, void* data)
   else if (event == "ota.flash.done" || event == "ota.flash.abort")
     {
     m_ota_paused = false;
-    m_last_rx = monotonictime;
-    m_probe_sent = false;
     }
   else if (event == "system.modem.received.ussd")
     {
@@ -2332,37 +2329,18 @@ void OvmsServerV2::NetmanStop(std::string event, void* data)
 
 void OvmsServerV2::LivenessCheck()
   {
-  if (!m_liveness_enabled || m_ota_paused || !MyNetManager.m_connected_any || m_connretry < 0)
+  if (!m_liveness_enabled || !m_mgconn ||
+      !StandardMetrics.ms_s_v2_connected->AsBool())
     return;
 
   const int64_t now = monotonictime;
   if (m_last_rx == 0)
     {
-    if (StandardMetrics.ms_s_v2_connected->AsBool())
-      m_last_rx = now;
+    m_last_rx = now;
     return;
     }
 
   const int64_t silence = now - m_last_rx;
-
-  // check for issue #241 condition:
-  int rxtimeout = MyConfig.GetParamValueInt("server.v2", "timeout.rx", 960);
-  if (rxtimeout != 0)
-    {
-    if (rxtimeout < 120) rxtimeout = 120;
-    if (silence >= rxtimeout)
-      {
-      ESP_LOGW(TAG, "Detected stale connection (issue #241), restarting network");
-      SetStatus("Restarting network", false, WaitNetwork);
-      Disconnect();
-      MyNetManager.RestartNetwork();
-      return;
-      }
-    }
-
-  if (!m_mgconn || !StandardMetrics.ms_s_v2_connected->AsBool())
-    return;
-
   if (silence < m_updatetime_probe)
     {
     m_probe_sent = false;
@@ -2372,8 +2350,8 @@ void OvmsServerV2::LivenessCheck()
   if (!m_probe_sent)
     {
     ESP_LOGV(TAG, "No inbound V2 traffic for %llds, sending ping", (long long)silence);
-    if (Transmit("MP-0 A", pdMS_TO_TICKS(1000)))
-      m_probe_sent = true;
+    Transmit("MP-0 A");
+    m_probe_sent = true;
     return;
     }
 
@@ -2407,17 +2385,13 @@ void OvmsServerV2::Ticker1(std::string event, void* data)
     SetStatus("Server is ready to start", false, WaitNetwork);
     }
 
-  if (m_liveness_enabled)
-    LivenessCheck();
-
   if (StandardMetrics.ms_s_v2_connected->AsBool())
     {
-    if (m_ota_paused)
-      return;
-
     uint32_t now = monotonictime;
 
-    if (!m_liveness_enabled)
+    if (m_liveness_enabled)
+      LivenessCheck();
+    else
       {
       // check for issue #241 condition:
       int rxtimeout = MyConfig.GetParamValueInt("server.v2", "timeout.rx", 960);
@@ -2426,10 +2400,9 @@ void OvmsServerV2::Ticker1(std::string event, void* data)
         if (rxtimeout < 120) rxtimeout = 120;
         if (++m_ping_ticker >= rxtimeout - 60)
           {
-          // send ping; don't block the events task if the Mongoose task is busy
-          // (e.g. executing a long server command), retry on the next tick:
-          if (Transmit("MP-0 A", pdMS_TO_TICKS(1000)))
-            m_ping_ticker = 0;
+          // send ping:
+          Transmit("MP-0 A");
+          m_ping_ticker = 0;
           }
         else if (now >= m_last_rx + rxtimeout)
           {
@@ -2441,6 +2414,9 @@ void OvmsServerV2::Ticker1(std::string event, void* data)
           }
         }
       }
+
+    if (m_ota_paused)
+      return;
 
     // Periodic transmission of metrics
     bool caron = StandardMetrics.ms_v_env_on->AsBool();
