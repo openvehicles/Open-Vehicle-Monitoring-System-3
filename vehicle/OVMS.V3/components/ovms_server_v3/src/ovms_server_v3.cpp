@@ -1393,6 +1393,8 @@ void OvmsServerV3::EventListener(std::string event, void* data)
   if (event == "ota.flash.done" || event == "ota.flash.abort")
     {
     m_ota_paused = false;
+    m_last_rx = now;
+    m_probe_sent = false;
     return;
     }
   if (event == "config.changed" || event == "config.mounted")
@@ -1557,7 +1559,7 @@ void OvmsServerV3::NetmanStop(std::string event, void* data)
 
 void OvmsServerV3::LivenessCheck()
   {
-  if (!m_liveness_enabled || !m_mgconn || !StandardMetrics.ms_s_v3_connected->AsBool())
+  if (!m_liveness_enabled || m_ota_paused || !m_mgconn || !StandardMetrics.ms_s_v3_connected->AsBool())
     return;
 
   int64_t now = StandardMetrics.ms_m_monotonic->AsInt();
@@ -1576,9 +1578,13 @@ void OvmsServerV3::LivenessCheck()
 
   if (!m_probe_sent)
     {
-    ESP_LOGV(TAG, "No inbound MQTT traffic for %llds, sending ping", (long long)silence);
-    mg_mqtt_ping(m_mgconn);
-    m_probe_sent = true;
+    auto mglock = MongooseLock(pdMS_TO_TICKS(1000));
+    if (mglock && m_mgconn)
+      {
+      ESP_LOGV(TAG, "No inbound MQTT traffic for %llds, sending ping", (long long)silence);
+      mg_mqtt_ping(m_mgconn);
+      m_probe_sent = true;
+      }
     return;
     }
 
@@ -1672,10 +1678,10 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
 
   if (StandardMetrics.ms_s_v3_connected->AsBool())
     {
-    if (m_liveness_enabled)
-      LivenessCheck();
     if (m_ota_paused)
       return;
+    if (m_liveness_enabled)
+      LivenessCheck();
     bool carawake = StandardMetrics.ms_v_env_awake->AsBool();
     bool caron = StandardMetrics.ms_v_env_on->AsBool();
     bool carcharging = StandardMetrics.ms_v_charge_inprogress->AsBool();
