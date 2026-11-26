@@ -176,10 +176,14 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
     "<p>Sends an MP ping after inbound traffic has been silent for the probe interval,"
     " then reconnects after another 30 seconds of silence.</p>");
   c.input_text("Probe interval", "updatetime_probe", map["updatetime.probe"].c_str(),
-    "in seconds, minimum: 10, default: 60");
+    "default: 60",
+    "<p>Time in seconds of inactivity before sending an MP ping to the server.</p>"
+    "<p>Note: the server may not respond to pings if it is busy, so the liveness check will only trigger a reconnect after another 30 seconds of silence.</p>");
   c.input_text("Network RX timeout", "timeout_rx", map["timeout.rx"].c_str(),
-    "in seconds, 0 = disabled, minimum: 120, default: 960",
-    "<p>Restarts the network connection if no inbound traffic has been received within this timeout.</p>");
+    "default: 960",
+    "<p>Restarts the network connection if no inbound traffic has been received within this timeout.</p>"
+    "<p>Liveness check enable/disable has no effect of this setting.</p>"
+    "<p>in seconds, 0 = disabled, minimum: 120, default: 960</p>");
   c.fieldset_end();
 
   c.fieldset_start("Workarounds");
